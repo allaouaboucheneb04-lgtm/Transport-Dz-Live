@@ -340,3 +340,56 @@ function installStopPickerButtons(){
 
 setTimeout(installStopPickerButtons, 600);
 document.addEventListener('click', ()=>setTimeout(installStopPickerButtons, 100));
+
+
+// ================================
+// Carte client centrée sur position
+// ================================
+let clientLocationMarker = null;
+
+function centerClientMapOnMyPosition(){
+  if(!navigator.geolocation) return alert('GPS non disponible sur ce téléphone.');
+
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    if(typeof map !== 'undefined' && map){
+      map.setView([lat, lng], 15);
+
+      if(clientLocationMarker){
+        clientLocationMarker.setLatLng([lat, lng]);
+      }else{
+        clientLocationMarker = L.circleMarker([lat, lng], {
+          radius: 9,
+          weight: 3,
+          fillOpacity: 0.8
+        }).addTo(map).bindPopup('📍 Ma position');
+      }
+    }
+  }, ()=>{
+    alert('GPS refusé. Active la localisation dans Safari.');
+  }, {enableHighAccuracy:true, timeout:12000});
+}
+
+function installClientGpsButton(){
+  if(document.getElementById('centerClientGpsBtn')) return;
+
+  const mapEl = document.getElementById('map');
+  if(!mapEl) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'centerClientGpsBtn';
+  btn.type = 'button';
+  btn.textContent = '📍 Ma position';
+  btn.onclick = centerClientMapOnMyPosition;
+
+  mapEl.parentElement.style.position = 'relative';
+  mapEl.parentElement.appendChild(btn);
+
+  // Centrer automatiquement au premier chargement côté client
+  setTimeout(centerClientMapOnMyPosition, 1000);
+}
+
+setTimeout(installClientGpsButton, 800);
+document.addEventListener('DOMContentLoaded', ()=>setTimeout(installClientGpsButton, 500));

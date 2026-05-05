@@ -91,3 +91,19 @@ html,body{
 @media(max-width:640px){
   .stop-picker-map{height:360px;}
 }
+
+
+/* Bouton GPS client sur carte */
+#centerClientGpsBtn{
+  position:absolute;
+  right:18px;
+  top:18px;
+  z-index:999;
+  border:none;
+  border-radius:999px;
+  padding:12px 16px;
+  background:#2563eb;
+  color:white;
+  font-weight:800;
+  box-shadow:0 10px 24px rgba(15,23,42,.18);
+}
