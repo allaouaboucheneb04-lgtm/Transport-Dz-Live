@@ -61,7 +61,6 @@
   <div id="loginModal" class="modal hidden"><div class="modal-card"><h2>Connexion</h2><p class="result-text">Admin ou chauffeur. Le premier compte créé doit être ajouté comme admin dans Firestore.</p><label>Email</label><input id="emailInput" type="email" placeholder="admin@email.com"><label>Mot de passe</label><input id="passwordInput" type="password" placeholder="Minimum 6 caractères"><div class="grid-two"><button id="loginBtn" class="primary-btn">Se connecter</button><button id="signupBtn" class="ghost-btn">Créer compte</button></div><button id="logoutBtn" class="danger-btn full">Déconnexion</button><button id="closeLoginBtn" class="ghost-btn full">Fermer</button><p id="authStatus" class="result-text"></p></div></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script type="module" src="app.js"></script>
 
 <!-- Sélecteur carte pour les arrêts -->
 <div id="stopMapPickerModal" class="modal hidden">
@@ -81,6 +80,13 @@
     <button id="closeStopPickerBtn" class="btn ghost">Fermer</button>
   </div>
 </div>
+
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js?v=1300"></script>
 
 </body>
 </html>

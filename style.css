@@ -647,3 +647,5 @@ button:not(.navBtn):not(.tab):not(.badge){
   #map,.leaflet-container{height:380px!important}
   .badge,#firebaseStatus,#openLoginBtn,#loginOpenBtn{font-size:11px;padding:7px 8px}
 }
+
+button:disabled{opacity:.65;pointer-events:none;}

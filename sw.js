@@ -1,3 +1,4 @@
+window.__manualGpsClick = false;
 const CACHE='transport-live-dz-v1';
 const ASSETS=['./','./index.html','./style.css','./app.js','./manifest.json'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
