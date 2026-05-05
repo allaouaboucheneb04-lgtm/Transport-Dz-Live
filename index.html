@@ -1,169 +1,159 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Transport Live DZ</title>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
+<header class="topbar">
+  <div>
+    <div class="kicker">Firebase + GPS Live</div>
+    <h1>Transport Live DZ</h1>
+  </div>
+  <div class="badges">
+    <span id="firebaseStatus" class="badge blue">Firebase...</span>
+    <button id="openLoginBtn" type="button" class="badge light">Connexion</button>
+  </div>
+</header>
+
+<main>
+<section id="clientPage" class="page active">
+  <div class="hero">
     <div>
-      <div class="kicker">Firebase + GPS Live</div>
-      <h1>Transport Live DZ</h1>
+      <div class="kicker">Client</div>
+      <h2>Voir les bus en direct</h2>
+      <p>Carte, lignes, arrêts et véhicules actifs en temps réel.</p>
     </div>
-    <div class="badges">
-      <span id="firebaseStatus" class="badge blue">Firebase...</span>
-      <button id="openLoginBtn" class="badge light">Connexion</button>
+    <button id="clientGpsBtn" type="button" class="primary small">📍 Ma position</button>
+  </div>
+
+  <div class="card">
+    <label>Ligne</label>
+    <select id="clientLineSelect"><option value="all">Toutes les lignes</option></select>
+    <label>Départ</label>
+    <input id="fromInput" placeholder="Ex: Gare routière">
+    <label>Destination</label>
+    <input id="toInput" placeholder="Ex: Université">
+    <button id="searchRouteBtn" type="button" class="primary">Chercher trajet</button>
+    <div id="routeResult" class="result"></div>
+  </div>
+
+  <div class="mapWrap"><div id="map"></div></div>
+
+  <div class="card">
+    <h3>Arrêts</h3>
+    <div id="stopsList" class="list"></div>
+  </div>
+</section>
+
+<section id="driverPage" class="page">
+  <div class="hero">
+    <div>
+      <div class="kicker">Chauffeur</div>
+      <h2>GPS véhicule</h2>
+      <p>Choisis ton véhicule puis démarre le partage GPS.</p>
     </div>
-  </header>
+  </div>
+  <div class="card">
+    <label>Véhicule</label>
+    <select id="driverVehicleSelect"></select>
+    <button id="startDriverGpsBtn" type="button" class="primary">▶️ Démarrer GPS</button>
+    <button id="stopDriverGpsBtn" type="button" class="danger">⏹ Arrêter GPS</button>
+    <div id="driverStatus" class="result">GPS arrêté.</div>
+  </div>
+</section>
 
-  <main>
-    <section id="clientPage" class="page active">
-      <div class="hero">
-        <div>
-          <div class="kicker">Client</div>
-          <h2>Voir les bus en direct</h2>
-          <p>Carte, lignes, arrêts et véhicules actifs en temps réel.</p>
-        </div>
-        <button id="clientGpsBtn" class="primary small">📍 Ma position</button>
-      </div>
-
-      <div class="card">
-        <label>Ligne</label>
-        <select id="clientLineSelect"><option value="all">Toutes les lignes</option></select>
-        <label>Départ</label>
-        <input id="fromInput" placeholder="Ex: Gare routière"/>
-        <label>Destination</label>
-        <input id="toInput" placeholder="Ex: Université"/>
-        <button id="searchRouteBtn" class="primary">Chercher trajet</button>
-        <div id="routeResult" class="result"></div>
-      </div>
-
-      <div class="mapWrap"><div id="map"></div></div>
-
-      <div class="card">
-        <h3>Arrêts</h3>
-        <div id="stopsList" class="list"></div>
-      </div>
-    </section>
-
-    <section id="driverPage" class="page">
-      <div class="hero">
-        <div>
-          <div class="kicker">Chauffeur</div>
-          <h2>GPS véhicule</h2>
-          <p>Choisis ton véhicule puis démarre le partage GPS.</p>
-        </div>
-      </div>
-      <div class="card">
-        <label>Véhicule</label>
-        <select id="driverVehicleSelect"></select>
-        <button id="startDriverGpsBtn" class="primary">▶️ Démarrer GPS</button>
-        <button id="stopDriverGpsBtn" class="danger">⏹ Arrêter GPS</button>
-        <div id="driverStatus" class="result">GPS arrêté.</div>
-      </div>
-    </section>
-
-    <section id="adminPage" class="page">
-      <div class="hero">
-        <div>
-          <div class="kicker">Admin</div>
-          <h2>Gestion simple</h2>
-          <p>Ajoute les lignes, arrêts et véhicules.</p>
-        </div>
-      </div>
-
-      <div class="tabs">
-        <button class="tab active" data-tab="lines">Lignes</button>
-        <button class="tab" data-tab="stops">Arrêts</button>
-        <button class="tab" data-tab="vehicles">Véhicules</button>
-      </div>
-
-      <div id="panelLines" class="adminPanel active">
-        <div class="card">
-          <label>Nom ligne</label>
-          <input id="lineName" placeholder="Ex: Tidjounane"/>
-          <label>Type</label>
-          <select id="lineType"><option>bus</option><option>tram</option><option>metro</option></select>
-          <label>Couleur</label>
-          <input id="lineColor" type="color" value="#2563eb"/>
-          <button id="addLineBtn" class="primary">Ajouter ligne</button>
-        </div>
-        <div id="linesAdminList" class="list"></div>
-      </div>
-
-      <div id="panelStops" class="adminPanel">
-        <div class="card">
-          <label>Ligne</label>
-          <select id="stopLineSelect"></select>
-          <label>Nom arrêt</label>
-          <input id="stopName" placeholder="Ex: Sidi Aïch"/>
-          <label>Latitude</label>
-          <input id="stopLat" inputmode="decimal" placeholder="36.6122"/>
-          <label>Longitude</label>
-          <input id="stopLng" inputmode="decimal" placeholder="4.6865"/>
-          <div class="row">
-            <button id="useMyLocationStopBtn" class="secondary">📍 Utiliser ma position</button>
-            <button id="pickStopOnMapBtn" class="secondary">🗺️ Choisir sur carte</button>
-          </div>
-          <button id="addStopBtn" class="primary">Ajouter arrêt</button>
-        </div>
-        <div id="stopsAdminList" class="list"></div>
-      </div>
-
-      <div id="panelVehicles" class="adminPanel">
-        <div class="card">
-          <label>Nom véhicule</label>
-          <input id="vehicleName" placeholder="Bus 1"/>
-          <label>Ligne</label>
-          <select id="vehicleLineSelect"></select>
-          <label>Chauffeur UID</label>
-          <input id="vehicleDriverId" placeholder="UID chauffeur"/>
-          <button id="addVehicleBtn" class="primary">Ajouter véhicule</button>
-        </div>
-        <div id="vehiclesAdminList" class="list"></div>
-      </div>
-    </section>
-  </main>
-
-  <nav class="bottomNav">
-    <button class="navBtn active" data-page="clientPage">🗺️<span>Client</span></button>
-    <button class="navBtn" data-page="driverPage">🚌<span>Chauffeur</span></button>
-    <button class="navBtn" data-page="adminPage">⚙️<span>Admin</span></button>
-  </nav>
-
-  <div id="loginModal" class="modal hidden">
-    <div class="modalCard">
-      <h2>Connexion</h2>
-      <p>Connecte-toi comme admin ou chauffeur.</p>
-      <label>Email</label>
-      <input id="emailInput" type="email" value="allaouaboucheneb04@gmail.com"/>
-      <label>Mot de passe</label>
-      <input id="passwordInput" type="password"/>
-      <button id="loginBtn" class="primary">Se connecter</button>
-      <button id="signupBtn" class="secondary">Créer compte</button>
-      <button id="logoutBtn" class="danger">Déconnexion</button>
-      <button id="closeLoginBtn" class="ghost">Fermer</button>
-      <div id="authStatus" class="result">Non connecté</div>
+<section id="adminPage" class="page">
+  <div class="hero">
+    <div>
+      <div class="kicker">Admin</div>
+      <h2>Gestion simple</h2>
+      <p>Ajoute les lignes, arrêts et véhicules.</p>
     </div>
   </div>
 
-  <div id="stopPickerModal" class="modal hidden">
-    <div class="modalCard mapModal">
-      <h2>Choisir l’arrêt</h2>
-      <p>Clique sur la carte ou utilise ta position.</p>
-      <div id="stopPickerMap"></div>
-      <div id="pickedCoords" class="result">Aucune position choisie</div>
-      <button id="pickerUseGpsBtn" class="secondary">📍 Ma position</button>
-      <button id="pickerConfirmBtn" class="primary">Utiliser cette position</button>
-      <button id="pickerCloseBtn" class="ghost">Fermer</button>
-    </div>
+  <div class="tabs">
+    <button class="tab active" type="button" data-panel="panelLines">Lignes</button>
+    <button class="tab" type="button" data-panel="panelStops">Arrêts</button>
+    <button class="tab" type="button" data-panel="panelVehicles">Véhicules</button>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="app.js"></script>
+  <div id="panelLines" class="adminPanel active">
+    <div class="card">
+      <label>Nom ligne</label><input id="lineName" placeholder="Ex: Tidjounane">
+      <label>Type</label><select id="lineType"><option>bus</option><option>tram</option><option>metro</option></select>
+      <label>Couleur</label><input id="lineColor" type="color" value="#2563eb">
+      <button id="addLineBtn" type="button" class="primary">Ajouter ligne</button>
+    </div>
+    <div id="linesAdminList" class="list"></div>
+  </div>
+
+  <div id="panelStops" class="adminPanel">
+    <div class="card">
+      <label>Ligne</label><select id="stopLineSelect"></select>
+      <label>Nom arrêt</label><input id="stopName" placeholder="Ex: Sidi Aïch">
+      <label>Latitude</label><input id="stopLat" inputmode="decimal" placeholder="36.6122">
+      <label>Longitude</label><input id="stopLng" inputmode="decimal" placeholder="4.6865">
+      <div class="row">
+        <button id="useMyLocationStopBtn" type="button" class="secondary">📍 Utiliser ma position</button>
+        <button id="pickStopOnMapBtn" type="button" class="secondary">🗺️ Choisir sur carte</button>
+      </div>
+      <button id="addStopBtn" type="button" class="primary">Ajouter arrêt</button>
+    </div>
+    <div id="stopsAdminList" class="list"></div>
+  </div>
+
+  <div id="panelVehicles" class="adminPanel">
+    <div class="card">
+      <label>Nom véhicule</label><input id="vehicleName" placeholder="Bus 1">
+      <label>Ligne</label><select id="vehicleLineSelect"></select>
+      <label>Chauffeur UID</label><input id="vehicleDriverId" placeholder="UID chauffeur">
+      <button id="addVehicleBtn" type="button" class="primary">Ajouter véhicule</button>
+    </div>
+    <div id="vehiclesAdminList" class="list"></div>
+  </div>
+</section>
+</main>
+
+<nav class="bottomNav">
+  <button class="navBtn active" type="button" data-page="clientPage">🗺️<span>Client</span></button>
+  <button class="navBtn" type="button" data-page="driverPage">🚌<span>Chauffeur</span></button>
+  <button class="navBtn" type="button" data-page="adminPage">⚙️<span>Admin</span></button>
+</nav>
+
+<div id="loginModal" class="modal hidden">
+  <div class="modalCard">
+    <h2>Connexion</h2>
+    <p>Connecte-toi comme admin ou chauffeur.</p>
+    <label>Email</label>
+    <input id="emailInput" type="email" value="allaouaboucheneb04@gmail.com" autocomplete="username">
+    <label>Mot de passe</label>
+    <input id="passwordInput" type="password" autocomplete="current-password">
+    <button id="loginBtn" type="button" class="primary">Se connecter</button>
+    <button id="signupBtn" type="button" class="secondary">Créer compte</button>
+    <button id="logoutBtn" type="button" class="danger">Déconnexion</button>
+    <button id="closeLoginBtn" type="button" class="ghost">Fermer</button>
+    <div id="authStatus" class="result">Non connecté</div>
+  </div>
+</div>
+
+<div id="stopPickerModal" class="modal hidden">
+  <div class="modalCard mapModal">
+    <h2>Choisir l’arrêt</h2>
+    <p>Clique sur la carte ou utilise ta position.</p>
+    <div id="stopPickerMap"></div>
+    <div id="pickedCoords" class="result">Aucune position choisie</div>
+    <button id="pickerUseGpsBtn" type="button" class="secondary">📍 Ma position</button>
+    <button id="pickerConfirmBtn" type="button" class="primary">Utiliser cette position</button>
+    <button id="pickerCloseBtn" type="button" class="ghost">Fermer</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
