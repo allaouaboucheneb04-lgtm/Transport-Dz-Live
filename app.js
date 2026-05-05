@@ -213,3 +213,130 @@ function showAuthErrorFinal(e){
   if(status) status.textContent = msg;
   alert("Erreur connexion: " + msg);
 }
+
+
+// ================================
+// Sélecteur carte pour arrêts
+// ================================
+let stopPickerMap = null;
+let stopPickerMarker = null;
+let pickedStopLat = null;
+let pickedStopLng = null;
+
+function setStopPickedPosition(lat, lng){
+  pickedStopLat = Number(lat);
+  pickedStopLng = Number(lng);
+
+  const latEl = document.getElementById('pickedLat');
+  const lngEl = document.getElementById('pickedLng');
+  if(latEl) latEl.textContent = pickedStopLat.toFixed(6);
+  if(lngEl) lngEl.textContent = pickedStopLng.toFixed(6);
+
+  if(stopPickerMarker){
+    stopPickerMarker.setLatLng([pickedStopLat, pickedStopLng]);
+  }else if(stopPickerMap){
+    stopPickerMarker = L.marker([pickedStopLat, pickedStopLng], {draggable:true}).addTo(stopPickerMap);
+    stopPickerMarker.on('dragend', ()=>{
+      const p = stopPickerMarker.getLatLng();
+      setStopPickedPosition(p.lat, p.lng);
+    });
+  }
+}
+
+function openStopMapPicker(){
+  const modal = document.getElementById('stopMapPickerModal');
+  if(!modal) return alert('Carte de sélection introuvable.');
+  modal.classList.remove('hidden');
+
+  setTimeout(()=>{
+    const latInput = document.getElementById('stopLat') || document.getElementById('stopLatitude') || document.querySelector('input[placeholder*="Latitude"], input[name*="lat"]');
+    const lngInput = document.getElementById('stopLng') || document.getElementById('stopLongitude') || document.querySelector('input[placeholder*="Longitude"], input[name*="lng"]');
+
+    const startLat = parseFloat(latInput && latInput.value) || 36.7525;
+    const startLng = parseFloat(lngInput && lngInput.value) || 5.0843;
+
+    if(!stopPickerMap){
+      stopPickerMap = L.map('stopPickerMap').setView([startLat, startLng], 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:'© OpenStreetMap'
+      }).addTo(stopPickerMap);
+
+      stopPickerMap.on('click', (e)=>{
+        setStopPickedPosition(e.latlng.lat, e.latlng.lng);
+      });
+    }else{
+      stopPickerMap.invalidateSize();
+      stopPickerMap.setView([startLat, startLng], 14);
+    }
+
+    setStopPickedPosition(startLat, startLng);
+    setTimeout(()=>stopPickerMap.invalidateSize(), 250);
+  }, 150);
+}
+
+function confirmStopPickedPosition(){
+  if(pickedStopLat == null || pickedStopLng == null) return alert('Choisis une position sur la carte.');
+
+  const latInput = document.getElementById('stopLat') || document.getElementById('stopLatitude') || document.querySelector('input[placeholder*="Latitude"], input[name*="lat"]');
+  const lngInput = document.getElementById('stopLng') || document.getElementById('stopLongitude') || document.querySelector('input[placeholder*="Longitude"], input[name*="lng"]');
+
+  if(latInput) latInput.value = pickedStopLat.toFixed(6);
+  if(lngInput) lngInput.value = pickedStopLng.toFixed(6);
+
+  document.getElementById('stopMapPickerModal')?.classList.add('hidden');
+}
+
+function useMyLocationForStop(){
+  if(!navigator.geolocation) return alert('GPS non disponible.');
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    setStopPickedPosition(lat, lng);
+    if(stopPickerMap) stopPickerMap.setView([lat,lng], 17);
+  }, ()=>{
+    alert('GPS refusé. Active la localisation dans Safari.');
+  }, {enableHighAccuracy:true, timeout:12000});
+}
+
+function installStopPickerButtons(){
+  // Bouton professionnel sous les champs latitude/longitude
+  const latInput = document.getElementById('stopLat') || document.getElementById('stopLatitude') || document.querySelector('input[placeholder*="Latitude"], input[name*="lat"]');
+  if(latInput && !document.getElementById('openStopPickerBtn')){
+    const btn = document.createElement('button');
+    btn.id = 'openStopPickerBtn';
+    btn.type = 'button';
+    btn.className = 'btn primary';
+    btn.textContent = '🗺️ Choisir sur la carte';
+    btn.style.marginTop = '12px';
+    btn.onclick = openStopMapPicker;
+
+    const parent = latInput.closest('.field,.form-group,label,div') || latInput.parentElement;
+    if(parent) parent.parentElement.insertBefore(btn, parent.nextSibling);
+  }
+
+  const useBtn = document.getElementById('useMyLocationForStopBtn');
+  const confirmBtn = document.getElementById('confirmStopPositionBtn');
+  const closeBtn = document.getElementById('closeStopPickerBtn');
+
+  if(useBtn) useBtn.onclick = useMyLocationForStop;
+  if(confirmBtn) confirmBtn.onclick = confirmStopPickedPosition;
+  if(closeBtn) closeBtn.onclick = ()=>document.getElementById('stopMapPickerModal')?.classList.add('hidden');
+
+  // Améliorer le bouton existant "Utiliser ma position" si présent
+  document.querySelectorAll('button').forEach(b=>{
+    if((b.textContent || '').trim().toLowerCase().includes('utiliser ma position') && b.id !== 'useMyLocationForStopBtn'){
+      b.onclick = ()=>{
+        if(!navigator.geolocation) return alert('GPS non disponible.');
+        navigator.geolocation.getCurrentPosition((pos)=>{
+          const latInput = document.getElementById('stopLat') || document.getElementById('stopLatitude') || document.querySelector('input[placeholder*="Latitude"], input[name*="lat"]');
+          const lngInput = document.getElementById('stopLng') || document.getElementById('stopLongitude') || document.querySelector('input[placeholder*="Longitude"], input[name*="lng"]');
+          if(latInput) latInput.value = pos.coords.latitude.toFixed(6);
+          if(lngInput) lngInput.value = pos.coords.longitude.toFixed(6);
+        }, ()=>alert('GPS refusé. Active la localisation dans Safari.'), {enableHighAccuracy:true, timeout:12000});
+      };
+    }
+  });
+}
+
+setTimeout(installStopPickerButtons, 600);
+document.addEventListener('click', ()=>setTimeout(installStopPickerButtons, 100));

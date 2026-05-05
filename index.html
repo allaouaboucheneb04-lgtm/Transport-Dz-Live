@@ -62,5 +62,25 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script type="module" src="app.js"></script>
+
+<!-- Sélecteur carte pour les arrêts -->
+<div id="stopMapPickerModal" class="modal hidden">
+  <div class="modalCard stop-picker-card">
+    <h2>Choisir la position de l’arrêt</h2>
+    <p class="muted">Déplace la carte, clique sur l’endroit exact, ou utilise ta position GPS.</p>
+
+    <div id="stopPickerMap" class="stop-picker-map"></div>
+
+    <div class="picker-coords">
+      <strong>Latitude:</strong> <span id="pickedLat">-</span>
+      <strong>Longitude:</strong> <span id="pickedLng">-</span>
+    </div>
+
+    <button id="useMyLocationForStopBtn" class="btn secondary">📍 Utiliser ma position</button>
+    <button id="confirmStopPositionBtn" class="btn primary">✅ Utiliser cette position</button>
+    <button id="closeStopPickerBtn" class="btn ghost">Fermer</button>
+  </div>
+</div>
+
 </body>
 </html>

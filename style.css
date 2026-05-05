@@ -66,3 +66,28 @@ html,body{
   color:#166534 !important;
   border-color:#bbf7d0 !important;
 }
+
+
+/* Carte sélection arrêt */
+.stop-picker-card{
+  max-width:720px !important;
+  width:94vw !important;
+}
+.stop-picker-map{
+  width:100%;
+  height:420px;
+  border-radius:22px;
+  overflow:hidden;
+  border:1px solid #dbe3ef;
+  margin:14px 0;
+}
+.picker-coords{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:10px 0 14px;
+  color:#334155;
+}
+@media(max-width:640px){
+  .stop-picker-map{height:360px;}
+}
