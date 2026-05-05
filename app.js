@@ -106,7 +106,7 @@ function routeSearch(){ const from=$('fromInput').value.trim().toLowerCase(),to=
 function bind(){
   document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$('page-'+btn.dataset.page).classList.add('active');setTimeout(()=>map&&map.invalidateSize(),200);});
   document.querySelectorAll('.mini').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.mini').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.admin-pane').forEach(p=>p.classList.remove('active'));$('admin-'+btn.dataset.adminTab).classList.add('active');});
-  $('loginOpenBtn').onclick=()=>$('loginModal').classList.remove('hidden'); $('closeLoginBtn').onclick=()=>$('loginModal').classList.add('hidden');
+  $('loginOpenBtn').onclick=()=>$('loginModal').classList.remove('hidden'); $('closeLoginBtn').onclick=()=>$('loginModal').classList.add('hidden'); alert('Connexion réussie ✅');
   function friendlyAuthError(e){
     const code = e && e.code ? e.code : '';
     if(code.includes('auth/invalid-credential')) return 'Email ou mot de passe incorrect.';
@@ -117,7 +117,7 @@ function bind(){
     if(code.includes('auth/unauthorized-domain')) return 'Ajoute ton domaine GitHub Pages dans Firebase Authentication > Settings > Authorized domains.';
     return e.message || 'Erreur de connexion.';
   }
-  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('loginModal').classList.add('hidden')}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
+  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('loginModal').classList.add('hidden'); alert('Connexion réussie ✅')}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
   $('signupBtn').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('authStatus').textContent='Compte créé. Ajoute ton UID dans admins pour devenir admin.';}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
   $('logoutBtn').onclick=()=>signOut(auth); $('clientLineSelect').onchange=()=>{renderLists();drawMap();};
   $('addLineBtn').onclick=addLine; $('addStopBtn').onclick=addStop; $('addVehicleBtn').onclick=addVehicle; $('seedBtn').onclick=seedDemo; $('clearDemoBtn').onclick=clearDemo;
@@ -125,3 +125,23 @@ function bind(){
   $('useMyLocationStop').onclick=()=>navigator.geolocation.getCurrentPosition(p=>{$('stopLat').value=p.coords.latitude;$('stopLng').value=p.coords.longitude;});
 }
 window.addEventListener('load',()=>{initMap();bind();initFirebase(); if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');});
+
+
+// Correctif visibilité boutons connexion iPhone/Safari
+function fixLoginModalButtons(){
+  ['loginBtn','signupBtn','logoutBtn','closeLogin'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){
+      el.style.display = 'block';
+      el.style.width = '100%';
+      el.style.minHeight = '52px';
+      el.style.marginTop = '12px';
+      el.style.opacity = '1';
+      el.style.visibility = 'visible';
+      el.style.position = 'relative';
+      el.style.zIndex = '9999';
+    }
+  });
+}
+setTimeout(fixLoginModalButtons, 300);
+document.addEventListener('click', ()=>setTimeout(fixLoginModalButtons, 50));
