@@ -22,26 +22,57 @@
   function num(v){ const x=Number(v); return Number.isFinite(x) ? x : null; }
   function lineName(id){ const l=lines.find(x=>x.id===id); return l ? (l.name || l.id) : (id || ""); }
 
-  function firebaseError(e, statusId){
-    console.error("FIRESTORE ERROR", e);
-    const msg = "Erreur Firebase: " + (e && e.code ? e.code + " - " : "") + (e && e.message ? e.message : e);
-    setText(statusId, msg);
-    alert(msg);
+  function firebaseType(v){
+    if(v === null || v === undefined) return { nullValue: null };
+    if(typeof v === "boolean") return { booleanValue: v };
+    if(typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    return { stringValue: String(v) };
   }
 
-  async function addToFirestore(collectionName, data, statusId){
-    if(!window.db){
-      const msg = "Firebase Firestore n'est pas chargé.";
+  function toFirestoreFields(obj){
+    const fields = {};
+    Object.keys(obj).forEach(k => fields[k] = firebaseType(obj[k]));
+    return fields;
+  }
+
+  async function firestoreServerAdd(collectionName, data, statusId){
+    if(!window.auth || !window.auth.currentUser){
+      const msg = "Connecte-toi d’abord.";
       setText(statusId, msg);
       alert(msg);
       return null;
     }
+
     try{
-      const ref = await window.db.collection(collectionName).add(data);
-      setText(statusId, "Enregistré dans Firebase ✅ ID: " + ref.id);
-      return ref;
+      const token = await window.auth.currentUser.getIdToken(true);
+      const url = `https://firestore.googleapis.com/v1/projects/transport-dz-live-5d1fb/databases/(default)/documents/${collectionName}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ fields: toFirestoreFields(data) })
+      });
+
+      const text = await res.text();
+      let json = {};
+      try { json = text ? JSON.parse(text) : {}; } catch(e){}
+
+      if(!res.ok){
+        const msg = "Erreur Firestore serveur: " + res.status + " " + (json.error?.message || text);
+        setText(statusId, msg);
+        alert(msg);
+        return null;
+      }
+
+      const id = (json.name || "").split("/").pop();
+      setText(statusId, "Sauvegardé dans Firebase ✅ ID: " + id);
+      return id;
     }catch(e){
-      firebaseError(e, statusId);
+      const msg = "Erreur réseau Firebase: " + (e.message || e);
+      setText(statusId, msg);
+      alert(msg);
       return null;
     }
   }
@@ -349,96 +380,100 @@
   async function saveLine(){
     if(!requireAdmin()) return;
     const btn = $("addLineBtn");
-    if(btn) { btn.disabled = true; btn.textContent = "Enregistrement..."; }
+    const oldText = btn ? btn.textContent : "";
+    if(btn){ btn.disabled = true; btn.textContent = "Enregistrement..."; }
 
     const name = val("lineName").trim();
     if(!name){
-      if(btn) { btn.disabled = false; btn.textContent = "Ajouter ligne"; }
+      if(btn){ btn.disabled = false; btn.textContent = oldText || "Ajouter ligne"; }
       return alert("Nom de ligne obligatoire.");
     }
 
-    const ref = await addToFirestore("lines", {
+    const id = await firestoreServerAdd("lines", {
       city: val("lineCity") || "Bejaia",
       name,
       type: val("lineType") || "bus",
       color: val("lineColor") || "#2563eb",
       active: true,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }, "lineStatus");
 
-    if(ref){
+    if(id){
       $("lineName").value = "";
     }
 
-    if(btn) { btn.disabled = false; btn.textContent = "Ajouter ligne"; }
+    if(btn){ btn.disabled = false; btn.textContent = oldText || "Ajouter ligne"; }
   }
 
   async function saveStop(){
     if(!requireAdmin()) return;
     const btn = $("addStopBtn");
-    if(btn) { btn.disabled = true; btn.textContent = "Enregistrement..."; }
+    const oldText = btn ? btn.textContent : "";
+    if(btn){ btn.disabled = true; btn.textContent = "Enregistrement..."; }
 
     const name = val("stopName").trim();
     const lat = num(val("stopLat"));
     const lng = num(val("stopLng"));
 
     if(!name){
-      if(btn) { btn.disabled = false; btn.textContent = "Ajouter arrêt"; }
+      if(btn){ btn.disabled = false; btn.textContent = oldText || "Ajouter arrêt"; }
       return alert("Nom arrêt obligatoire.");
     }
     if(lat === null || lng === null){
-      if(btn) { btn.disabled = false; btn.textContent = "Ajouter arrêt"; }
+      if(btn){ btn.disabled = false; btn.textContent = oldText || "Ajouter arrêt"; }
       return alert("Latitude/longitude invalide.");
     }
 
-    const ref = await addToFirestore("stops", {
+    const id = await firestoreServerAdd("stops", {
       lineId: val("stopLineSelect"),
       name,
       lat,
       lng,
       active: true,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }, "stopStatus");
 
-    if(ref){
+    if(id){
       $("stopName").value = "";
       $("stopLat").value = "";
       $("stopLng").value = "";
     }
 
-    if(btn) { btn.disabled = false; btn.textContent = "Ajouter arrêt"; }
+    if(btn){ btn.disabled = false; btn.textContent = oldText || "Ajouter arrêt"; }
   }
 
   async function saveVehicle(){
     if(!requireAdmin()) return;
     const btn = $("addVehicleBtn");
-    if(btn) { btn.disabled = true; btn.textContent = "Enregistrement..."; }
+    const oldText = btn ? btn.textContent : "";
+    if(btn){ btn.disabled = true; btn.textContent = "Enregistrement..."; }
 
     const name = val("vehicleName").trim();
     if(!name){
-      if(btn) { btn.disabled = false; btn.textContent = "Ajouter véhicule"; }
+      if(btn){ btn.disabled = false; btn.textContent = oldText || "Ajouter véhicule"; }
       return alert("Nom véhicule obligatoire.");
     }
 
-    const ref = await addToFirestore("vehicles", {
+    const id = await firestoreServerAdd("vehicles", {
       name,
       lineId: val("vehicleLineSelect"),
       driverId: val("vehicleDriverId").trim(),
       status: "inactive",
-      lat: null,
-      lng: null,
-      updatedAt: null,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      active: true,
+      lat: 0,
+      lng: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }, "vehicleStatus");
 
-    if(ref){
+    if(id){
       $("vehicleName").value = "";
       $("vehicleDriverId").value = "";
     }
 
-    if(btn) { btn.disabled = false; btn.textContent = "Ajouter véhicule"; }
+    if(btn){ btn.disabled = false; btn.textContent = oldText || "Ajouter véhicule"; }
   }
 
   function startDriverGps(){
