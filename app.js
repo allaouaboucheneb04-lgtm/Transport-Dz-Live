@@ -348,66 +348,96 @@ document.addEventListener('click', ()=>setTimeout(installStopPickerButtons, 100)
 
 
 
+
+
 // ================================
-// Carte client centrée sur position - corrigé iPhone/Safari
+// Carte client centrée sur position - version finale iPhone/Safari
 // ================================
 let clientLocationMarker = null;
+let clientGpsWatchId = null;
 
 function showGpsMessage(message){
   const el = document.getElementById('routeResult');
   if(el) el.textContent = message;
 }
 
+function applyClientPosition(lat, lng, label='📍 Ma position'){
+  if(typeof map === 'undefined' || !map) return;
+
+  clientMapCenteredByGps = true;
+  map.invalidateSize();
+  map.setView([lat, lng], 16);
+
+  if(clientLocationMarker){
+    clientLocationMarker.setLatLng([lat, lng]);
+  }else{
+    clientLocationMarker = L.circleMarker([lat, lng], {
+      radius: 10,
+      weight: 3,
+      fillOpacity: 0.85
+    }).addTo(map).bindPopup(label);
+  }
+
+  clientLocationMarker.bindPopup(label).openPopup();
+  showGpsMessage('Carte centrée sur ta position.');
+}
+
+function gpsErrorMessage(err){
+  if(!err) return 'GPS impossible.';
+  if(err.code === 1) return 'GPS refusé. Dans Safari: AA > Réglages du site web > Position > Autoriser.';
+  if(err.code === 2) return 'Position indisponible. Active Wi‑Fi + données cellulaires, puis essaie près d’une fenêtre.';
+  if(err.code === 3) return 'GPS trop long. Je lance un suivi GPS, attends quelques secondes.';
+  return 'GPS impossible.';
+}
+
 function centerClientMapOnMyPosition(){
   if(!navigator.geolocation){
     showGpsMessage('GPS non disponible sur ce téléphone.');
-    return alert('GPS non disponible sur ce téléphone.');
+    return;
   }
 
   showGpsMessage('Recherche de ta position GPS...');
 
+  // Stop ancien suivi pour éviter doublons
+  if(clientGpsWatchId !== null){
+    navigator.geolocation.clearWatch(clientGpsWatchId);
+    clientGpsWatchId = null;
+  }
+
+  // 1) Premier essai rapide: plus fiable sur iPhone/Safari que highAccuracy direct
   navigator.geolocation.getCurrentPosition((pos)=>{
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-
-    if(typeof map !== 'undefined' && map){
-      clientMapCenteredByGps = true;
-      map.setView([lat, lng], 16);
-
-      if(clientLocationMarker){
-        clientLocationMarker.setLatLng([lat, lng]);
-      }else{
-        clientLocationMarker = L.circleMarker([lat, lng], {
-          radius: 10,
-          weight: 3,
-          fillOpacity: 0.85
-        }).addTo(map).bindPopup('📍 Ma position');
-      }
-
-      clientLocationMarker.openPopup();
-      showGpsMessage('Carte centrée sur ta position.');
-    }
+    applyClientPosition(pos.coords.latitude, pos.coords.longitude);
   }, (err)=>{
-    let msg = 'GPS impossible.';
-    if(err.code === 1){
-      msg = 'GPS refusé pour ce site. Dans Safari, touche AA / Réglages du site web / Position / Autoriser, puis recharge.';
-    }else if(err.code === 2){
-      msg = 'Position indisponible. Essaie dehors ou active Wi‑Fi + données cellulaires.';
-    }else if(err.code === 3){
-      msg = 'GPS trop long. Réessaie.';
-    }
-
+    const msg = gpsErrorMessage(err);
     showGpsMessage(msg);
-    alert(msg);
 
-    // Ne bloque pas l'app : on garde la carte visible.
-    if(typeof map !== 'undefined' && map){
-      map.invalidateSize();
+    if(err && err.code === 1){
+      alert(msg);
+      return;
     }
+
+    // 2) Fallback iPhone: watchPosition trouve souvent la position après getCurrentPosition timeout
+    clientGpsWatchId = navigator.geolocation.watchPosition((pos)=>{
+      applyClientPosition(pos.coords.latitude, pos.coords.longitude);
+      showGpsMessage('Position trouvée en suivi GPS.');
+      if(clientGpsWatchId !== null){
+        navigator.geolocation.clearWatch(clientGpsWatchId);
+        clientGpsWatchId = null;
+      }
+    }, (e)=>{
+      const msg2 = gpsErrorMessage(e);
+      showGpsMessage(msg2);
+      if(e && e.code === 1) alert(msg2);
+    }, {
+      enableHighAccuracy: false,
+      timeout: 30000,
+      maximumAge: 60000
+    });
+
   }, {
-    enableHighAccuracy: true,
-    timeout: 20000,
-    maximumAge: 0
+    enableHighAccuracy: false,
+    timeout: 8000,
+    maximumAge: 60000
   });
 }
 
@@ -427,10 +457,6 @@ function installClientGpsButton(){
   btn.onclick = centerClientMapOnMyPosition;
 
   wrap.appendChild(btn);
-
-  // IMPORTANT iPhone/Safari:
-  // On ne demande plus le GPS automatiquement au chargement.
-  // L'utilisateur clique sur le bouton pour éviter "GPS refusé".
 }
 
 setTimeout(installClientGpsButton, 800);
