@@ -27,39 +27,60 @@ function initFirebase(){
   });
 }
 async function loadRole(){
-  currentRole='guest';
+  currentRole = 'guest';
   if(!currentUser || !db) return;
 
+  const uid = currentUser.uid;
+  const email = (currentUser.email || '').toLowerCase();
+
   try{
-    // Méthode admin simple : créer Firestore > admins > UID
-    const adminSnap = await getDoc(doc(db,'admins',currentUser.uid));
-    if(adminSnap.exists() && adminSnap.data().active !== false){
+    // Sécurité temporaire pour ton compte principal
+    if(email === 'allaouaboucheneb04@gmail.com'){
       currentRole = 'admin';
-      $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: admin`; setAuthUiState(currentUser);
+      $('authStatus').textContent = `Connecté: ${currentUser.email} · UID: ${uid} · rôle: admin`;
+      setAuthUiState(currentUser);
       return;
     }
 
-    // Sinon rôle classique dans users > UID
-    const userRef = doc(db,'users',currentUser.uid);
-    const userSnap = await getDoc(userRef);
-
-    if(userSnap.exists()){
-      currentRole = userSnap.data().role || 'driver';
-    }else{
-      await setDoc(userRef, {
-        email: currentUser.email,
-        role: 'driver',
-        active: true,
-        createdAt: serverTimestamp()
-      }, {merge:true});
-      currentRole = 'driver';
+    // Méthode 1: admins / UID
+    const adminSnap = await getDoc(doc(db,'admins',uid));
+    if(adminSnap.exists()){
+      const d = adminSnap.data();
+      if(d.active === true || d.role === 'admin'){
+        currentRole = 'admin';
+        $('authStatus').textContent = `Connecté: ${currentUser.email} · UID: ${uid} · rôle: admin`;
+        setAuthUiState(currentUser);
+        return;
+      }
     }
 
-    $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: ${currentRole}`; setAuthUiState(currentUser);
+    // Méthode 2: users / UID
+    const userSnap = await getDoc(doc(db,'users',uid));
+    if(userSnap.exists()){
+      const d = userSnap.data();
+      currentRole = d.role || 'driver';
+      $('authStatus').textContent = `Connecté: ${currentUser.email} · UID: ${uid} · rôle: ${currentRole}`;
+      setAuthUiState(currentUser);
+      return;
+    }
+
+    // Création chauffeur par défaut
+    await setDoc(doc(db,'users',uid), {
+      email: currentUser.email,
+      role: 'driver',
+      active: true,
+      createdAt: serverTimestamp()
+    }, {merge:true});
+
+    currentRole = 'driver';
+    $('authStatus').textContent = `Connecté: ${currentUser.email} · UID: ${uid} · rôle: driver`;
+    setAuthUiState(currentUser);
+
   }catch(e){
     console.error('Erreur rôle:', e);
-    currentRole='driver';
-    $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle temporaire chauffeur`; setAuthUiState(currentUser);
+    currentRole = email === 'allaouaboucheneb04@gmail.com' ? 'admin' : 'driver';
+    $('authStatus').textContent = `Connecté: ${currentUser.email} · UID: ${uid} · rôle: ${currentRole}`;
+    setAuthUiState(currentUser);
   }
 }
 function setSync(text, ok){ const b=$('syncBadge'); b.textContent=text; b.className=ok?'badge':'badge warn'; }
@@ -96,7 +117,7 @@ function drawMap(){
   vehicles.forEach(v=>markers.push(L.marker([v.lat,v.lng],{icon:L.divIcon({className:'',html:`<div class="bus-marker">🚍 ${v.name}</div>`})}).addTo(map).bindPopup(`<b>${v.name}</b><br>${lineName(v.lineId)}<br>${v.driverName||''}`)));
   const all=[...stops.map(s=>[s.lat,s.lng]),...vehicles.map(v=>[v.lat,v.lng])]; if(all.length) map.fitBounds(all,{padding:[40,40],maxZoom:14});
 }
-function requireAdmin(){ if(!firebaseReady) return alert('Configure Firebase avant.'); if(!currentUser) return alert('Connecte-toi d’abord.'); if(currentRole!=='admin') return alert('Compte admin requis. Crée Firestore > admins > ton UID avec active=true'); return true; }
+function requireAdmin(){ if(!firebaseReady) return alert('Configure Firebase avant.'); if(!currentUser) return alert('Connecte-toi d’abord.'); if(currentRole!=='admin') return alert('Compte admin requis. Ton UID est: '+currentUser.uid); return true; }
 async function addLine(){ if(!requireAdmin()) return; const name=$('lineName').value.trim(); if(!name) return alert('Nom ligne obligatoire.'); await addDoc(collection(db,'lines'),{name,type:$('lineType').value,color:$('lineColor').value,city:'bejaia',createdAt:serverTimestamp()}); $('lineName').value=''; }
 async function addStop(){ if(!requireAdmin()) return; const lineId=$('stopLineSelect').value,name=$('stopName').value.trim(),lat=parseFloat($('stopLat').value),lng=parseFloat($('stopLng').value); if(!lineId||!name||isNaN(lat)||isNaN(lng)) return alert('Remplis ligne, nom, latitude, longitude.'); await addDoc(collection(db,'stops'),{lineId,name,lat,lng,city:'bejaia',createdAt:serverTimestamp()}); ['stopName','stopLat','stopLng'].forEach(id=>$(id).value=''); }
 async function addVehicle(){ if(!requireAdmin()) return; const name=$('vehicleName').value.trim(), lineId=$('vehicleLineSelect').value; if(!name||!lineId) return alert('Remplis véhicule et ligne.'); await addDoc(collection(db,'vehicles'),{name,lineId,lat:BEJAIA_CENTER[0],lng:BEJAIA_CENTER[1],status:'offline',driverName:'',updatedAt:serverTimestamp(),city:'bejaia'}); $('vehicleName').value=''; }
