@@ -1,8 +1,5 @@
-
-// Transport Live DZ - Auth stable repair
 (function(){
-  const $ = (id) => document.getElementById(id);
-  const qs = (sel) => document.querySelector(sel);
+  const $ = id => document.getElementById(id);
 
   let currentUser = null;
   let currentRole = "guest";
@@ -20,97 +17,51 @@
   let clientLocationMarker = null;
   let clientCentered = false;
 
-  function safeText(id, text){
-    const el = $(id);
-    if(el) el.textContent = text;
-  }
-
-  function safeValue(id){
-    const el = $(id);
-    return el ? el.value : "";
-  }
-
-  function getLoginModal(){
-    return $("loginModal") || qs(".modal");
-  }
-
-  function getAuthStatus(){
-    return $("authStatus") || qs("#loginModal .result") || qs(".modal .result");
-  }
-
-  function setAuthStatus(text){
-    const el = getAuthStatus();
-    if(el) el.textContent = text;
-  }
-
-  function getLoginButtonTop(){
-    return $("openLoginBtn") || $("loginOpenBtn") || $("loginBtnTop") || qs("button[data-open-login]") || Array.from(document.querySelectorAll("button")).find(b => (b.textContent || "").trim().toLowerCase() === "connexion");
-  }
+  function setText(id, text){ const el=$(id); if(el) el.textContent=text; }
+  function val(id){ const el=$(id); return el ? el.value : ""; }
+  function num(v){ const x=Number(v); return Number.isFinite(x) ? x : null; }
+  function lineName(id){ const l=lines.find(x=>x.id===id); return l ? (l.name || l.id) : (id || ""); }
 
   function setFirebaseStatus(ok, text){
-    const el = $("firebaseStatus") || qs(".firebaseStatus") || qs(".firebase-status");
-    if(el){
-      el.textContent = text;
-      el.classList.remove("blue","green","light");
-      el.classList.add(ok ? "green" : "blue");
-    }
+    const el=$("firebaseStatus");
+    if(!el) return;
+    el.textContent=text;
+    el.className="badge " + (ok ? "green" : "blue");
   }
 
   function setAuthUi(){
-    const top = getLoginButtonTop();
-    if(top){
-      if(currentUser){
-        top.textContent = "Connecté";
-        top.classList.remove("light","blue");
-        top.classList.add("green");
-      }else{
-        top.textContent = "Connexion";
-        top.classList.remove("green","blue");
-        top.classList.add("light");
-      }
-    }
-
+    const btn=$("openLoginBtn");
     if(currentUser){
-      setAuthStatus("Connecté: " + currentUser.email + " · rôle: " + currentRole);
+      btn.textContent="Connecté";
+      btn.className="badge green";
+      setText("authStatus", `Connecté: ${currentUser.email} · rôle: ${currentRole}`);
     }else{
-      setAuthStatus("Non connecté");
+      btn.textContent="Connexion";
+      btn.className="badge light";
+      setText("authStatus", "Non connecté");
     }
-  }
-
-  function openLogin(){
-    const modal = getLoginModal();
-    if(modal) modal.classList.remove("hidden");
-  }
-
-  function closeLogin(){
-    const modal = getLoginModal();
-    if(modal) modal.classList.add("hidden");
   }
 
   function authError(e){
     console.error("AUTH ERROR", e);
-    let msg = (e && e.message) ? e.message : "Erreur connexion.";
+    let msg = e && e.message ? e.message : "Erreur connexion.";
     if(e && e.code === "auth/invalid-credential") msg = "Email ou mot de passe incorrect.";
     if(e && e.code === "auth/wrong-password") msg = "Mot de passe incorrect.";
     if(e && e.code === "auth/user-not-found") msg = "Compte introuvable dans Firebase Authentication.";
     if(e && e.code === "auth/operation-not-allowed") msg = "Active Email/Password dans Firebase Authentication.";
     if(e && e.code === "auth/unauthorized-domain") msg = "Domaine GitHub non autorisé dans Firebase Authentication.";
-    if(e && e.code === "auth/network-request-failed") msg = "Problème réseau Firebase. Réessaie.";
-    setAuthStatus(msg);
+    if(e && e.code === "auth/network-request-failed") msg = "Problème réseau Firebase.";
+    setText("authStatus", msg);
     alert(msg);
   }
 
   async function loadRole(){
     currentRole = "guest";
-    if(!currentUser || !window.db){
-      setAuthUi();
-      return;
-    }
+    if(!currentUser || !window.db){ setAuthUi(); return; }
 
     const email = (currentUser.email || "").toLowerCase();
     const uid = currentUser.uid;
 
-    // Admin principal garanti dans l'app
     if(email === "allaouaboucheneb04@gmail.com"){
       currentRole = "admin";
       setAuthUi();
@@ -142,7 +93,6 @@
       currentRole = "driver";
     }catch(e){
       console.error("ROLE ERROR", e);
-      // Do not block login if role read fails
       currentRole = email === "allaouaboucheneb04@gmail.com" ? "admin" : "driver";
     }
 
@@ -150,97 +100,93 @@
   }
 
   function requireAdmin(){
-    if(!currentUser){
-      alert("Connecte-toi d’abord.");
-      return false;
-    }
-    if(currentRole !== "admin"){
-      alert("Compte admin requis.");
-      return false;
-    }
+    if(!currentUser){ alert("Connecte-toi d’abord."); return false; }
+    if(currentRole !== "admin"){ alert("Compte admin requis."); return false; }
     return true;
   }
 
-  function n(v){
-    const x = Number(v);
-    return Number.isFinite(x) ? x : null;
-  }
-
-  function lineName(id){
-    const line = lines.find(l => l.id === id);
-    return line ? (line.name || line.id) : (id || "");
-  }
-
   function initMap(){
-    if(map || !$("map") || typeof L === "undefined") return;
+    if(map || !$("map")) return;
     map = L.map("map").setView([36.7525, 5.0843], 13);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap"
-    }).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution:"© OpenStreetMap" }).addTo(map);
+  }
+
+  function bindRealtime(){
+    if(!window.db) return;
+    unsub.forEach(fn => fn && fn());
+    unsub = [];
+
+    unsub.push(window.db.collection("lines").onSnapshot(s => {
+      lines = s.docs.map(d => ({id:d.id, ...d.data()}));
+      renderAll();
+    }, e => console.error("lines", e)));
+
+    unsub.push(window.db.collection("stops").onSnapshot(s => {
+      stops = s.docs.map(d => ({id:d.id, ...d.data()}));
+      renderAll();
+    }, e => console.error("stops", e)));
+
+    unsub.push(window.db.collection("vehicles").onSnapshot(s => {
+      vehicles = s.docs.map(d => ({id:d.id, ...d.data()}));
+      renderAll();
+    }, e => console.error("vehicles", e)));
   }
 
   function renderSelects(){
-    const clientLine = $("clientLineSelect") || $("lineFilter") || $("clientLine");
+    const city = val("clientCity") || "Bejaia";
+    const visibleLines = lines.filter(l => !l.city || l.city === city || city === "all");
+
+    const clientLine = $("clientLineSelect");
     if(clientLine){
       const old = clientLine.value || "all";
-      clientLine.innerHTML = '<option value="all">Toutes les lignes</option>' + lines.map(l => `<option value="${l.id}">${l.name || l.id}</option>`).join("");
-      clientLine.value = Array.from(clientLine.options).some(o => o.value === old) ? old : "all";
+      clientLine.innerHTML = '<option value="all">Toutes les lignes</option>' +
+        visibleLines.map(l => `<option value="${l.id}">${l.name || l.id}</option>`).join("");
+      clientLine.value = Array.from(clientLine.options).some(o=>o.value===old) ? old : "all";
     }
 
-    const adminOpts = lines.map(l => `<option value="${l.id}">${l.name || l.id}</option>`).join("");
-    ["stopLineSelect","vehicleLineSelect","lineSelect","stopLine","vehicleLine"].forEach(id => {
-      const el = $(id);
-      if(el) el.innerHTML = adminOpts;
-    });
+    const lineOpts = lines.map(l => `<option value="${l.id}">${l.name || l.id}</option>`).join("");
+    ["stopLineSelect","vehicleLineSelect"].forEach(id => { if($(id)) $(id).innerHTML = lineOpts; });
 
     const vehOpts = vehicles.map(v => `<option value="${v.id}">${v.name || v.id}</option>`).join("");
-    const drv = $("driverVehicleSelect") || $("vehicleSelect");
-    if(drv) drv.innerHTML = vehOpts;
+    if($("driverVehicleSelect")) $("driverVehicleSelect").innerHTML = vehOpts;
   }
 
   function renderLists(){
-    const stopsList = $("stopsList");
-    if(stopsList){
-      stopsList.innerHTML = stops.length ? stops.map(s => `
-        <div class="item">
-          <strong>🚏 ${s.name || "Arrêt"}</strong>
-          <span class="muted">${lineName(s.lineId)} · ${s.lat ?? s.latitude ?? ""}, ${s.lng ?? s.longitude ?? ""}</span>
-        </div>
-      `).join("") : '<div class="muted">Aucun arrêt.</div>';
-    }
+    const selectedLine = val("clientLineSelect") || "all";
+    const visibleStops = stops.filter(s => selectedLine === "all" || s.lineId === selectedLine || s.line === selectedLine);
 
-    const linesAdmin = $("linesAdminList");
-    if(linesAdmin){
-      linesAdmin.innerHTML = lines.length ? lines.map(l => `
-        <div class="item">
-          <strong>${l.name || l.id}</strong>
-          <span class="muted">${l.type || "bus"}</span>
-          <button class="deleteBtn" data-del-line="${l.id}" type="button">Supprimer</button>
-        </div>
-      `).join("") : '<div class="muted">Aucune ligne.</div>';
-    }
+    $("stopsList").innerHTML = visibleStops.length ? visibleStops.map(s => `
+      <div class="item">
+        <strong>🚏 ${s.name || "Arrêt"}</strong>
+        <span class="muted">${lineName(s.lineId)} · ${s.lat ?? s.latitude ?? ""}, ${s.lng ?? s.longitude ?? ""}</span>
+      </div>`).join("") : '<div class="muted">Aucun arrêt.</div>';
 
-    const stopsAdmin = $("stopsAdminList");
-    if(stopsAdmin){
-      stopsAdmin.innerHTML = stops.length ? stops.map(s => `
-        <div class="item">
-          <strong>${s.name || s.id}</strong>
-          <span class="muted">${lineName(s.lineId)} · ${s.lat ?? s.latitude ?? ""}, ${s.lng ?? s.longitude ?? ""}</span>
-          <button class="deleteBtn" data-del-stop="${s.id}" type="button">Supprimer</button>
-        </div>
-      `).join("") : '<div class="muted">Aucun arrêt.</div>';
-    }
+    $("vehiclesList").innerHTML = vehicles.length ? vehicles.map(v => `
+      <div class="item">
+        <strong>🚌 ${v.name || "Véhicule"}</strong>
+        <span class="muted">${lineName(v.lineId)} · ${v.status || "inactif"} · ${v.lat ? "GPS OK" : "pas de GPS"}</span>
+      </div>`).join("") : '<div class="muted">Aucun véhicule.</div>';
 
-    const vehiclesAdmin = $("vehiclesAdminList");
-    if(vehiclesAdmin){
-      vehiclesAdmin.innerHTML = vehicles.length ? vehicles.map(v => `
-        <div class="item">
-          <strong>${v.name || v.id}</strong>
-          <span class="muted">${lineName(v.lineId)} · chauffeur: ${v.driverId || ""}</span>
-          <button class="deleteBtn" data-del-veh="${v.id}" type="button">Supprimer</button>
-        </div>
-      `).join("") : '<div class="muted">Aucun véhicule.</div>';
-    }
+    $("linesAdminList").innerHTML = lines.length ? lines.map(l => `
+      <div class="item">
+        <strong>${l.name || l.id}</strong>
+        <span class="muted">${l.city || ""} · ${l.type || "bus"}</span>
+        <button class="deleteBtn" type="button" data-del-line="${l.id}">Supprimer</button>
+      </div>`).join("") : '<div class="muted">Aucune ligne.</div>';
+
+    $("stopsAdminList").innerHTML = stops.length ? stops.map(s => `
+      <div class="item">
+        <strong>${s.name || s.id}</strong>
+        <span class="muted">${lineName(s.lineId)} · ${s.lat ?? s.latitude ?? ""}, ${s.lng ?? s.longitude ?? ""}</span>
+        <button class="deleteBtn" type="button" data-del-stop="${s.id}">Supprimer</button>
+      </div>`).join("") : '<div class="muted">Aucun arrêt.</div>';
+
+    $("vehiclesAdminList").innerHTML = vehicles.length ? vehicles.map(v => `
+      <div class="item">
+        <strong>${v.name || v.id}</strong>
+        <span class="muted">${lineName(v.lineId)} · chauffeur: ${v.driverId || ""}</span>
+        <button class="deleteBtn" type="button" data-del-veh="${v.id}">Supprimer</button>
+      </div>`).join("") : '<div class="muted">Aucun véhicule.</div>';
 
     document.querySelectorAll("[data-del-line]").forEach(b => b.onclick = () => requireAdmin() && window.db.collection("lines").doc(b.dataset.delLine).delete());
     document.querySelectorAll("[data-del-stop]").forEach(b => b.onclick = () => requireAdmin() && window.db.collection("stops").doc(b.dataset.delStop).delete());
@@ -256,26 +202,39 @@
       }
     });
 
-    const selectedEl = $("clientLineSelect") || $("lineFilter") || $("clientLine");
-    const selected = selectedEl ? selectedEl.value : "all";
-
+    const selectedLine = val("clientLineSelect") || "all";
     const visibleStops = stops.filter(s => {
-      const lat = n(s.lat ?? s.latitude);
-      const lng = n(s.lng ?? s.longitude);
-      return lat !== null && lng !== null && (selected === "all" || s.lineId === selected || s.line === selected);
+      const lat = num(s.lat ?? s.latitude);
+      const lng = num(s.lng ?? s.longitude);
+      return lat !== null && lng !== null && (selectedLine === "all" || s.lineId === selectedLine || s.line === selectedLine);
     });
 
+    const lineGroups = {};
     visibleStops.forEach(s => {
-      const lat = n(s.lat ?? s.latitude);
-      const lng = n(s.lng ?? s.longitude);
-      L.circleMarker([lat, lng], {radius:8, weight:3, fillOpacity:.9})
+      const lat = num(s.lat ?? s.latitude);
+      const lng = num(s.lng ?? s.longitude);
+      const color = lines.find(l => l.id === s.lineId)?.color || "#2563eb";
+      L.circleMarker([lat,lng], {radius:8, color, fillColor:color, weight:3, fillOpacity:.9})
         .addTo(map)
         .bindPopup(`🚏 ${s.name || "Arrêt"}<br>${lineName(s.lineId)}`);
+
+      if(s.lineId){
+        if(!lineGroups[s.lineId]) lineGroups[s.lineId] = [];
+        lineGroups[s.lineId].push([lat,lng]);
+      }
+    });
+
+    Object.keys(lineGroups).forEach(lineId => {
+      const pts = lineGroups[lineId];
+      if(pts.length > 1){
+        const color = lines.find(l => l.id === lineId)?.color || "#2563eb";
+        L.polyline(pts, {color, weight:4, opacity:.55}).addTo(map);
+      }
     });
 
     vehicles.forEach(v => {
-      const lat = n(v.lat);
-      const lng = n(v.lng);
+      const lat = num(v.lat);
+      const lng = num(v.lng);
       if(lat === null || lng === null) return;
       L.marker([lat,lng]).addTo(map).bindPopup(`🚌 ${v.name || "Véhicule"}<br>${lineName(v.lineId)}<br>${v.status || ""}`);
     });
@@ -284,8 +243,8 @@
 
     if(!clientCentered){
       const pts = [
-        ...visibleStops.map(s => [n(s.lat ?? s.latitude), n(s.lng ?? s.longitude)]),
-        ...vehicles.map(v => [n(v.lat), n(v.lng)]).filter(p => p[0] !== null && p[1] !== null)
+        ...visibleStops.map(s => [num(s.lat ?? s.latitude), num(s.lng ?? s.longitude)]),
+        ...vehicles.map(v => [num(v.lat), num(v.lng)]).filter(p => p[0] !== null && p[1] !== null)
       ];
       if(pts.length) map.fitBounds(pts, {padding:[30,30], maxZoom:14});
     }
@@ -297,50 +256,24 @@
     drawMap();
   }
 
-  function bindRealtime(){
-    if(!window.db) return;
-    unsub.forEach(fn => fn && fn());
-    unsub = [];
-
-    unsub.push(window.db.collection("lines").onSnapshot(snap => {
-      lines = snap.docs.map(d => ({id:d.id, ...d.data()}));
-      renderAll();
-    }, console.error));
-
-    unsub.push(window.db.collection("stops").onSnapshot(snap => {
-      stops = snap.docs.map(d => ({id:d.id, ...d.data()}));
-      renderAll();
-    }, console.error));
-
-    unsub.push(window.db.collection("vehicles").onSnapshot(snap => {
-      vehicles = snap.docs.map(d => ({id:d.id, ...d.data()}));
-      renderAll();
-    }, console.error));
-  }
-
-  function centerClientManual(){
-    if(!navigator.geolocation){
-      alert("GPS non disponible.");
-      return;
-    }
-    safeText("routeResult", "Recherche de ta position...");
+  function clientGps(){
+    if(!navigator.geolocation) return alert("GPS non disponible.");
+    setText("routeResult", "Recherche de ta position...");
     navigator.geolocation.getCurrentPosition(pos => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
       clientCentered = true;
-      if(map){
-        map.setView([lat,lng],16);
-        if(clientLocationMarker) clientLocationMarker.setLatLng([lat,lng]);
-        else clientLocationMarker = L.circleMarker([lat,lng], {radius:10, weight:3, fillOpacity:.85}).addTo(map);
-        clientLocationMarker.bindPopup("📍 Ma position").openPopup();
-      }
-      safeText("routeResult", "Carte centrée sur ta position.");
-    }, err => {
+      map.setView([lat,lng], 16);
+      if(clientLocationMarker) clientLocationMarker.setLatLng([lat,lng]);
+      else clientLocationMarker = L.circleMarker([lat,lng], {radius:10, weight:3, fillOpacity:.85}).addTo(map);
+      clientLocationMarker.bindPopup("📍 Ma position").openPopup();
+      setText("routeResult", "Carte centrée sur ta position.");
+    }, e => {
       let msg = "GPS impossible.";
-      if(err.code === 1) msg = "GPS refusé. Autorise la position pour Safari.";
-      if(err.code === 2) msg = "Position indisponible. Active Wi‑Fi + données cellulaires.";
-      if(err.code === 3) msg = "GPS trop long. Essaie dehors ou près d’une fenêtre.";
-      safeText("routeResult", msg);
+      if(e.code === 1) msg = "GPS refusé. Autorise la position pour Safari.";
+      if(e.code === 2) msg = "Position indisponible. Active Wi-Fi + données cellulaires.";
+      if(e.code === 3) msg = "GPS trop long. Essaie dehors ou près d’une fenêtre.";
+      setText("routeResult", msg);
       alert(msg);
     }, {enableHighAccuracy:false, timeout:20000, maximumAge:60000});
   }
@@ -348,7 +281,7 @@
   function getPosition(){
     return new Promise((resolve,reject) => {
       if(!navigator.geolocation) return reject(new Error("GPS non disponible"));
-      navigator.geolocation.getCurrentPosition(p => resolve([p.coords.latitude, p.coords.longitude]), reject, {
+      navigator.geolocation.getCurrentPosition(p => resolve([p.coords.latitude,p.coords.longitude]), reject, {
         enableHighAccuracy:false,
         timeout:20000,
         maximumAge:60000
@@ -357,288 +290,295 @@
   }
 
   function initStopPicker(){
-    if(stopPickerMap || !$("stopPickerMap") || typeof L === "undefined") return;
+    if(stopPickerMap) return;
     stopPickerMap = L.map("stopPickerMap").setView([36.7525,5.0843],13);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {attribution:"© OpenStreetMap"}).addTo(stopPickerMap);
-    stopPickerMap.on("click", e => setPicked(e.latlng.lat, e.latlng.lng));
+    stopPickerMap.on("click", e => setPicked(e.latlng.lat,e.latlng.lng));
   }
 
   function setPicked(lat,lng){
     pickedLat = lat;
     pickedLng = lng;
     if(stopPickerMarker) stopPickerMarker.setLatLng([lat,lng]);
-    else if(stopPickerMap){
+    else{
       stopPickerMarker = L.marker([lat,lng], {draggable:true}).addTo(stopPickerMap);
       stopPickerMarker.on("dragend", () => {
         const p = stopPickerMarker.getLatLng();
         setPicked(p.lat,p.lng);
       });
     }
-    safeText("pickedCoords", `Latitude: ${lat.toFixed(6)} · Longitude: ${lng.toFixed(6)}`);
+    setText("pickedCoords", `Latitude: ${lat.toFixed(6)} · Longitude: ${lng.toFixed(6)}`);
   }
 
   function openStopPicker(){
-    const modal = $("stopPickerModal") || $("stopMapPickerModal");
-    if(!modal) return alert("Carte arrêt introuvable.");
-    modal.classList.remove("hidden");
-
+    $("stopPickerModal").classList.remove("hidden");
     setTimeout(() => {
       initStopPicker();
-      const lat = n(safeValue("stopLat") || safeValue("stopLatitude")) || 36.7525;
-      const lng = n(safeValue("stopLng") || safeValue("stopLongitude")) || 5.0843;
-      if(stopPickerMap){
-        stopPickerMap.invalidateSize();
-        stopPickerMap.setView([lat,lng],14);
-        setPicked(lat,lng);
-      }
+      const lat = num(val("stopLat")) || 36.7525;
+      const lng = num(val("stopLng")) || 5.0843;
+      stopPickerMap.invalidateSize();
+      stopPickerMap.setView([lat,lng], 14);
+      setPicked(lat,lng);
     }, 180);
   }
 
+  async function saveLine(){
+    if(!requireAdmin()) return;
+    const name = val("lineName").trim();
+    if(!name) return alert("Nom de ligne obligatoire.");
+    await window.db.collection("lines").add({
+      city: val("lineCity") || "Bejaia",
+      name,
+      type: val("lineType") || "bus",
+      color: val("lineColor") || "#2563eb",
+      active: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    $("lineName").value = "";
+    setText("lineStatus", "Ligne enregistrée dans Firebase ✅");
+  }
+
+  async function saveStop(){
+    if(!requireAdmin()) return;
+    const name = val("stopName").trim();
+    const lat = num(val("stopLat"));
+    const lng = num(val("stopLng"));
+    if(!name) return alert("Nom arrêt obligatoire.");
+    if(lat === null || lng === null) return alert("Latitude/longitude invalide.");
+    await window.db.collection("stops").add({
+      lineId: val("stopLineSelect"),
+      name,
+      lat,
+      lng,
+      active: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    $("stopName").value = "";
+    $("stopLat").value = "";
+    $("stopLng").value = "";
+    setText("stopStatus", "Arrêt enregistré dans Firebase ✅");
+  }
+
+  async function saveVehicle(){
+    if(!requireAdmin()) return;
+    const name = val("vehicleName").trim();
+    if(!name) return alert("Nom véhicule obligatoire.");
+    await window.db.collection("vehicles").add({
+      name,
+      lineId: val("vehicleLineSelect"),
+      driverId: val("vehicleDriverId").trim(),
+      status: "inactive",
+      lat: null,
+      lng: null,
+      updatedAt: null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    $("vehicleName").value = "";
+    $("vehicleDriverId").value = "";
+    setText("vehicleStatus", "Véhicule enregistré dans Firebase ✅");
+  }
+
+  function startDriverGps(){
+    if(!currentUser) return alert("Connecte-toi comme chauffeur.");
+    const vehicleId = val("driverVehicleSelect");
+    if(!vehicleId) return alert("Choisis un véhicule.");
+    const interval = Number(val("driverGpsFrequency") || 30000);
+
+    if(driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+
+    driverWatchId = navigator.geolocation.watchPosition(async p => {
+      const now = Date.now();
+      if(now - lastGpsWrite < interval) return;
+      lastGpsWrite = now;
+
+      await window.db.collection("vehicles").doc(vehicleId).set({
+        lat: p.coords.latitude,
+        lng: p.coords.longitude,
+        driverId: currentUser.uid,
+        driverName: val("driverNameInput") || currentUser.email,
+        status: "active",
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+
+      setText("driverStatus", "GPS envoyé: " + new Date().toLocaleTimeString());
+    }, e => {
+      alert("GPS chauffeur impossible.");
+    }, {enableHighAccuracy:false, timeout:20000, maximumAge:10000});
+
+    setText("driverStatus", "GPS démarré.");
+  }
+
+  function stopDriverGps(){
+    if(driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+    driverWatchId = null;
+    setText("driverStatus", "GPS arrêté.");
+  }
+
+  async function seedData(city){
+    if(!requireAdmin()) return;
+
+    const isMtl = city === "Montreal";
+    const lineRef = await window.db.collection("lines").add({
+      city,
+      name: isMtl ? "Test Montréal" : "Tidjounane",
+      type: "bus",
+      color: isMtl ? "#16a34a" : "#2563eb",
+      active: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    const demoStops = isMtl ? [
+      ["Jean-Talon",45.5390,-73.6130],
+      ["Saint-Michel",45.5590,-73.5990],
+      ["Pie-IX",45.5530,-73.5510]
+    ] : [
+      ["Béjaïa Centre",36.7525,5.0843],
+      ["Gare routière",36.7509,5.0567],
+      ["Université",36.7165,5.0614],
+      ["Sidi Aïch",36.6122,4.6865]
+    ];
+
+    for(const s of demoStops){
+      await window.db.collection("stops").add({
+        lineId: lineRef.id,
+        name: s[0],
+        lat: s[1],
+        lng: s[2],
+        active: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    await window.db.collection("vehicles").add({
+      name: isMtl ? "Bus test Montréal" : "Bus Tidjounane 01",
+      lineId: lineRef.id,
+      driverId: "",
+      status: "inactive",
+      lat: demoStops[0][1],
+      lng: demoStops[0][2],
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    alert("Données démo ajoutées ✅");
+  }
+
   function setupEvents(){
-    const top = getLoginButtonTop();
-    if(top) top.onclick = openLogin;
+    $("openLoginBtn").onclick = () => $("loginModal").classList.remove("hidden");
+    $("closeLoginBtn").onclick = () => $("loginModal").classList.add("hidden");
 
-    const close = $("closeLoginBtn") || $("closeLogin") || qs(".modal .ghost");
-    if(close) close.onclick = closeLogin;
+    $("loginBtn").onclick = async () => {
+      const email = val("emailInput").trim();
+      const pass = val("passwordInput");
+      if(!email || !pass) return alert("Mets ton email et ton mot de passe.");
 
-    const login = $("loginBtn");
-    if(login){
-      login.onclick = async () => {
-        const emailEl = $("emailInput") || qs('input[type="email"]');
-        const passEl = $("passwordInput") || qs('input[type="password"]');
-        const email = emailEl ? emailEl.value.trim() : "";
-        const pass = passEl ? passEl.value : "";
+      $("loginBtn").disabled = true;
+      $("loginBtn").textContent = "Connexion...";
+      setText("authStatus", "Connexion en cours...");
 
-        if(!email || !pass){
-          alert("Mets ton email et mot de passe.");
-          return;
-        }
+      const slowTimer = setTimeout(() => {
+        setText("authStatus", "Connexion lente. Vérifie Email/Password et Authorized domains.");
+      }, 7000);
 
-        setAuthStatus("Connexion en cours...");
-        login.disabled = true;
-        login.textContent = "Connexion...";
-
-        const slowTimer = setTimeout(() => {
-          setAuthStatus("Connexion lente. Vérifie Email/Password activé et domaine autorisé.");
-        }, 7000);
-
-        try{
-          const cred = await window.auth.signInWithEmailAndPassword(email, pass);
-          clearTimeout(slowTimer);
-          currentUser = cred.user;
-          await loadRole();
-          closeLogin();
-          alert("Connexion réussie ✅");
-        }catch(e){
-          clearTimeout(slowTimer);
-          authError(e);
-        }finally{
-          login.disabled = false;
-          login.textContent = "Se connecter";
-        }
-      };
-    }
-
-    const signup = $("signupBtn");
-    if(signup){
-      signup.onclick = async () => {
-        const emailEl = $("emailInput") || qs('input[type="email"]');
-        const passEl = $("passwordInput") || qs('input[type="password"]');
-        try{
-          const cred = await window.auth.createUserWithEmailAndPassword(emailEl.value.trim(), passEl.value);
-          currentUser = cred.user;
-          await loadRole();
-          alert("Compte créé ✅");
-        }catch(e){ authError(e); }
-      };
-    }
-
-    const logout = $("logoutBtn");
-    if(logout){
-      logout.onclick = async () => {
-        await window.auth.signOut();
-        currentUser = null;
-        currentRole = "guest";
-        setAuthUi();
-      };
-    }
-
-    document.querySelectorAll(".navBtn").forEach(btn => {
-      btn.onclick = () => {
-        document.querySelectorAll(".navBtn").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-        btn.classList.add("active");
-        const page = $(btn.dataset.page);
-        if(page) page.classList.add("active");
-        setTimeout(() => map && map.invalidateSize(), 250);
-      };
-    });
-
-    document.querySelectorAll(".tab").forEach(btn => {
-      btn.onclick = () => {
-        document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".adminPanel").forEach(p => p.classList.remove("active"));
-        btn.classList.add("active");
-        const panel = $(btn.dataset.panel) || $(btn.dataset.adminTab ? ("admin" + btn.dataset.adminTab[0].toUpperCase() + btn.dataset.adminTab.slice(1)) : "");
-        if(panel) panel.classList.add("active");
-      };
-    });
-
-    const clientGps = $("clientGpsBtn") || $("centerClientGpsBtn");
-    if(clientGps) clientGps.onclick = centerClientManual;
-
-    const lineSelect = $("clientLineSelect") || $("lineFilter") || $("clientLine");
-    if(lineSelect) lineSelect.onchange = () => { clientCentered = false; renderAll(); };
-
-    const search = $("searchRouteBtn");
-    if(search){
-      search.onclick = () => {
-        const q = ((safeValue("fromInput") || "") + " " + (safeValue("toInput") || "")).trim().toLowerCase();
-        const hits = stops.filter(s => (s.name || "").toLowerCase().includes(q));
-        safeText("routeResult", hits.length ? `${hits.length} arrêt(s) trouvé(s).` : "Aucun trajet automatique pour le moment.");
-      };
-    }
-
-    const addLine = $("addLineBtn");
-    if(addLine){
-      addLine.onclick = async () => {
-        if(!requireAdmin()) return;
-        await window.db.collection("lines").add({
-          name: safeValue("lineName").trim(),
-          type: safeValue("lineType") || "bus",
-          color: safeValue("lineColor") || "#2563eb",
-          active: true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        if($("lineName")) $("lineName").value = "";
-      };
-    }
-
-    const useStopGps = $("useMyLocationStopBtn") || $("useMyLocationStop");
-    if(useStopGps){
-      useStopGps.onclick = async () => {
-        try{
-          const [lat,lng] = await getPosition();
-          if($("stopLat")) $("stopLat").value = lat.toFixed(6);
-          if($("stopLng")) $("stopLng").value = lng.toFixed(6);
-          if($("stopLatitude")) $("stopLatitude").value = lat.toFixed(6);
-          if($("stopLongitude")) $("stopLongitude").value = lng.toFixed(6);
-        }catch(e){
-          alert("GPS impossible.");
-        }
-      };
-    }
-
-    const pickMap = $("pickStopOnMapBtn") || $("openStopPickerBtn");
-    if(pickMap) pickMap.onclick = openStopPicker;
-
-    const pickerClose = $("pickerCloseBtn") || $("closeStopPickerBtn");
-    if(pickerClose) pickerClose.onclick = () => {
-      const modal = $("stopPickerModal") || $("stopMapPickerModal");
-      if(modal) modal.classList.add("hidden");
+      try{
+        const cred = await window.auth.signInWithEmailAndPassword(email, pass);
+        clearTimeout(slowTimer);
+        currentUser = cred.user;
+        await loadRole();
+        $("loginModal").classList.add("hidden");
+        alert("Connexion réussie ✅");
+      }catch(e){
+        clearTimeout(slowTimer);
+        authError(e);
+      }finally{
+        $("loginBtn").disabled = false;
+        $("loginBtn").textContent = "Se connecter";
+      }
     };
 
-    const pickerUseGps = $("pickerUseGpsBtn") || $("useMyLocationForStopBtn");
-    if(pickerUseGps){
-      pickerUseGps.onclick = async () => {
-        try{
-          const [lat,lng] = await getPosition();
-          initStopPicker();
-          if(stopPickerMap) stopPickerMap.setView([lat,lng],16);
-          setPicked(lat,lng);
-        }catch(e){ alert("GPS impossible."); }
-      };
-    }
+    $("signupBtn").onclick = async () => {
+      try{
+        const cred = await window.auth.createUserWithEmailAndPassword(val("emailInput").trim(), val("passwordInput"));
+        currentUser = cred.user;
+        await loadRole();
+        alert("Compte créé ✅");
+      }catch(e){ authError(e); }
+    };
 
-    const pickerConfirm = $("pickerConfirmBtn") || $("confirmStopPositionBtn");
-    if(pickerConfirm){
-      pickerConfirm.onclick = () => {
-        if(pickedLat == null) return alert("Choisis une position.");
-        if($("stopLat")) $("stopLat").value = pickedLat.toFixed(6);
-        if($("stopLng")) $("stopLng").value = pickedLng.toFixed(6);
-        if($("stopLatitude")) $("stopLatitude").value = pickedLat.toFixed(6);
-        if($("stopLongitude")) $("stopLongitude").value = pickedLng.toFixed(6);
-        const modal = $("stopPickerModal") || $("stopMapPickerModal");
-        if(modal) modal.classList.add("hidden");
-      };
-    }
+    $("logoutBtn").onclick = async () => {
+      await window.auth.signOut();
+      currentUser = null;
+      currentRole = "guest";
+      setAuthUi();
+    };
 
-    const addStop = $("addStopBtn");
-    if(addStop){
-      addStop.onclick = async () => {
-        if(!requireAdmin()) return;
-        const lat = n(safeValue("stopLat") || safeValue("stopLatitude"));
-        const lng = n(safeValue("stopLng") || safeValue("stopLongitude"));
-        if(lat === null || lng === null) return alert("Latitude/longitude invalide.");
-        await window.db.collection("stops").add({
-          lineId: safeValue("stopLineSelect") || safeValue("stopLine") || "",
-          name: safeValue("stopName").trim(),
-          lat, lng,
-          active: true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        if($("stopName")) $("stopName").value = "";
-        if($("stopLat")) $("stopLat").value = "";
-        if($("stopLng")) $("stopLng").value = "";
-      };
-    }
+    document.querySelectorAll(".navBtn").forEach(btn => btn.onclick = () => {
+      document.querySelectorAll(".navBtn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      $(btn.dataset.page).classList.add("active");
+      setTimeout(() => map && map.invalidateSize(), 250);
+    });
 
-    const addVehicle = $("addVehicleBtn");
-    if(addVehicle){
-      addVehicle.onclick = async () => {
-        if(!requireAdmin()) return;
-        await window.db.collection("vehicles").add({
-          name: safeValue("vehicleName") || safeValue("vehicleNumber") || "Bus",
-          lineId: safeValue("vehicleLineSelect") || "",
-          driverId: safeValue("vehicleDriverId") || "",
-          status: "active",
-          lat: 36.7525,
-          lng: 5.0843,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      };
-    }
+    document.querySelectorAll(".tab").forEach(btn => btn.onclick = () => {
+      document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".adminPanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      $(btn.dataset.panel).classList.add("active");
+    });
 
-    const startDriver = $("startDriverGpsBtn");
-    if(startDriver){
-      startDriver.onclick = () => {
-        if(!currentUser) return alert("Connecte-toi.");
-        const vehicleSelect = $("driverVehicleSelect") || $("vehicleSelect");
-        const vehicleId = vehicleSelect ? vehicleSelect.value : "";
-        if(!vehicleId) return alert("Choisis un véhicule.");
-        if(driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+    $("clientGpsBtn").onclick = clientGps;
+    $("clientLineSelect").onchange = () => { clientCentered = false; renderAll(); };
+    $("clientCity").onchange = () => { clientCentered = false; renderAll(); };
 
-        driverWatchId = navigator.geolocation.watchPosition(async p => {
-          const now = Date.now();
-          if(now - lastGpsWrite < 15000) return;
-          lastGpsWrite = now;
-          await window.db.collection("vehicles").doc(vehicleId).set({
-            lat: p.coords.latitude,
-            lng: p.coords.longitude,
-            driverId: currentUser.uid,
-            status: "active",
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, {merge:true});
-          safeText("driverStatus", "GPS envoyé: " + new Date().toLocaleTimeString());
-        }, () => alert("GPS chauffeur impossible"), {enableHighAccuracy:false, timeout:20000, maximumAge:10000});
+    $("searchRouteBtn").onclick = () => {
+      const q = (val("fromInput") + " " + val("toInput")).trim().toLowerCase();
+      const hits = stops.filter(s => (s.name || "").toLowerCase().includes(q));
+      setText("routeResult", hits.length ? `${hits.length} arrêt(s) trouvé(s).` : "Aucun trajet automatique pour le moment.");
+    };
 
-        safeText("driverStatus", "GPS démarré.");
-      };
-    }
+    $("addLineBtn").onclick = saveLine;
+    $("addStopBtn").onclick = saveStop;
+    $("addVehicleBtn").onclick = saveVehicle;
 
-    const stopDriver = $("stopDriverGpsBtn");
-    if(stopDriver){
-      stopDriver.onclick = () => {
-        if(driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
-        driverWatchId = null;
-        safeText("driverStatus", "GPS arrêté.");
-      };
-    }
+    $("useMyLocationStopBtn").onclick = async () => {
+      try{
+        const [lat,lng] = await getPosition();
+        $("stopLat").value = lat.toFixed(6);
+        $("stopLng").value = lng.toFixed(6);
+      }catch(e){
+        alert("GPS impossible.");
+      }
+    };
+
+    $("pickStopOnMapBtn").onclick = openStopPicker;
+    $("pickerCloseBtn").onclick = () => $("stopPickerModal").classList.add("hidden");
+    $("pickerUseGpsBtn").onclick = async () => {
+      try{
+        const [lat,lng] = await getPosition();
+        initStopPicker();
+        stopPickerMap.setView([lat,lng],16);
+        setPicked(lat,lng);
+      }catch(e){ alert("GPS impossible."); }
+    };
+    $("pickerConfirmBtn").onclick = () => {
+      if(pickedLat == null) return alert("Choisis une position.");
+      $("stopLat").value = pickedLat.toFixed(6);
+      $("stopLng").value = pickedLng.toFixed(6);
+      $("stopPickerModal").classList.add("hidden");
+    };
+
+    $("startDriverGpsBtn").onclick = startDriverGps;
+    $("stopDriverGpsBtn").onclick = stopDriverGps;
+
+    $("seedBejaiaBtn").onclick = () => seedData("Bejaia");
+    $("seedMontrealBtn").onclick = () => seedData("Montreal");
+    $("refreshBtn").onclick = () => renderAll();
   }
 
   function init(){
     if(!window.firebase || !window.auth || !window.db){
-      alert("Firebase n'est pas chargé. Vérifie firebase-config.js et les scripts.");
+      alert("Firebase n'est pas chargé. Vérifie firebase-config.js.");
       return;
     }
 
