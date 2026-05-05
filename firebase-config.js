@@ -1,13 +1,9 @@
-// 1) Crée un projet Firebase
-// 2) Active Authentication > Email/Password
-// 3) Active Firestore Database
-// 4) Remplace les valeurs ci-dessous par ta configuration Firebase
-
 window.firebaseConfig = {
-  apiKey: "REMPLACE_MOI",
-  authDomain: "REMPLACE_MOI.firebaseapp.com",
-  projectId: "REMPLACE_MOI",
-  storageBucket: "REMPLACE_MOI.appspot.com",
-  messagingSenderId: "REMPLACE_MOI",
-  appId: "REMPLACE_MOI"
+  apiKey: "AIzaSyAPfRxnxmu2IRQIUF-U4qpIlVG95MCSABA",
+  authDomain: "transport-dz-live-5d1fb.firebaseapp.com",
+  projectId: "transport-dz-live-5d1fb",
+  storageBucket: "transport-dz-live-5d1fb.firebasestorage.app",
+  messagingSenderId: "512618434438",
+  appId: "1:512618434438:web:0cadfb3ba155cce34ae607",
+  measurementId: "G-1496GEGBV7"
 };
