@@ -11,7 +11,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">
+  <div>
     <div class="kicker">Firebase + GPS Live</div>
     <h1>Transport Live DZ</h1>
   </div>
@@ -22,7 +22,6 @@
 </header>
 
 <main>
-  <!-- CLIENT -->
   <section id="clientPage" class="page active">
     <div class="hero">
       <div>
@@ -34,30 +33,27 @@
     </div>
 
     <div class="card">
-      <label for="clientCity">Ville</label>
+      <label>Ville</label>
       <select id="clientCity">
         <option value="Bejaia">Béjaïa</option>
         <option value="Montreal">Montréal test</option>
       </select>
 
-      <label for="clientLineSelect">Ligne</label>
+      <label>Ligne</label>
       <select id="clientLineSelect">
         <option value="all">Toutes les lignes</option>
       </select>
 
-      <label for="fromInput">Départ</label>
+      <label>Départ</label>
       <input id="fromInput" placeholder="Ex: Gare routière">
-
-      <label for="toInput">Destination</label>
+      <label>Destination</label>
       <input id="toInput" placeholder="Ex: Université">
 
       <button id="searchRouteBtn" type="button" class="primary">Chercher trajet</button>
       <div id="routeResult" class="result">Prêt.</div>
     </div>
 
-    <div class="mapWrap">
-      <div id="map"></div>
-    </div>
+    <div class="mapWrap"><div id="map"></div></div>
 
     <div class="card">
       <h3>Arrêts visibles</h3>
@@ -70,27 +66,26 @@
     </div>
   </section>
 
-  <!-- CHAUFFEUR -->
   <section id="driverPage" class="page">
     <div class="hero">
       <div>
         <div class="kicker">Chauffeur</div>
         <h2>GPS véhicule</h2>
-        <p>Choisis ton véhicule puis démarre le partage GPS. Envoi optimisé chaque 15–30 secondes.</p>
+        <p>Choisis ton véhicule puis démarre le partage GPS.</p>
       </div>
     </div>
 
     <div class="card">
-      <label for="driverNameInput">Nom chauffeur</label>
-      <input id="driverNameInput" placeholder="Nom du chauffeur">
+      <label>Nom chauffeur</label>
+      <input id="driverNameInput" placeholder="Nom chauffeur">
 
-      <label for="driverVehicleSelect">Véhicule</label>
+      <label>Véhicule</label>
       <select id="driverVehicleSelect"></select>
 
-      <label for="driverGpsFrequency">Fréquence GPS</label>
+      <label>Fréquence GPS</label>
       <select id="driverGpsFrequency">
         <option value="15000">15 secondes</option>
-        <option value="30000" selected>30 secondes (moins cher)</option>
+        <option value="30000" selected>30 secondes</option>
         <option value="60000">60 secondes</option>
       </select>
 
@@ -100,13 +95,12 @@
     </div>
   </section>
 
-  <!-- ADMIN -->
   <section id="adminPage" class="page">
     <div class="hero">
       <div>
         <div class="kicker">Admin</div>
-        <h2>Gestion simple</h2>
-        <p>Ajoute les lignes, arrêts et véhicules. Tout est enregistré dans Firebase.</p>
+        <h2>Gestion complète</h2>
+        <p>Lignes, arrêts, véhicules, chauffeurs et clients sauvegardés dans Firebase.</p>
       </div>
     </div>
 
@@ -114,99 +108,110 @@
       <button class="tab active" type="button" data-panel="panelLines">Lignes</button>
       <button class="tab" type="button" data-panel="panelStops">Arrêts</button>
       <button class="tab" type="button" data-panel="panelVehicles">Véhicules</button>
+      <button class="tab" type="button" data-panel="panelDrivers">Chauffeurs</button>
+      <button class="tab" type="button" data-panel="panelClients">Clients</button>
       <button class="tab" type="button" data-panel="panelTools">Outils</button>
     </div>
 
     <div id="panelLines" class="adminPanel active">
       <div class="card">
         <h3>Ajouter une ligne</h3>
-        <label for="lineCity">Ville</label>
+        <label>Ville</label>
         <select id="lineCity">
           <option value="Bejaia">Béjaïa</option>
           <option value="Montreal">Montréal test</option>
         </select>
-
-        <label for="lineName">Nom ligne</label>
+        <label>Nom ligne</label>
         <input id="lineName" placeholder="Ex: Tidjounane">
-
-        <label for="lineType">Type</label>
+        <label>Type</label>
         <select id="lineType">
           <option value="bus">bus</option>
           <option value="tram">tram</option>
           <option value="metro">metro</option>
           <option value="taxi_collectif">taxi collectif</option>
         </select>
-
-        <label for="lineColor">Couleur</label>
+        <label>Couleur</label>
         <input id="lineColor" type="color" value="#2563eb">
-
-        <button id="addLineBtn" type="button" class="primary">Ajouter ligne</button>
+        <button id="addLineBtn" type="button" class="primary">Enregistrer ligne</button>
         <div id="lineStatus" class="result"></div>
       </div>
-      <div class="card">
-        <h3>Lignes enregistrées</h3>
-        <div id="linesAdminList" class="list"></div>
-      </div>
+      <div class="card"><h3>Lignes Firebase</h3><div id="linesAdminList" class="list"></div></div>
     </div>
 
     <div id="panelStops" class="adminPanel">
       <div class="card">
         <h3>Ajouter un arrêt</h3>
-        <label for="stopLineSelect">Ligne</label>
+        <label>Ligne</label>
         <select id="stopLineSelect"></select>
-
-        <label for="stopName">Nom arrêt</label>
+        <label>Nom arrêt</label>
         <input id="stopName" placeholder="Ex: Sidi Aïch">
-
-        <label for="stopLat">Latitude</label>
+        <label>Latitude</label>
         <input id="stopLat" inputmode="decimal" placeholder="36.6122">
-
-        <label for="stopLng">Longitude</label>
+        <label>Longitude</label>
         <input id="stopLng" inputmode="decimal" placeholder="4.6865">
-
         <div class="row">
           <button id="useMyLocationStopBtn" type="button" class="secondary">📍 Utiliser ma position</button>
           <button id="pickStopOnMapBtn" type="button" class="secondary">🗺️ Choisir sur carte</button>
         </div>
-
-        <button id="addStopBtn" type="button" class="primary">Ajouter arrêt</button>
+        <button id="addStopBtn" type="button" class="primary">Enregistrer arrêt</button>
         <div id="stopStatus" class="result"></div>
       </div>
-      <div class="card">
-        <h3>Arrêts enregistrés</h3>
-        <div id="stopsAdminList" class="list"></div>
-      </div>
+      <div class="card"><h3>Arrêts Firebase</h3><div id="stopsAdminList" class="list"></div></div>
     </div>
 
     <div id="panelVehicles" class="adminPanel">
       <div class="card">
         <h3>Ajouter un véhicule</h3>
-
-        <label for="vehicleName">Nom / numéro véhicule</label>
+        <label>Nom véhicule</label>
         <input id="vehicleName" placeholder="Ex: Bus 12">
-
-        <label for="vehicleLineSelect">Ligne</label>
+        <label>Ligne</label>
         <select id="vehicleLineSelect"></select>
-
-        <label for="vehicleDriverId">Chauffeur UID / email</label>
-        <input id="vehicleDriverId" placeholder="UID chauffeur ou email">
-
-        <button id="addVehicleBtn" type="button" class="primary">Ajouter véhicule</button>
+        <label>Chauffeur</label>
+        <select id="vehicleDriverSelect"></select>
+        <button id="addVehicleBtn" type="button" class="primary">Enregistrer véhicule</button>
         <div id="vehicleStatus" class="result"></div>
       </div>
+      <div class="card"><h3>Véhicules Firebase</h3><div id="vehiclesAdminList" class="list"></div></div>
+    </div>
+
+    <div id="panelDrivers" class="adminPanel">
       <div class="card">
-        <h3>Véhicules enregistrés</h3>
-        <div id="vehiclesAdminList" class="list"></div>
+        <h3>Ajouter un chauffeur</h3>
+        <label>Nom chauffeur</label>
+        <input id="driverNameAdmin" placeholder="Nom complet">
+        <label>Téléphone</label>
+        <input id="driverPhoneAdmin" placeholder="0550...">
+        <label>Email / UID</label>
+        <input id="driverEmailAdmin" placeholder="email ou UID">
+        <button id="addDriverBtn" type="button" class="primary">Enregistrer chauffeur</button>
+        <div id="driverAdminStatus" class="result"></div>
       </div>
+      <div class="card"><h3>Chauffeurs Firebase</h3><div id="driversAdminList" class="list"></div></div>
+    </div>
+
+    <div id="panelClients" class="adminPanel">
+      <div class="card">
+        <h3>Ajouter un client</h3>
+        <label>Nom client</label>
+        <input id="clientNameAdmin" placeholder="Nom complet">
+        <label>Téléphone</label>
+        <input id="clientPhoneAdmin" placeholder="Téléphone">
+        <label>Email</label>
+        <input id="clientEmailAdmin" placeholder="email">
+        <button id="addClientBtn" type="button" class="primary">Enregistrer client</button>
+        <div id="clientAdminStatus" class="result"></div>
+      </div>
+      <div class="card"><h3>Clients Firebase</h3><div id="clientsAdminList" class="list"></div></div>
     </div>
 
     <div id="panelTools" class="adminPanel">
       <div class="card">
-        <h3>Outils</h3>
+        <h3>Test sauvegarde Firebase</h3>
+        <button id="testSaveBtn" type="button" class="primary">Tester écriture Firebase</button>
         <button id="seedBejaiaBtn" type="button" class="secondary">Ajouter données démo Béjaïa</button>
         <button id="seedMontrealBtn" type="button" class="secondary">Ajouter données démo Montréal</button>
         <button id="refreshBtn" type="button" class="secondary">Rafraîchir affichage</button>
-        <div class="result">Utilise les règles Firestore dans <b>firestore.rules</b>.</div>
+        <div id="toolStatus" class="result">Prêt.</div>
       </div>
     </div>
   </section>
@@ -218,32 +223,26 @@
   <button class="navBtn" type="button" data-page="adminPage">⚙️<span>Admin</span></button>
 </nav>
 
-<!-- MODAL LOGIN -->
 <div id="loginModal" class="modal hidden">
   <div class="modalCard">
     <h2>Connexion</h2>
     <p>Connecte-toi comme admin ou chauffeur.</p>
-
-    <label for="emailInput">Email</label>
+    <label>Email</label>
     <input id="emailInput" type="email" value="allaouaboucheneb04@gmail.com" autocomplete="username">
-
-    <label for="passwordInput">Mot de passe</label>
+    <label>Mot de passe</label>
     <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Minimum 6 caractères">
-
     <button id="loginBtn" type="button" class="primary">Se connecter</button>
     <button id="signupBtn" type="button" class="secondary">Créer compte</button>
     <button id="logoutBtn" type="button" class="danger">Déconnexion</button>
     <button id="closeLoginBtn" type="button" class="ghost">Fermer</button>
-
     <div id="authStatus" class="result">Non connecté</div>
   </div>
 </div>
 
-<!-- MODAL STOP PICKER -->
 <div id="stopPickerModal" class="modal hidden">
   <div class="modalCard mapModal">
     <h2>Choisir l’arrêt</h2>
-    <p>Clique sur la carte pour choisir la position exacte, ou utilise ta position GPS.</p>
+    <p>Clique sur la carte pour choisir la position exacte.</p>
     <div id="stopPickerMap"></div>
     <div id="pickedCoords" class="result">Aucune position choisie</div>
     <button id="pickerUseGpsBtn" type="button" class="secondary">📍 Ma position</button>
@@ -257,6 +256,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=2000"></script>
+<script src="app.js?v=3000"></script>
 </body>
 </html>
