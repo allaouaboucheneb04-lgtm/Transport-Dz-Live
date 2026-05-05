@@ -8,7 +8,7 @@ const firebaseConfig = {
   measurementId: "G-1496GEGBV7"
 };
 
-if (typeof firebase !== "undefined" && !firebase.apps.length) {
+if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 window.auth = firebase.auth();

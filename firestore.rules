@@ -53,9 +53,8 @@ service cloud.firestore {
     }
 
     match /clients/{id} {
-      allow read: if isAdmin();
       allow create: if true;
-      allow update, delete: if isAdmin();
+      allow read, update, delete: if isAdmin();
     }
 
     match /reports/{id} {
