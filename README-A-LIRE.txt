@@ -1,15 +1,12 @@
-CORRECTION COMPLETE
+VRAI CORRECTIF CONNEXION:
+- Suppression d'un ancien onAuthStateChanged qui cassait app.js avant initFirebase.
+- Correction du bouton Connexion avec le bon id: loginOpenBtn.
+- Correction closeLoginBtn.
+- Firebase config en module ES.
 
-J'ai reconstruit le projet proprement pour supprimer le bug du bouton connexion.
-
-Important après upload:
-1. Va dans Firebase > Authentication > Sign-in method > active Email/Password.
-2. Firebase > Authentication > Settings > Authorized domains:
-   ajoute allaouaboucheneb04-lgtm.github.io
-3. Firebase > Firestore > Sécurité:
-   colle firestore.rules puis Publier.
-4. Upload tous les fichiers sur GitHub.
-5. Ouvre:
-   https://allaouaboucheneb04-lgtm.github.io/Transport-Dz-Live/?v=500
-
-Ton email allaouaboucheneb04@gmail.com est forcé comme admin dans le code.
+Après upload:
+1. Attends 1 minute GitHub Pages.
+2. Ouvre: /Transport-Dz-Live/?v=25
+3. Clique Connexion > Se connecter.
+4. Si erreur: vérifie Firebase Authentication > Sign-in method > Email/Password activé.
+5. Ajoute le domaine autorisé: allaouaboucheneb04-lgtm.github.io
