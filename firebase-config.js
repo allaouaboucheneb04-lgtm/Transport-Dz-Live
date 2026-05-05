@@ -1,4 +1,3 @@
-// Firebase config - Transport DZ Live
 const firebaseConfig = {
   apiKey: "AIzaSyAPfRxnxmu2IRQIUF-U4qpIlVG95MCSABA",
   authDomain: "transport-dz-live-5d1fb.firebaseapp.com",

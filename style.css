@@ -43,4 +43,4 @@ input:focus,select:focus{border-color:rgba(37,99,235,.8);box-shadow:0 0 0 4px rg
 button:disabled{opacity:.65;pointer-events:none}
 @media(min-width:700px){.hero{display:flex;align-items:flex-start;justify-content:space-between}.small{width:auto;margin-top:0}.row{grid-template-columns:1fr 1fr}.badges{max-width:none}.badge{font-size:14px;padding:10px 14px}.tabs{grid-template-columns:repeat(4,1fr)}}
 
-#manualFirestoreTestBtn{margin-top:10px;padding:12px 16px;border-radius:14px;border:0;background:#2563eb;color:white;font-weight:900;}
+.deleteBtn{background:#fee2e2;color:#dc2626;border:0;border-radius:14px;padding:10px 14px;font-weight:900;margin-top:10px}
