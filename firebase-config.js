@@ -1,5 +1,3 @@
-// Configuration Firebase - Transport DZ Live
-// Version compatible avec app.js en modules ES
 export const firebaseConfig = {
   apiKey: "AIzaSyAPfRxnxmu2IRQIUF-U4qpIlVG95MCSABA",
   authDomain: "transport-dz-live-5d1fb.firebaseapp.com",

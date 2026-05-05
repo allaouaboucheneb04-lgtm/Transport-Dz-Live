@@ -12,9 +12,19 @@ const $ = id => document.getElementById(id);
 const isConfigured = () => window.firebaseConfig && !String(window.firebaseConfig.apiKey||'').includes('REMPLACE');
 
 function initFirebase(){
-  if(!isConfigured()){ setSync('Firebase connecté manquante', false); renderAll(); return; }
+  if(!isConfigured()){ setSync('Config Firebase manquante', false); renderAll(); return; }
   app = initializeApp(firebaseConfig); auth=getAuth(app); db=getFirestore(app); firebaseReady=true; setSync('Firebase connecté', true);
-  onAuthStateChanged(auth, async user=>{ currentUser=user; await loadRole(); bindRealtime(); renderAll(); });
+  onAuthStateChanged(auth, async user=>{
+    currentUser = user || null;
+    if(currentUser){
+      await loadRole();
+    }else{
+      currentRole = 'guest';
+      setAuthUiState(null);
+    }
+    bindRealtime();
+    renderAll();
+  });
 }
 async function loadRole(){
   currentRole='guest';
@@ -107,7 +117,8 @@ function routeSearch(){ const from=$('fromInput').value.trim().toLowerCase(),to=
 function bind(){
   document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$('page-'+btn.dataset.page).classList.add('active');setTimeout(()=>map&&map.invalidateSize(),200);});
   document.querySelectorAll('.mini').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.mini').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.admin-pane').forEach(p=>p.classList.remove('active'));$('admin-'+btn.dataset.adminTab).classList.add('active');});
-  $('loginOpenBtn').onclick=()=>$('loginModal').classList.remove('hidden'); $('closeLoginBtn').onclick=()=>$('loginModal').classList.add('hidden'); setAuthUiState(auth.currentUser); alert('Connexion réussie ✅');
+  $('loginOpenBtn').onclick=()=>{$('loginModal').classList.remove('hidden'); if(auth && auth.currentUser) setAuthUiState(auth.currentUser);};
+  $('closeLoginBtn').onclick=()=>{$('loginModal').classList.add('hidden');};
   function friendlyAuthError(e){
     const code = e && e.code ? e.code : '';
     if(code.includes('auth/invalid-credential')) return 'Email ou mot de passe incorrect.';
@@ -118,7 +129,7 @@ function bind(){
     if(code.includes('auth/unauthorized-domain')) return 'Ajoute ton domaine GitHub Pages dans Firebase Authentication > Settings > Authorized domains.';
     return e.message || 'Erreur de connexion.';
   }
-  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('loginModal').classList.add('hidden'); setAuthUiState(auth.currentUser); alert('Connexion réussie ✅')}catch(e){ showAuthErrorFinal(e) }};
+  $('loginBtn').onclick=async()=>{try{const cred=await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value); currentUser=cred.user; await loadRole(); setAuthUiState(currentUser); $('loginModal').classList.add('hidden'); alert('Connexion réussie ✅')}catch(e){ showAuthErrorFinal(e) }};
   $('signupBtn').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('authStatus').textContent='Compte créé. Ajoute ton UID dans admins pour devenir admin.';}catch(e){ showAuthErrorFinal(e) }};
   $('logoutBtn').onclick=()=>signOut(auth); $('clientLineSelect').onchange=()=>{renderLists();drawMap();};
   $('addLineBtn').onclick=addLine; $('addStopBtn').onclick=addStop; $('addVehicleBtn').onclick=addVehicle; $('seedBtn').onclick=seedDemo; $('clearDemoBtn').onclick=clearDemo;
@@ -130,7 +141,7 @@ window.addEventListener('load',()=>{initMap();bind();initFirebase(); if('service
 
 // Correctif visibilité boutons connexion iPhone/Safari
 function fixLoginModalButtons(){
-  ['loginBtn','signupBtn','logoutBtn','closeLogin'].forEach(id=>{
+  ['loginBtn','signupBtn','logoutBtn','closeLoginBtn'].forEach(id=>{
     const el = document.getElementById(id);
     if(el){
       el.style.display = 'block';
@@ -151,6 +162,7 @@ document.addEventListener('click', ()=>setTimeout(fixLoginModalButtons, 50));
 // --- Correctif UI connexion/admin ---
 function setAuthUiState(user){
   const topBtns = [
+    document.getElementById('loginOpenBtn'),
     document.getElementById('openLogin'),
     document.getElementById('loginBtnTop'),
     document.getElementById('connectBtn'),
@@ -172,22 +184,6 @@ function setAuthUiState(user){
     status.textContent = user ? ('Connecté: ' + user.email + ' · rôle: ' + (currentRole || '...')) : 'Non connecté';
   }
 }
-
-
-onAuthStateChanged(auth, async(user)=>{
-  currentUser = user || null;
-
-  if(user){
-    await loadRole();
-    setAuthUiState(user);
-  }else{
-    currentRole = 'guest';
-    setAuthUiState(null);
-  }
-
-  renderAll && renderAll();
-});
-
 
 // Correctif final affichage erreurs connexion
 function showAuthErrorFinal(e){

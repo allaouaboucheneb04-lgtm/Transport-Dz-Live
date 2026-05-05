@@ -60,3 +60,9 @@ html,body{
   overflow-x:hidden !important;
 }
 *{box-sizing:border-box;}
+
+#loginOpenBtn.is-connected{
+  background:#dcfce7 !important;
+  color:#166534 !important;
+  border-color:#bbf7d0 !important;
+}
