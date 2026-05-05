@@ -6,7 +6,7 @@ import { getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot, q
 
 const BEJAIA_CENTER = [36.7509, 5.0567];
 let app, auth, db, currentUser=null, currentRole='guest', firebaseReady=false;
-let map, markers=[], unsubscribers=[], gpsWatchId=null, lastGpsWrite=0;
+let map, markers=[], unsubscribers=[], gpsWatchId=null, lastGpsWrite=0, clientMapCenteredByGps=false;
 let state={lines:[],stops:[],vehicles:[]};
 const $ = id => document.getElementById(id);
 const isConfigured = () => window.firebaseConfig && !String(window.firebaseConfig.apiKey||'').includes('REMPLACE');
@@ -115,7 +115,7 @@ function drawMap(){
   const stops=d.stops.filter(s=>!lineId||s.lineId===lineId), vehicles=d.vehicles.filter(v=>!lineId||v.lineId===lineId);
   stops.forEach(s=>markers.push(L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:'<div class="stop-dot"></div>'})}).addTo(map).bindPopup(`<b>${s.name}</b><br>${lineName(s.lineId)}`)));
   vehicles.forEach(v=>markers.push(L.marker([v.lat,v.lng],{icon:L.divIcon({className:'',html:`<div class="bus-marker">🚍 ${v.name}</div>`})}).addTo(map).bindPopup(`<b>${v.name}</b><br>${lineName(v.lineId)}<br>${v.driverName||''}`)));
-  const all=[...stops.map(s=>[s.lat,s.lng]),...vehicles.map(v=>[v.lat,v.lng])]; if(all.length) map.fitBounds(all,{padding:[40,40],maxZoom:14});
+  const all=[...stops.map(s=>[s.lat,s.lng]),...vehicles.map(v=>[v.lat,v.lng])]; if(all.length && !clientMapCenteredByGps) map.fitBounds(all,{padding:[40,40],maxZoom:14});
 }
 function requireAdmin(){ if(!firebaseReady) return alert('Configure Firebase avant.'); if(!currentUser) return alert('Connecte-toi d’abord.'); if(currentRole!=='admin') return alert('Compte admin requis. Ton UID est: '+currentUser.uid); return true; }
 async function addLine(){ if(!requireAdmin()) return; const name=$('lineName').value.trim(); if(!name) return alert('Nom ligne obligatoire.'); await addDoc(collection(db,'lines'),{name,type:$('lineType').value,color:$('lineColor').value,city:'bejaia',createdAt:serverTimestamp()}); $('lineName').value=''; }
@@ -155,7 +155,11 @@ function bind(){
   $('logoutBtn').onclick=()=>signOut(auth); $('clientLineSelect').onchange=()=>{renderLists();drawMap();};
   $('addLineBtn').onclick=addLine; $('addStopBtn').onclick=addStop; $('addVehicleBtn').onclick=addVehicle; $('seedBtn').onclick=seedDemo; $('clearDemoBtn').onclick=clearDemo;
   $('startTripBtn').onclick=startTrip; $('stopTripBtn').onclick=stopTrip; $('routeBtn').onclick=routeSearch;
-  $('useMyLocationStop').onclick=()=>navigator.geolocation.getCurrentPosition(p=>{$('stopLat').value=p.coords.latitude;$('stopLng').value=p.coords.longitude;});
+  $('useMyLocationStop').onclick=()=>navigator.geolocation.getCurrentPosition(
+    p=>{$('stopLat').value=p.coords.latitude.toFixed(6);$('stopLng').value=p.coords.longitude.toFixed(6);},
+    e=>alert(e.code===1?'GPS refusé pour ce site. Autorise la position dans Safari puis recharge.':'GPS impossible: '+e.message),
+    {enableHighAccuracy:true, timeout:20000, maximumAge:0}
+  );
 }
 window.addEventListener('load',()=>{initMap();bind();initFirebase(); if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');});
 
@@ -342,34 +346,69 @@ setTimeout(installStopPickerButtons, 600);
 document.addEventListener('click', ()=>setTimeout(installStopPickerButtons, 100));
 
 
+
+
 // ================================
-// Carte client centrée sur position
+// Carte client centrée sur position - corrigé iPhone/Safari
 // ================================
 let clientLocationMarker = null;
 
+function showGpsMessage(message){
+  const el = document.getElementById('routeResult');
+  if(el) el.textContent = message;
+}
+
 function centerClientMapOnMyPosition(){
-  if(!navigator.geolocation) return alert('GPS non disponible sur ce téléphone.');
+  if(!navigator.geolocation){
+    showGpsMessage('GPS non disponible sur ce téléphone.');
+    return alert('GPS non disponible sur ce téléphone.');
+  }
+
+  showGpsMessage('Recherche de ta position GPS...');
 
   navigator.geolocation.getCurrentPosition((pos)=>{
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
 
     if(typeof map !== 'undefined' && map){
-      map.setView([lat, lng], 15);
+      clientMapCenteredByGps = true;
+      map.setView([lat, lng], 16);
 
       if(clientLocationMarker){
         clientLocationMarker.setLatLng([lat, lng]);
       }else{
         clientLocationMarker = L.circleMarker([lat, lng], {
-          radius: 9,
+          radius: 10,
           weight: 3,
-          fillOpacity: 0.8
+          fillOpacity: 0.85
         }).addTo(map).bindPopup('📍 Ma position');
       }
+
+      clientLocationMarker.openPopup();
+      showGpsMessage('Carte centrée sur ta position.');
     }
-  }, ()=>{
-    alert('GPS refusé. Active la localisation dans Safari.');
-  }, {enableHighAccuracy:true, timeout:12000});
+  }, (err)=>{
+    let msg = 'GPS impossible.';
+    if(err.code === 1){
+      msg = 'GPS refusé pour ce site. Dans Safari, touche AA / Réglages du site web / Position / Autoriser, puis recharge.';
+    }else if(err.code === 2){
+      msg = 'Position indisponible. Essaie dehors ou active Wi‑Fi + données cellulaires.';
+    }else if(err.code === 3){
+      msg = 'GPS trop long. Réessaie.';
+    }
+
+    showGpsMessage(msg);
+    alert(msg);
+
+    // Ne bloque pas l'app : on garde la carte visible.
+    if(typeof map !== 'undefined' && map){
+      map.invalidateSize();
+    }
+  }, {
+    enableHighAccuracy: true,
+    timeout: 20000,
+    maximumAge: 0
+  });
 }
 
 function installClientGpsButton(){
@@ -378,17 +417,20 @@ function installClientGpsButton(){
   const mapEl = document.getElementById('map');
   if(!mapEl) return;
 
+  const wrap = mapEl.parentElement;
+  wrap.style.position = 'relative';
+
   const btn = document.createElement('button');
   btn.id = 'centerClientGpsBtn';
   btn.type = 'button';
   btn.textContent = '📍 Ma position';
   btn.onclick = centerClientMapOnMyPosition;
 
-  mapEl.parentElement.style.position = 'relative';
-  mapEl.parentElement.appendChild(btn);
+  wrap.appendChild(btn);
 
-  // Centrer automatiquement au premier chargement côté client
-  setTimeout(centerClientMapOnMyPosition, 1000);
+  // IMPORTANT iPhone/Safari:
+  // On ne demande plus le GPS automatiquement au chargement.
+  // L'utilisateur clique sur le bouton pour éviter "GPS refusé".
 }
 
 setTimeout(installClientGpsButton, 800);
