@@ -1,4 +1,4 @@
-// Transport Live DZ - Firebase v8 compat
+// Firebase config - Transport DZ Live
 const firebaseConfig = {
   apiKey: "AIzaSyAPfRxnxmu2IRQIUF-U4qpIlVG95MCSABA",
   authDomain: "transport-dz-live-5d1fb.firebaseapp.com",
@@ -9,9 +9,8 @@ const firebaseConfig = {
   measurementId: "G-1496GEGBV7"
 };
 
-if (!firebase.apps.length) {
+if (typeof firebase !== "undefined" && !firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
-
 window.auth = firebase.auth();
 window.db = firebase.firestore();

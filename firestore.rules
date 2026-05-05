@@ -41,26 +41,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /vehicles/{id} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin()
-        || (signedIn() && request.resource.data.driverId == request.auth.uid);
-    }
-
     match /drivers/{id} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /vehicles/{id} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (signedIn() && request.resource.data.driverId == request.auth.uid);
     }
 
     match /clients/{id} {
       allow read: if isAdmin();
       allow create: if true;
       allow update, delete: if isAdmin();
-    }
-
-    match /testWrites/{id} {
-      allow read, write: if isAdmin();
     }
 
     match /reports/{id} {
