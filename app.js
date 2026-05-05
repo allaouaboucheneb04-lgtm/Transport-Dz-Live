@@ -1,3 +1,4 @@
+import { firebaseConfig } from './firebase-config.js';
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
@@ -11,8 +12,8 @@ const $ = id => document.getElementById(id);
 const isConfigured = () => window.firebaseConfig && !String(window.firebaseConfig.apiKey||'').includes('REMPLACE');
 
 function initFirebase(){
-  if(!isConfigured()){ setSync('Config Firebase manquante', false); renderAll(); return; }
-  app = initializeApp(window.firebaseConfig); auth=getAuth(app); db=getFirestore(app); firebaseReady=true; setSync('Firebase connecté', true);
+  if(!isConfigured()){ setSync('Firebase connecté manquante', false); renderAll(); return; }
+  app = initializeApp(firebaseConfig); auth=getAuth(app); db=getFirestore(app); firebaseReady=true; setSync('Firebase connecté', true);
   onAuthStateChanged(auth, async user=>{ currentUser=user; await loadRole(); bindRealtime(); renderAll(); });
 }
 async function loadRole(){
@@ -117,8 +118,8 @@ function bind(){
     if(code.includes('auth/unauthorized-domain')) return 'Ajoute ton domaine GitHub Pages dans Firebase Authentication > Settings > Authorized domains.';
     return e.message || 'Erreur de connexion.';
   }
-  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('loginModal').classList.add('hidden'); setAuthUiState(auth.currentUser); alert('Connexion réussie ✅')}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
-  $('signupBtn').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('authStatus').textContent='Compte créé. Ajoute ton UID dans admins pour devenir admin.';}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
+  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('loginModal').classList.add('hidden'); setAuthUiState(auth.currentUser); alert('Connexion réussie ✅')}catch(e){ showAuthErrorFinal(e) }};
+  $('signupBtn').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('authStatus').textContent='Compte créé. Ajoute ton UID dans admins pour devenir admin.';}catch(e){ showAuthErrorFinal(e) }};
   $('logoutBtn').onclick=()=>signOut(auth); $('clientLineSelect').onchange=()=>{renderLists();drawMap();};
   $('addLineBtn').onclick=addLine; $('addStopBtn').onclick=addStop; $('addVehicleBtn').onclick=addVehicle; $('seedBtn').onclick=seedDemo; $('clearDemoBtn').onclick=clearDemo;
   $('startTripBtn').onclick=startTrip; $('stopTripBtn').onclick=stopTrip; $('routeBtn').onclick=routeSearch;
@@ -186,3 +187,12 @@ onAuthStateChanged(auth, async(user)=>{
 
   renderAll && renderAll();
 });
+
+
+// Correctif final affichage erreurs connexion
+function showAuthErrorFinal(e){
+  const msg = (e && e.code) ? e.code + " - " + (e.message || "") : String(e);
+  const status = document.getElementById('authStatus');
+  if(status) status.textContent = msg;
+  alert("Erreur connexion: " + msg);
+}
