@@ -25,3 +25,20 @@ Les arrêts/lignes sont simples et légers.
 
 IMPORTANT
 Pour GPS sur iPhone/Android, le site doit être en HTTPS, donc Netlify/Firebase Hosting/GitHub Pages.
+
+
+IMPORTANT CONNEXION ADMIN
+1. Firebase > Authentication > Sign-in method > active Email/Password.
+2. Firebase > Authentication > Settings > Authorized domains:
+   ajoute allaouaboucheneb04-lgtm.github.io
+3. Crée ton utilisateur dans Authentication.
+4. Copie son UID.
+5. Firestore > Données > Commencer une collection:
+   Collection: admins
+   Document ID: TON_UID
+   Champs:
+   - email : ton email
+   - role : admin
+   - active : true
+   - name : Allaoua
+6. Firestore > Sécurité: colle le contenu de firestore.rules puis Publier.

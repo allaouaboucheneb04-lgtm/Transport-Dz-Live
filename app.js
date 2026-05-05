@@ -18,10 +18,38 @@ function initFirebase(){
 async function loadRole(){
   currentRole='guest';
   if(!currentUser || !db) return;
-  const snap=await getDoc(doc(db,'users',currentUser.uid));
-  if(snap.exists()) currentRole=snap.data().role || 'driver';
-  else await setDoc(doc(db,'users',currentUser.uid), {email:currentUser.email, role:'driver', createdAt:serverTimestamp()}, {merge:true}), currentRole='driver';
-  $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: ${currentRole}`;
+
+  try{
+    // Méthode admin simple : créer Firestore > admins > UID
+    const adminSnap = await getDoc(doc(db,'admins',currentUser.uid));
+    if(adminSnap.exists() && adminSnap.data().active !== false){
+      currentRole = 'admin';
+      $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: admin`;
+      return;
+    }
+
+    // Sinon rôle classique dans users > UID
+    const userRef = doc(db,'users',currentUser.uid);
+    const userSnap = await getDoc(userRef);
+
+    if(userSnap.exists()){
+      currentRole = userSnap.data().role || 'driver';
+    }else{
+      await setDoc(userRef, {
+        email: currentUser.email,
+        role: 'driver',
+        active: true,
+        createdAt: serverTimestamp()
+      }, {merge:true});
+      currentRole = 'driver';
+    }
+
+    $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: ${currentRole}`;
+  }catch(e){
+    console.error('Erreur rôle:', e);
+    currentRole='driver';
+    $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle temporaire chauffeur`;
+  }
 }
 function setSync(text, ok){ const b=$('syncBadge'); b.textContent=text; b.className=ok?'badge':'badge warn'; }
 function bindRealtime(){
@@ -57,7 +85,7 @@ function drawMap(){
   vehicles.forEach(v=>markers.push(L.marker([v.lat,v.lng],{icon:L.divIcon({className:'',html:`<div class="bus-marker">🚍 ${v.name}</div>`})}).addTo(map).bindPopup(`<b>${v.name}</b><br>${lineName(v.lineId)}<br>${v.driverName||''}`)));
   const all=[...stops.map(s=>[s.lat,s.lng]),...vehicles.map(v=>[v.lat,v.lng])]; if(all.length) map.fitBounds(all,{padding:[40,40],maxZoom:14});
 }
-function requireAdmin(){ if(!firebaseReady) return alert('Configure Firebase avant.'); if(currentRole!=='admin') return alert('Compte admin requis. Va dans Firestore > users > ton UID > role = admin'); return true; }
+function requireAdmin(){ if(!firebaseReady) return alert('Configure Firebase avant.'); if(currentRole!=='admin') return alert('Compte admin requis. Crée Firestore > admins > ton UID avec active=true'); return true; }
 async function addLine(){ if(!requireAdmin()) return; const name=$('lineName').value.trim(); if(!name) return alert('Nom ligne obligatoire.'); await addDoc(collection(db,'lines'),{name,type:$('lineType').value,color:$('lineColor').value,city:'bejaia',createdAt:serverTimestamp()}); $('lineName').value=''; }
 async function addStop(){ if(!requireAdmin()) return; const lineId=$('stopLineSelect').value,name=$('stopName').value.trim(),lat=parseFloat($('stopLat').value),lng=parseFloat($('stopLng').value); if(!lineId||!name||isNaN(lat)||isNaN(lng)) return alert('Remplis ligne, nom, latitude, longitude.'); await addDoc(collection(db,'stops'),{lineId,name,lat,lng,city:'bejaia',createdAt:serverTimestamp()}); ['stopName','stopLat','stopLng'].forEach(id=>$(id).value=''); }
 async function addVehicle(){ if(!requireAdmin()) return; const name=$('vehicleName').value.trim(), lineId=$('vehicleLineSelect').value; if(!name||!lineId) return alert('Remplis véhicule et ligne.'); await addDoc(collection(db,'vehicles'),{name,lineId,lat:BEJAIA_CENTER[0],lng:BEJAIA_CENTER[1],status:'offline',driverName:'',updatedAt:serverTimestamp(),city:'bejaia'}); $('vehicleName').value=''; }
@@ -79,8 +107,18 @@ function bind(){
   document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$('page-'+btn.dataset.page).classList.add('active');setTimeout(()=>map&&map.invalidateSize(),200);});
   document.querySelectorAll('.mini').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.mini').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.admin-pane').forEach(p=>p.classList.remove('active'));$('admin-'+btn.dataset.adminTab).classList.add('active');});
   $('loginOpenBtn').onclick=()=>$('loginModal').classList.remove('hidden'); $('closeLoginBtn').onclick=()=>$('loginModal').classList.add('hidden');
-  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value,$('passwordInput').value);$('loginModal').classList.add('hidden')}catch(e){$('authStatus').textContent=e.message}};
-  $('signupBtn').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('emailInput').value,$('passwordInput').value)}catch(e){$('authStatus').textContent=e.message}};
+  function friendlyAuthError(e){
+    const code = e && e.code ? e.code : '';
+    if(code.includes('auth/invalid-credential')) return 'Email ou mot de passe incorrect.';
+    if(code.includes('auth/user-not-found')) return 'Compte introuvable. Crée-le dans Firebase Authentication.';
+    if(code.includes('auth/wrong-password')) return 'Mot de passe incorrect.';
+    if(code.includes('auth/email-already-in-use')) return 'Ce compte existe déjà. Clique Se connecter.';
+    if(code.includes('auth/operation-not-allowed')) return 'Active Email/Password dans Firebase Authentication.';
+    if(code.includes('auth/unauthorized-domain')) return 'Ajoute ton domaine GitHub Pages dans Firebase Authentication > Settings > Authorized domains.';
+    return e.message || 'Erreur de connexion.';
+  }
+  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('loginModal').classList.add('hidden')}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
+  $('signupBtn').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('authStatus').textContent='Compte créé. Ajoute ton UID dans admins pour devenir admin.';}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
   $('logoutBtn').onclick=()=>signOut(auth); $('clientLineSelect').onchange=()=>{renderLists();drawMap();};
   $('addLineBtn').onclick=addLine; $('addStopBtn').onclick=addStop; $('addVehicleBtn').onclick=addVehicle; $('seedBtn').onclick=seedDemo; $('clearDemoBtn').onclick=clearDemo;
   $('startTripBtn').onclick=startTrip; $('stopTripBtn').onclick=stopTrip; $('routeBtn').onclick=routeSearch;
