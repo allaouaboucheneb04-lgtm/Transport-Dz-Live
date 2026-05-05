@@ -46,3 +46,17 @@ html, body{width:100%;max-width:100%;overflow-x:hidden;}\n*{box-sizing:border-bo
 html, body{
   overflow-x:hidden !important;
 }
+
+
+/* Correctif bouton connexion */
+.is-connected{
+  background:#dcfce7 !important;
+  color:#166534 !important;
+  border-color:#bbf7d0 !important;
+}
+html,body{
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:hidden !important;
+}
+*{box-sizing:border-box;}

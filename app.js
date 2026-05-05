@@ -24,7 +24,7 @@ async function loadRole(){
     const adminSnap = await getDoc(doc(db,'admins',currentUser.uid));
     if(adminSnap.exists() && adminSnap.data().active !== false){
       currentRole = 'admin';
-      $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: admin`;
+      $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: admin`; setAuthUiState(currentUser);
       return;
     }
 
@@ -44,11 +44,11 @@ async function loadRole(){
       currentRole = 'driver';
     }
 
-    $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: ${currentRole}`;
+    $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle: ${currentRole}`; setAuthUiState(currentUser);
   }catch(e){
     console.error('Erreur rôle:', e);
     currentRole='driver';
-    $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle temporaire chauffeur`;
+    $('authStatus').textContent = `Connecté: ${currentUser.email} · rôle temporaire chauffeur`; setAuthUiState(currentUser);
   }
 }
 function setSync(text, ok){ const b=$('syncBadge'); b.textContent=text; b.className=ok?'badge':'badge warn'; }
@@ -85,7 +85,7 @@ function drawMap(){
   vehicles.forEach(v=>markers.push(L.marker([v.lat,v.lng],{icon:L.divIcon({className:'',html:`<div class="bus-marker">🚍 ${v.name}</div>`})}).addTo(map).bindPopup(`<b>${v.name}</b><br>${lineName(v.lineId)}<br>${v.driverName||''}`)));
   const all=[...stops.map(s=>[s.lat,s.lng]),...vehicles.map(v=>[v.lat,v.lng])]; if(all.length) map.fitBounds(all,{padding:[40,40],maxZoom:14});
 }
-function requireAdmin(){ if(!firebaseReady) return alert('Configure Firebase avant.'); if(currentRole!=='admin') return alert('Compte admin requis. Crée Firestore > admins > ton UID avec active=true'); return true; }
+function requireAdmin(){ if(!firebaseReady) return alert('Configure Firebase avant.'); if(!currentUser) return alert('Connecte-toi d’abord.'); if(currentRole!=='admin') return alert('Compte admin requis. Crée Firestore > admins > ton UID avec active=true'); return true; }
 async function addLine(){ if(!requireAdmin()) return; const name=$('lineName').value.trim(); if(!name) return alert('Nom ligne obligatoire.'); await addDoc(collection(db,'lines'),{name,type:$('lineType').value,color:$('lineColor').value,city:'bejaia',createdAt:serverTimestamp()}); $('lineName').value=''; }
 async function addStop(){ if(!requireAdmin()) return; const lineId=$('stopLineSelect').value,name=$('stopName').value.trim(),lat=parseFloat($('stopLat').value),lng=parseFloat($('stopLng').value); if(!lineId||!name||isNaN(lat)||isNaN(lng)) return alert('Remplis ligne, nom, latitude, longitude.'); await addDoc(collection(db,'stops'),{lineId,name,lat,lng,city:'bejaia',createdAt:serverTimestamp()}); ['stopName','stopLat','stopLng'].forEach(id=>$(id).value=''); }
 async function addVehicle(){ if(!requireAdmin()) return; const name=$('vehicleName').value.trim(), lineId=$('vehicleLineSelect').value; if(!name||!lineId) return alert('Remplis véhicule et ligne.'); await addDoc(collection(db,'vehicles'),{name,lineId,lat:BEJAIA_CENTER[0],lng:BEJAIA_CENTER[1],status:'offline',driverName:'',updatedAt:serverTimestamp(),city:'bejaia'}); $('vehicleName').value=''; }
@@ -106,7 +106,7 @@ function routeSearch(){ const from=$('fromInput').value.trim().toLowerCase(),to=
 function bind(){
   document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$('page-'+btn.dataset.page).classList.add('active');setTimeout(()=>map&&map.invalidateSize(),200);});
   document.querySelectorAll('.mini').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.mini').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.admin-pane').forEach(p=>p.classList.remove('active'));$('admin-'+btn.dataset.adminTab).classList.add('active');});
-  $('loginOpenBtn').onclick=()=>$('loginModal').classList.remove('hidden'); $('closeLoginBtn').onclick=()=>$('loginModal').classList.add('hidden'); alert('Connexion réussie ✅');
+  $('loginOpenBtn').onclick=()=>$('loginModal').classList.remove('hidden'); $('closeLoginBtn').onclick=()=>$('loginModal').classList.add('hidden'); setAuthUiState(auth.currentUser); alert('Connexion réussie ✅');
   function friendlyAuthError(e){
     const code = e && e.code ? e.code : '';
     if(code.includes('auth/invalid-credential')) return 'Email ou mot de passe incorrect.';
@@ -117,7 +117,7 @@ function bind(){
     if(code.includes('auth/unauthorized-domain')) return 'Ajoute ton domaine GitHub Pages dans Firebase Authentication > Settings > Authorized domains.';
     return e.message || 'Erreur de connexion.';
   }
-  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('loginModal').classList.add('hidden'); alert('Connexion réussie ✅')}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
+  $('loginBtn').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('loginModal').classList.add('hidden'); setAuthUiState(auth.currentUser); alert('Connexion réussie ✅')}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
   $('signupBtn').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('emailInput').value.trim(),$('passwordInput').value);$('authStatus').textContent='Compte créé. Ajoute ton UID dans admins pour devenir admin.';}catch(e){$('authStatus').textContent=friendlyAuthError(e)}};
   $('logoutBtn').onclick=()=>signOut(auth); $('clientLineSelect').onchange=()=>{renderLists();drawMap();};
   $('addLineBtn').onclick=addLine; $('addStopBtn').onclick=addStop; $('addVehicleBtn').onclick=addVehicle; $('seedBtn').onclick=seedDemo; $('clearDemoBtn').onclick=clearDemo;
@@ -145,3 +145,44 @@ function fixLoginModalButtons(){
 }
 setTimeout(fixLoginModalButtons, 300);
 document.addEventListener('click', ()=>setTimeout(fixLoginModalButtons, 50));
+
+
+// --- Correctif UI connexion/admin ---
+function setAuthUiState(user){
+  const topBtns = [
+    document.getElementById('openLogin'),
+    document.getElementById('loginBtnTop'),
+    document.getElementById('connectBtn'),
+    document.querySelector('[data-open-login]')
+  ].filter(Boolean);
+
+  topBtns.forEach(btn=>{
+    if(user){
+      btn.textContent = 'Connecté';
+      btn.classList.add('is-connected');
+    }else{
+      btn.textContent = 'Connexion';
+      btn.classList.remove('is-connected');
+    }
+  });
+
+  const status = document.getElementById('authStatus');
+  if(status){
+    status.textContent = user ? ('Connecté: ' + user.email + ' · rôle: ' + (currentRole || '...')) : 'Non connecté';
+  }
+}
+
+
+onAuthStateChanged(auth, async(user)=>{
+  currentUser = user || null;
+
+  if(user){
+    await loadRole();
+    setAuthUiState(user);
+  }else{
+    currentRole = 'guest';
+    setAuthUiState(null);
+  }
+
+  renderAll && renderAll();
+});
