@@ -139,3 +139,10 @@ html,body{
   font-weight:900 !important;
   box-shadow:0 10px 24px rgba(15,23,42,.22) !important;
 }
+
+
+/* Correctif visibilité arrêts */
+.leaflet-interactive.stop-fix-marker{
+  stroke:#2563eb;
+  fill:#2563eb;
+}

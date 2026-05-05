@@ -461,3 +461,50 @@ function installClientGpsButton(){
 
 setTimeout(installClientGpsButton, 800);
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(installClientGpsButton, 500));
+
+
+// ================================
+// Correctif affichage arrêts existants
+// ================================
+function normalizeStopForMap(stop){
+  const lat = Number(stop.lat ?? stop.latitude ?? stop.Latitude);
+  const lng = Number(stop.lng ?? stop.longitude ?? stop.Lng ?? stop.Longitude);
+  return {...stop, lat, lng};
+}
+
+function drawAllStopsOnMapFix(){
+  if(typeof map === 'undefined' || !map || !Array.isArray(stops)) return;
+
+  const existingStopLayerClass = 'stop-fix-marker';
+
+  // nettoyer anciens markers ajoutés par ce correctif
+  map.eachLayer(layer=>{
+    if(layer && layer.options && layer.options.className === existingStopLayerClass){
+      map.removeLayer(layer);
+    }
+  });
+
+  const selected = (document.getElementById('lineFilter')?.value || document.getElementById('clientLine')?.value || 'all');
+
+  const validStops = stops
+    .map(normalizeStopForMap)
+    .filter(s=>Number.isFinite(s.lat) && Number.isFinite(s.lng))
+    .filter(s=>!selected || selected==='all' || selected==='Toutes les lignes' || s.lineId===selected || s.line===selected || s.lineName===selected);
+
+  validStops.forEach(s=>{
+    L.circleMarker([s.lat, s.lng], {
+      radius: 7,
+      weight: 2,
+      fillOpacity: .9,
+      className: existingStopLayerClass
+    }).addTo(map).bindPopup(`🚏 ${s.name || 'Arrêt'}<br>${s.lineName || s.lineId || ''}`);
+  });
+
+  const result = document.getElementById('routeResult');
+  if(result && validStops.length){
+    result.textContent = `${validStops.length} arrêt(s) affiché(s).`;
+  }
+}
+
+setInterval(drawAllStopsOnMapFix, 2500);
+setTimeout(drawAllStopsOnMapFix, 1500);
