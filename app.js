@@ -29,11 +29,11 @@ function driverName(id){const d=drivers.find(x=>x.id===id||x.email===id||x.uid==
 
 function stopsForLine(lineId){
   if(!lineId || lineId==="all") return [];
-  return stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+  return activeStopsOnly().filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
 }
 function clientVisibleStops(){
   const selected = val("clientLineSelect") || "all";
-  if(selected === "all") return stops.filter(s => num(s.lat)!==null && num(s.lng)!==null);
+  if(selected === "all") return activeStopsOnly().filter(s => num(s.lat)!==null && num(s.lng)!==null);
   return stopsForLine(selected);
 }
 
@@ -299,6 +299,53 @@ function renderAdminStopsFilterOptions(){
   sel.value = Array.from(sel.options).some(o => o.value === old) ? old : "all";
 }
 
+
+function isLineActive(lineId){
+  const line = lines.find(l => l.id === lineId);
+  return !!line && line.active !== false;
+}
+function activeLinesOnly(){
+  return lines.filter(l => l.active !== false);
+}
+function activeStopsOnly(){
+  return stops.filter(s => s.active !== false && isLineActive(s.lineId));
+}
+async function setLineActive(lineId, active){
+  if(!requireAdmin()) return;
+  const line = lines.find(l => l.id === lineId);
+  if(!line) return alert("Ligne introuvable.");
+
+  const ok = confirm(active
+    ? "Réactiver cette ligne et ses arrêts ?"
+    : "Désactiver cette ligne et tous ses arrêts ? Elle ne sera plus visible côté client.");
+  if(!ok) return;
+
+  try{
+    await db.collection("lines").doc(lineId).set({
+      active: active,
+      updatedAt: now()
+    }, {merge:true});
+
+    const relatedStops = stops.filter(s => s.lineId === lineId);
+    let batch = db.batch();
+    let count = 0;
+    for(const s of relatedStops){
+      batch.set(db.collection("stops").doc(s.id), {active: active, updatedAt: now()}, {merge:true});
+      count++;
+      if(count % 400 === 0){
+        await batch.commit();
+        batch = db.batch();
+      }
+    }
+    await batch.commit();
+
+    alert((active ? "Ligne réactivée ✅ " : "Ligne désactivée ✅ ") + count + " arrêt(s) mis à jour.");
+  }catch(e){
+    console.error(e);
+    alert("Erreur activation ligne: " + (e.message || e));
+  }
+}
+
 function renderSelects(){renderBejaiaImportLineSelect();renderOsmLineSelect();renderAdminStopsFilterOptions();const city=val("clientCity")||"Bejaia";const vis=lines.filter(l=>!l.city||l.city===city);const old=val("clientLineSelect")||"all";$("clientLineSelect").innerHTML='<option value="all">Toutes les lignes</option>'+vis.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("clientLineSelect").value=[...$("clientLineSelect").options].some(o=>o.value===old)?old:"all";const lo=lines.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("stopLineSelect").innerHTML=lo;$("vehicleLineSelect").innerHTML=lo;const dro='<option value="">Aucun chauffeur</option>'+drivers.map(d=>`<option value="${d.id}">${d.name||d.email||d.id}</option>`).join("");$("vehicleDriverSelect").innerHTML=dro;$("driverVehicleSelect").innerHTML=vehicles.map(v=>`<option value="${v.id}">${v.name} · ${lineName(v.lineId)}</option>`).join("")}
 function selectedLineStopsForList(){ const sel=val("clientLineSelect")||"all"; return sel==="all" ? stops : stops.filter(s=>s.lineId===sel); }
 
@@ -387,7 +434,7 @@ function renderLists(){
 const sel=val("clientLineSelect")||"all";
 const visibleStops = selectedLineStopsForList();
 
-$("linesAdminList").innerHTML=lines.length?lines.map(l=>`<div class="item"><strong>${l.name}</strong><span class="muted">${l.city||""} · ${l.type||"bus"}</span><div class="actions"><button class="editBtn" data-edit-line="${l.id}" type="button">Modifier</button><button class="deleteBtn" data-del-line="${l.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucune ligne.</div>';
+$("linesAdminList").innerHTML=lines.length?lines.map(l=>`<div class="item"><strong>${l.name}</strong><span class="muted">${l.city||""} · ${l.type||"bus"}</span><div class="actions"><button class="editBtn" data-edit-line="${l.id}" type="button">Modifier</button><button class="${l.active===false?'activateBtn':'disableBtn'}" data-toggle-line="${l.id}" data-active="${l.active===false?'true':'false'}" type="button">${l.active===false?'Réactiver':'Désactiver'}</button><button class="${l.active===false?'activateBtn':'disableBtn'}" data-toggle-line="${l.id}" data-active="${l.active===false?'true':'false'}" type="button">${l.active===false?'Réactiver':'Désactiver'}</button><button class="deleteBtn" data-del-line="${l.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucune ligne.</div>';
 
 const adminStops=adminFilteredStops();if($("adminStopsCount"))$("adminStopsCount").textContent=adminStops.length+" arrêt(s) affiché(s)";$("stopsAdminList").innerHTML=adminStops.length?adminStops.map(s=>`<div class="item"><strong>${s.name}</strong><span class="muted">${lineName(s.lineId)} · ${s.lat}, ${s.lng}</span><div class="actions"><button class="editBtn" data-edit-stop="${s.id}" type="button">Modifier</button><button class="deleteBtn" data-del-stop="${s.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucun arrêt trouvé.</div>';
 
@@ -413,11 +460,11 @@ document.querySelectorAll("[data-del-driver]").forEach(b=>b.onclick=()=>requireA
 
 function stopsForLine(lineId){
   if(!lineId || lineId==="all") return [];
-  return stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+  return activeStopsOnly().filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
 }
 function clientVisibleStops(){
   const selected = val("clientLineSelect") || "all";
-  if(selected === "all") return stops.filter(s => num(s.lat)!==null && num(s.lng)!==null);
+  if(selected === "all") return activeStopsOnly().filter(s => num(s.lat)!==null && num(s.lng)!==null);
   return stopsForLine(selected);
 }
 function routeKey(lineId, routeStops){
@@ -468,7 +515,7 @@ map.eachLayer(layer=>{
 clearRouteLayers();
 
 const selected = val("clientLineSelect") || "all";
-const visible = clientVisibleStops();
+const visible = clientVisibleStops().filter(s=>s.active!==false && isLineActive(s.lineId));
 
 // Draw stops
 visible.forEach(s=>{
@@ -648,7 +695,7 @@ function findNearestStopForText(q){
   return found.length ? found[0] : null;
 }
 function findLineStops(lineId){
-  return stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+  return activeStopsOnly().filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
 }
 function findBestTransfer(fromStop, toStop){
   if(!fromStop || !toStop) return null;
@@ -1356,7 +1403,7 @@ function safeClearSearchLayers(){
 }
 function safeOrderedStops(lineId){
   if(typeof orderedStopsForLine==="function") return orderedStopsForLine(lineId);
-  return stops.filter(s=>s.lineId===lineId&&num(s.lat)!==null&&num(s.lng)!==null);
+  return activeStopsOnly().filter(s=>s.lineId===lineId&&num(s.lat)!==null&&num(s.lng)!==null);
 }
 function findClosestTransferBetweenLines(fromStop,toStop){
   if(!fromStop||!toStop||!fromStop.lineId||!toStop.lineId) return null;
@@ -1451,7 +1498,7 @@ function stopLabel(s){
   return s ? (s.name || s.id || "Arrêt") : "Arrêt";
 }
 function allValidStops(){
-  return stops.filter(s => s && s.id && s.lineId && num(s.lat)!==null && num(s.lng)!==null);
+  return activeStopsOnly().filter(s => s && s.id && s.lineId && num(s.lat)!==null && num(s.lng)!==null);
 }
 function routeLineStops(lineId){
   const arr = stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
@@ -1471,7 +1518,7 @@ function buildTransportGraph(){
   valid.forEach(s => { graph[uniqueStopKey(s)] = []; });
 
   // Bus edges along each line, forward and backward
-  lines.forEach(line => {
+  activeLinesOnly().forEach(line => {
     const ls = routeLineStops(line.id);
     for(let i=0;i<ls.length-1;i++){
       const a=ls[i], b=ls[i+1];
@@ -1653,8 +1700,8 @@ async function searchRouteMultiLines(){
     return;
   }
 
-  const fromCandidates = findStopsForRouteQuery(fromTxt).slice(0,8);
-  const toCandidates = findStopsForRouteQuery(toTxt).slice(0,8);
+  const fromCandidates = findStopsForRouteQuery(fromTxt).filter(s=>s.active!==false && isLineActive(s.lineId)).slice(0,8);
+  const toCandidates = findStopsForRouteQuery(toTxt).filter(s=>s.active!==false && isLineActive(s.lineId)).slice(0,8);
 
   if(!fromCandidates.length || !toCandidates.length){
     setText("routeResult",`Aucun arrêt trouvé. Départ: ${fromCandidates[0]?.name || "non"} · Destination: ${toCandidates[0]?.name || "non"}`);
