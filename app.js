@@ -1726,7 +1726,7 @@ async function searchRouteMultiLines(){
   }
 
   if(!best){
-    setText("routeResult",`Aucun trajet raisonnable trouvé. L’app refuse les longues marches. Essaie un autre arrêt proche.`);
+    setText("routeResult",`Aucun trajet trouvé avec les lignes actives actuelles. Essaie un autre arrêt ou réactive certaines lignes.`);
     return;
   }
 
