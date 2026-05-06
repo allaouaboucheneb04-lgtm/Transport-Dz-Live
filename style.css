@@ -25,3 +25,5 @@
 .dangerNote{margin-top:10px;padding:12px;border-radius:16px;background:#fff1f2;color:#be123c;font-weight:900;border:1px solid #fecdd3}
 
 .routeStep{padding:8px 10px;border-radius:12px;background:#f8fafc;margin-top:6px;font-weight:800}
+
+.smallBtn{width:auto;min-height:42px;border-radius:14px;margin:8px 0 10px;padding:8px 14px;font-weight:900}
