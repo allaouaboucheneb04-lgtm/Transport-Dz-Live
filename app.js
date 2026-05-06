@@ -222,10 +222,87 @@ function initStopPicker(){if(stopPickerMap)return;stopPickerMap=L.map("stopPicke
 function setPicked(lat,lng){pickedLat=lat;pickedLng=lng;if(stopPickerMarker)stopPickerMarker.setLatLng([lat,lng]);else{stopPickerMarker=L.marker([lat,lng],{draggable:true}).addTo(stopPickerMap);stopPickerMarker.on("dragend",()=>{const p=stopPickerMarker.getLatLng();setPicked(p.lat,p.lng)})}setText("pickedCoords",`Latitude: ${lat.toFixed(6)} · Longitude: ${lng.toFixed(6)}`)}
 function openStopPicker(){$("stopPickerModal").classList.remove("hidden");setTimeout(()=>{initStopPicker();const lat=num(val("stopLat"))||36.7525,lng=num(val("stopLng"))||5.0843;stopPickerMap.invalidateSize();stopPickerMap.setView([lat,lng],14);setPicked(lat,lng)},180)}
 
+
+function normalizeText(txt){
+  return (txt || "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+function findStopsByText(q){
+  const n = normalizeText(q);
+  if(!n) return [];
+  return stops.filter(s => {
+    const text = normalizeText(`${s.name || ""} ${lineName(s.lineId) || ""}`);
+    return text.includes(n) || n.includes(normalizeText(s.name || ""));
+  });
+}
+function findLineByText(q){
+  const n = normalizeText(q);
+  if(!n) return null;
+  return lines.find(l => normalizeText(l.name || "").includes(n) || n.includes(normalizeText(l.name || ""))) || null;
+}
+function fitLineOnMap(lineId){
+  const routeStops = typeof stopsForLine === "function" ? stopsForLine(lineId) : stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+  if(map && routeStops.length){
+    const bounds = L.latLngBounds(routeStops.map(s => [num(s.lat), num(s.lng)]));
+    map.fitBounds(bounds, {padding:[35,35]});
+  }
+}
+function searchRouteSmart(){
+  const from = val("fromInput").trim();
+  const to = val("toInput").trim();
+  const selected = val("clientLineSelect") || "all";
+
+  if(!from && !to){
+    setText("routeResult","Écris un départ ou une destination.");
+    return;
+  }
+
+  let fromStops = findStopsByText(from);
+  let toStops = findStopsByText(to);
+
+  if(selected !== "all"){
+    fromStops = fromStops.filter(s => s.lineId === selected);
+    toStops = toStops.filter(s => s.lineId === selected);
+  }
+
+  const fromLine = findLineByText(from);
+  const toLine = findLineByText(to);
+
+  let foundLineId = null;
+
+  if(fromStops.length && toStops.length){
+    const fromIds = new Set(fromStops.map(s => s.lineId));
+    const common = toStops.find(s => fromIds.has(s.lineId));
+    if(common) foundLineId = common.lineId;
+  }
+
+  if(!foundLineId && fromLine) foundLineId = fromLine.id;
+  if(!foundLineId && toLine) foundLineId = toLine.id;
+  if(!foundLineId && fromStops.length) foundLineId = fromStops[0].lineId;
+  if(!foundLineId && toStops.length) foundLineId = toStops[0].lineId;
+
+  if(foundLineId){
+    const line = lines.find(l => l.id === foundLineId);
+    if($("clientLineSelect")) $("clientLineSelect").value = foundLineId;
+    renderAll();
+    setTimeout(() => fitLineOnMap(foundLineId), 600);
+    const lineStops = stops.filter(s => s.lineId === foundLineId);
+    setText("routeResult", `✅ Ligne trouvée: ${line ? line.name : foundLineId} · ${lineStops.length} arrêt(s).`);
+    return;
+  }
+
+  setText("routeResult","Aucun trajet trouvé. Vérifie que les arrêts ont le bon lineId et que le nom existe.");
+}
+
 function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
-$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;$("searchRouteBtn").onclick=()=>{const q=(val("fromInput")+" "+val("toInput")).toLowerCase();const found=stops.filter(s=>(s.name||"").toLowerCase().includes(q));setText("routeResult",found.length?found.length+" arrêt(s) trouvé(s).":"Aucun trajet automatique pour le moment.")};$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
+$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;$("searchRouteBtn").onclick=searchRouteSmart;$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
