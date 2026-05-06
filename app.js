@@ -1,6 +1,6 @@
 (function(){
 const $=id=>document.getElementById(id);
-let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let routeLayers=[];let routeSearchLayers=[];
+let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],walkingTracks=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let walkingTrackWatchId=null,walkingTrackPoints=[],walkingTrackStart=0;let routeLayers=[];let routeSearchLayers=[];
 const LINE_TOLERANCE_METERS=500;
 const GPS_STALE_MS=120000;
 
@@ -205,7 +205,7 @@ visibleVehiclesForClients().forEach(v=>{
 
 if(clientMarker) clientMarker.addTo(map);
 }
-function renderAll(){renderSelects();renderLists();drawMap().catch(console.error)}
+function renderAll(){renderSelects();fillWalkingStopSelects();renderLists();renderWalkingTracksAdmin();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
@@ -305,6 +305,12 @@ function clearSearchRouteLayers(){
   routeSearchLayers = [];
 }
 async function getOsrmFootRoute(a,b){
+  const learned = approvedWalkingLinkFor(a.stop || {}, b.stop || {});
+  if(learned){
+    const learnedRoute = await routeFromApprovedWalkingTrack(learned);
+    if(learnedRoute) return learnedRoute;
+  }
+
   if(!a || !b) return {latlngs:[], distance:0, duration:0};
   const key = `walk:${a.lat},${a.lng}:${b.lat},${b.lng}`;
   if(routeCache[key]) return routeCache[key];
@@ -526,10 +532,133 @@ async function searchRouteGoogleLike(){
   }
 }
 
+
+function fillWalkingStopSelects(){
+  const from = $("walkFromStopSelect");
+  const to = $("walkToStopSelect");
+  if(!from || !to) return;
+  const options = stops.map(s => `<option value="${s.id}">${s.name || s.id} · ${lineName(s.lineId)}</option>`).join("");
+  const oldFrom = from.value;
+  const oldTo = to.value;
+  from.innerHTML = options;
+  to.innerHTML = options;
+  if([...from.options].some(o=>o.value===oldFrom)) from.value=oldFrom;
+  if([...to.options].some(o=>o.value===oldTo)) to.value=oldTo;
+}
+function approvedWalkingLinkFor(a,b){
+  return walkingTracks.find(t => t.approved === true && (
+    (t.fromStopId === a.id && t.toStopId === b.id) ||
+    (t.fromStopId === b.id && t.toStopId === a.id)
+  ));
+}
+async function routeFromApprovedWalkingTrack(track){
+  if(track && Array.isArray(track.points) && track.points.length >= 2){
+    return {
+      latlngs: track.points.map(p => [Number(p.lat), Number(p.lng)]),
+      distance: track.distanceMeters || 0,
+      duration: track.durationSeconds || 0,
+      learned: true,
+      name: track.name || "Raccourci appris"
+    };
+  }
+  return null;
+}
+function walkingTrackDistance(points){
+  let total=0;
+  for(let i=1;i<points.length;i++){
+    total += distanceMeters(points[i-1].lat, points[i-1].lng, points[i].lat, points[i].lng);
+  }
+  return total;
+}
+function startWalkingTrack(){
+  const fromId = val("walkFromStopSelect");
+  const toId = val("walkToStopSelect");
+  if(!fromId || !toId || fromId === toId) return alert("Choisis deux arrêts différents.");
+  if(!navigator.geolocation) return alert("GPS non disponible.");
+
+  walkingTrackPoints=[];
+  walkingTrackStart=Date.now();
+  if(walkingTrackWatchId) navigator.geolocation.clearWatch(walkingTrackWatchId);
+
+  setText("walkingTrackStatus","Enregistrement du chemin à pied...");
+  walkingTrackWatchId = navigator.geolocation.watchPosition(pos => {
+    const p = {
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      accuracy: pos.coords.accuracy || null,
+      t: Date.now()
+    };
+    const last = walkingTrackPoints[walkingTrackPoints.length-1];
+    if(!last || distanceMeters(last.lat,last.lng,p.lat,p.lng) > 5){
+      walkingTrackPoints.push(p);
+      setText("walkingTrackStatus",`Enregistrement... ${walkingTrackPoints.length} points GPS`);
+    }
+  }, err => {
+    alert("GPS impossible pour l’enregistrement.");
+    setText("walkingTrackStatus","GPS impossible.");
+  }, {enableHighAccuracy:true, timeout:20000, maximumAge:2000});
+}
+async function stopWalkingTrack(){
+  if(walkingTrackWatchId) navigator.geolocation.clearWatch(walkingTrackWatchId);
+  walkingTrackWatchId=null;
+
+  const fromId = val("walkFromStopSelect");
+  const toId = val("walkToStopSelect");
+  if(!fromId || !toId || fromId === toId) return alert("Choisis deux arrêts différents.");
+  if(walkingTrackPoints.length < 2) return alert("Pas assez de points GPS enregistrés.");
+
+  const fromStop = stops.find(s=>s.id===fromId);
+  const toStop = stops.find(s=>s.id===toId);
+  const durationSeconds = Math.round((Date.now()-walkingTrackStart)/1000);
+  const distanceMetersValue = Math.round(walkingTrackDistance(walkingTrackPoints));
+
+  try{
+    await db.collection("walkingTracks").add({
+      fromStopId: fromId,
+      toStopId: toId,
+      fromStopName: fromStop ? fromStop.name : "",
+      toStopName: toStop ? toStop.name : "",
+      distanceMeters: distanceMetersValue,
+      durationSeconds,
+      points: walkingTrackPoints.map(p=>({lat:p.lat,lng:p.lng,t:p.t,accuracy:p.accuracy})),
+      approved:false,
+      active:true,
+      createdAt:now()
+    });
+    setText("walkingTrackStatus",`Envoyé ✅ ${distanceMetersValue} m · ${formatMin(durationSeconds)}. En attente validation admin.`);
+    walkingTrackPoints=[];
+  }catch(e){
+    alert("Erreur envoi chemin: "+(e.message||e));
+  }
+}
+function renderWalkingTracksAdmin(){
+  const box=$("walkingTracksAdminList");
+  if(!box) return;
+  box.innerHTML = walkingTracks.length ? walkingTracks.map(t => `
+    <div class="item">
+      <strong>🚶 ${t.fromStopName || t.fromStopId} → ${t.toStopName || t.toStopId}</strong>
+      <span class="muted">${formatKm(t.distanceMeters || 0)} · ${formatMin(t.durationSeconds || 0)} · ${t.approved ? "validé ✅" : "à valider ⏳"}</span>
+      <div class="actions">
+        <button class="editBtn" data-approve-walk="${t.id}" type="button">Valider</button>
+        <button class="deleteBtn" data-delete-walk="${t.id}" type="button">Supprimer</button>
+      </div>
+    </div>
+  `).join("") : '<div class="muted">Aucun chemin proposé.</div>';
+
+  document.querySelectorAll("[data-approve-walk]").forEach(b=>b.onclick=async()=> {
+    if(!requireAdmin()) return;
+    await db.collection("walkingTracks").doc(b.dataset.approveWalk).set({approved:true,active:true,approvedAt:now()},{merge:true});
+  });
+  document.querySelectorAll("[data-delete-walk]").forEach(b=>b.onclick=async()=> {
+    if(!requireAdmin()) return;
+    await db.collection("walkingTracks").doc(b.dataset.deleteWalk).delete();
+  });
+}
+
 function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
-$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;$("searchRouteBtn").onclick=()=>searchRouteGoogleLike().catch(e=>{console.error(e);setText("routeResult","Erreur calcul trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
+$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteGoogleLike().catch(e=>{console.error(e);setText("routeResult","Erreur calcul trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();

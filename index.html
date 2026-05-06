@@ -74,7 +74,7 @@
     <button class="tab active" type="button" data-panel="panelLines">Lignes</button>
     <button class="tab" type="button" data-panel="panelStops">Arrêts</button>
     <button class="tab" type="button" data-panel="panelVehicles">Véhicules</button>
-    <button class="tab" type="button" data-panel="panelDrivers">Chauffeurs</button>
+    <button class="tab" type="button" data-panel="panelDrivers">Chauffeurs</button><button class="tab" type="button" data-panel="panelWalking">Marche</button>
   </div>
 
   <div id="panelLines" class="adminPanel active">
@@ -132,6 +132,15 @@
     </div>
     <div class="card"><h3>Chauffeurs enregistrés</h3><div id="driversAdminList" class="list"></div></div>
   </div>
+
+  <div id="panelWalking" class="adminPanel">
+    <div class="card">
+      <h3>Chemins à pied proposés</h3>
+      <p>Valide les raccourcis utilisés par les clients. Une fois validés, l’app les utilise automatiquement.</p>
+      <div id="walkingTracksAdminList" class="list"></div>
+    </div>
+  </div>
+
 </section>
 </main>
 
@@ -160,6 +169,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=fast-transfer-real-1"></script>
+<script src="app.js?v=walking-learning-1"></script>
 </body>
 </html>
