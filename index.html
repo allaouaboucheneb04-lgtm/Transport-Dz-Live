@@ -26,7 +26,7 @@
     <label>Départ</label><input id="fromInput" placeholder="Ex: Gare routière">
     <label>Destination</label><input id="toInput" placeholder="Ex: Université">
     <button id="searchRouteBtn" class="primary" type="button">Chercher trajet</button>
-    <div id="routeResult" class="result">Prêt. Écris un arrêt ou une ligne, exemple: Tidjounane → Takarietz. Les trajets suivent les routes via OSRM/OpenStreetMap.</div>
+    <div id="routeResult" class="result">Prêt. Écris un arrêt de départ et un arrêt de destination. L’app calcule bus + marche. Écris un arrêt de départ et un arrêt de destination. L’app calcule bus + marche. Les trajets suivent les routes via OSRM/OpenStreetMap.</div>
   </div>
   <div class="mapWrap"><div id="map"></div></div>
   <div class="card"><h3>Arrêts</h3><div id="stopsList" class="list"></div></div>
@@ -160,6 +160,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=search-route-fix-1"></script>
+<script src="app.js?v=google-like-route-1"></script>
 </body>
 </html>

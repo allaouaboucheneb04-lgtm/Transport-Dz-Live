@@ -1,6 +1,6 @@
 (function(){
 const $=id=>document.getElementById(id);
-let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let routeLayers=[];
+let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let routeLayers=[];let routeSearchLayers=[];
 const LINE_TOLERANCE_METERS=500;
 const GPS_STALE_MS=120000;
 
@@ -299,10 +299,184 @@ function searchRouteSmart(){
   setText("routeResult","Aucun trajet trouvé. Vérifie que les arrêts ont le bon lineId et que le nom existe.");
 }
 
+
+function clearSearchRouteLayers(){
+  routeSearchLayers.forEach(layer => { try{ map.removeLayer(layer); }catch(e){} });
+  routeSearchLayers = [];
+}
+async function getOsrmFootRoute(a,b){
+  if(!a || !b) return [];
+  const key = `foot:${a.lat},${a.lng}:${b.lat},${b.lng}`;
+  if(routeCache[key]) return routeCache[key];
+
+  // OSRM public server does not always support walking profile; use driving as fallback road-following route.
+  const url = `https://router.project-osrm.org/route/v1/foot/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
+  const urlFallback = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
+
+  async function fetchRoute(u){
+    const res = await fetch(u);
+    const data = await res.json();
+    if(data.code === "Ok" && data.routes && data.routes[0]){
+      return {
+        latlngs: data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]),
+        distance: data.routes[0].distance || 0,
+        duration: data.routes[0].duration || 0
+      };
+    }
+    return null;
+  }
+
+  try{
+    let route = await fetchRoute(url);
+    if(!route) route = await fetchRoute(urlFallback);
+    if(route){ routeCache[key] = route; return route; }
+  }catch(e){
+    console.warn("Walking OSRM failed", e);
+  }
+
+  const dist = distanceMeters(a.lat,a.lng,b.lat,b.lng);
+  const fallback = {latlngs:[[a.lat,a.lng],[b.lat,b.lng]], distance:dist, duration:dist/1.2};
+  routeCache[key] = fallback;
+  return fallback;
+}
+function stopPoint(s){ return {lat:num(s.lat), lng:num(s.lng), stop:s}; }
+function formatKm(m){ return m >= 1000 ? (m/1000).toFixed(1)+" km" : Math.round(m)+" m"; }
+function formatMin(sec){ return Math.max(1, Math.round(sec/60))+" min"; }
+function findNearestStopForText(q){
+  const found = findStopsByText(q);
+  return found.length ? found[0] : null;
+}
+function findLineStops(lineId){
+  return stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+}
+function findBestTransfer(fromStop, toStop){
+  if(!fromStop || !toStop) return null;
+  if(fromStop.lineId === toStop.lineId){
+    return {type:"direct", lineId:fromStop.lineId, fromStop, toStop};
+  }
+
+  const fromLineStops = findLineStops(fromStop.lineId);
+  const toLineStops = findLineStops(toStop.lineId);
+  let best = null;
+
+  for(const a of fromLineStops){
+    for(const b of toLineStops){
+      const d = distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
+      if(!best || d < best.walkDistance){
+        best = {type:"transfer", fromLineId:fromStop.lineId, toLineId:toStop.lineId, fromStop, toStop, transferFrom:a, transferTo:b, walkDistance:d};
+      }
+    }
+  }
+  return best;
+}
+async function drawGoogleLikeRoute(plan){
+  if(!map || !plan) return;
+  clearSearchRouteLayers();
+
+  const boundsPoints = [];
+
+  function addStopMarker(s,label){
+    if(!s || num(s.lat)===null || num(s.lng)===null) return;
+    const m = L.marker([num(s.lat),num(s.lng)]).addTo(map).bindPopup(label);
+    routeSearchLayers.push(m);
+    boundsPoints.push([num(s.lat),num(s.lng)]);
+  }
+
+  if(plan.type === "direct"){
+    const line = lines.find(l=>l.id===plan.lineId);
+    const routeStops = findLineStops(plan.lineId);
+    if(line && routeStops.length > 1){
+      const latlngs = await getOsrmRoute(plan.lineId, routeStops);
+      const busLayer = L.polyline(latlngs,{color:line.color||"#2563eb",weight:7,opacity:.85}).addTo(map);
+      routeSearchLayers.push(busLayer);
+      latlngs.forEach(p=>boundsPoints.push(p));
+    }
+    addStopMarker(plan.fromStop,"Départ: "+plan.fromStop.name);
+    addStopMarker(plan.toStop,"Destination: "+plan.toStop.name);
+  }
+
+  if(plan.type === "transfer"){
+    const line1 = lines.find(l=>l.id===plan.fromLineId);
+    const line2 = lines.find(l=>l.id===plan.toLineId);
+
+    const route1 = findLineStops(plan.fromLineId);
+    const route2 = findLineStops(plan.toLineId);
+
+    if(line1 && route1.length > 1){
+      const latlngs1 = await getOsrmRoute(plan.fromLineId, route1);
+      const layer1 = L.polyline(latlngs1,{color:line1.color||"#2563eb",weight:6,opacity:.75}).addTo(map);
+      routeSearchLayers.push(layer1);
+      latlngs1.forEach(p=>boundsPoints.push(p));
+    }
+    if(line2 && route2.length > 1){
+      const latlngs2 = await getOsrmRoute(plan.toLineId, route2);
+      const layer2 = L.polyline(latlngs2,{color:line2.color||"#16a34a",weight:6,opacity:.75}).addTo(map);
+      routeSearchLayers.push(layer2);
+      latlngs2.forEach(p=>boundsPoints.push(p));
+    }
+
+    const walk = await getOsrmFootRoute(stopPoint(plan.transferFrom), stopPoint(plan.transferTo));
+    if(walk && walk.latlngs){
+      const walkLayer = L.polyline(walk.latlngs,{color:"#111827",weight:5,opacity:.85,dashArray:"8,10"}).addTo(map);
+      routeSearchLayers.push(walkLayer);
+      walk.latlngs.forEach(p=>boundsPoints.push(p));
+    }
+
+    addStopMarker(plan.fromStop,"Départ: "+plan.fromStop.name);
+    addStopMarker(plan.transferFrom,"Descendre ici: "+plan.transferFrom.name);
+    addStopMarker(plan.transferTo,"Marcher jusqu’ici: "+plan.transferTo.name);
+    addStopMarker(plan.toStop,"Destination: "+plan.toStop.name);
+  }
+
+  if(boundsPoints.length){
+    map.fitBounds(L.latLngBounds(boundsPoints),{padding:[40,40]});
+  }
+}
+async function searchRouteGoogleLike(){
+  const fromTxt = val("fromInput").trim();
+  const toTxt = val("toInput").trim();
+
+  if(!fromTxt || !toTxt){
+    setText("routeResult","Écris le départ ET la destination.");
+    return;
+  }
+
+  const fromStop = findNearestStopForText(fromTxt);
+  const toStop = findNearestStopForText(toTxt);
+
+  if(!fromStop || !toStop){
+    setText("routeResult","Aucun arrêt trouvé. Vérifie le nom du départ et de la destination.");
+    return;
+  }
+
+  const plan = findBestTransfer(fromStop,toStop);
+  if(!plan){
+    setText("routeResult","Impossible de calculer un trajet.");
+    return;
+  }
+
+  if(plan.type === "direct"){
+    const line = lines.find(l=>l.id===plan.lineId);
+    if($("clientLineSelect")) $("clientLineSelect").value = plan.lineId;
+    renderAll();
+    await drawGoogleLikeRoute(plan);
+    setText("routeResult",`✅ Trajet direct: ${line ? line.name : plan.lineId} · ${fromStop.name} → ${toStop.name}`);
+    return;
+  }
+
+  if(plan.type === "transfer"){
+    const l1 = lines.find(l=>l.id===plan.fromLineId);
+    const l2 = lines.find(l=>l.id===plan.toLineId);
+    await drawGoogleLikeRoute(plan);
+    const walk = await getOsrmFootRoute(stopPoint(plan.transferFrom), stopPoint(plan.transferTo));
+    setText("routeResult",`✅ Trajet avec correspondance: ${l1?l1.name:plan.fromLineId} → marche ${formatKm(walk.distance)} (${formatMin(walk.duration)}) → ${l2?l2.name:plan.toLineId}`);
+  }
+}
+
 function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
-$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;$("searchRouteBtn").onclick=searchRouteSmart;$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
+$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;$("searchRouteBtn").onclick=()=>searchRouteGoogleLike().catch(e=>{console.error(e);setText("routeResult","Erreur calcul trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
