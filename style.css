@@ -55,3 +55,9 @@
 
 .waitingBusItem{border-left:6px solid #64748b}
 .waitingCount{display:inline-flex;margin-top:8px;padding:8px 12px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:950}
+
+.busEmojiMarker{background:transparent!important;border:0!important}
+.busEmojiBubble{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#ffffff;border:3px solid #2563eb;box-shadow:0 8px 22px rgba(15,23,42,.28);font-size:24px}
+.hiddenBus .busEmojiBubble{opacity:.35;filter:grayscale(1)}
+.activeBus .busEmojiBubble{animation:busPulse 1.6s infinite}
+@keyframes busPulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
