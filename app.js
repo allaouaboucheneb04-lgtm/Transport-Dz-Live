@@ -636,6 +636,17 @@ function clearRouteLayers(){
   routeLayers = [];
 }
 
+
+function getBusIcon(){
+  return L.divIcon({
+    className: "busEmojiIcon",
+    html: '<div class="busEmojiPin">🚌</div>',
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -22]
+  });
+}
+
 async function drawMap(){
 if(!map)return;
 if(routeFocusActive) return;
@@ -671,7 +682,7 @@ if(selected !== "all"){
 
 visibleVehiclesForClients().forEach(v=>{
   if(num(v.lat)===null||num(v.lng)===null) return;
-  L.marker([num(v.lat),num(v.lng)])
+  L.marker([num(v.lat),num(v.lng)], {icon:getBusIcon()})
     .addTo(map)
     .bindPopup(`🚌 ${v.name}<br>${lineName(v.lineId)}<br>En ligne`);
 });
