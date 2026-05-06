@@ -18,9 +18,9 @@ function requireAdmin(){if(!currentUser){alert("Connecte-toi d’abord.");return
 async function addDoc(collection,data,statusId){try{const ref=await db.collection(collection).add(data);setText(statusId,"Sauvegardé dans Firebase ✅");return ref}catch(e){console.error(e);const m="Erreur Firebase: "+(e.code||"")+" "+(e.message||e);setText(statusId,m);alert(m);return null}}
 async function updateDoc(collection,id,data,statusId){try{await db.collection(collection).doc(id).set({...data,updatedAt:now()},{merge:true});setText(statusId,"Mis à jour dans Firebase ✅");return true}catch(e){console.error(e);const m="Erreur modification Firebase: "+(e.code||"")+" "+(e.message||e);setText(statusId,m);alert(m);return false}}
 function openAdminPanel(panelId){document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));const panel=$(panelId);if(panel)panel.classList.add("active");const tab=document.querySelector(`[data-panel="${panelId}"]`);if(tab)tab.classList.add("active");document.querySelector('[data-page="adminPage"]')?.click();}
-function resetEdit(type){if(type==="line"){editingLineId=null;$("addLineBtn").textContent="Ajouter ligne";$("lineName").value="";}if(type==="stop"){editingStopId=null;$("addStopBtn").textContent="Ajouter arrêt";$("stopName").value="";$("stopLat").value="";$("stopLng").value="";if($("stopOrder"))$("stopOrder").value="";}if(type==="vehicle"){editingVehicleId=null;$("addVehicleBtn").textContent="Ajouter véhicule";$("vehicleName").value="";}if(type==="driver"){editingDriverId=null;$("addDriverBtn").textContent="Ajouter chauffeur";$("driverNameAdmin").value="";$("driverPhoneAdmin").value="";$("driverEmailAdmin").value="";}}
+function resetEdit(type){if(type==="line"){editingLineId=null;$("addLineBtn").textContent="Ajouter ligne";$("lineName").value="";}if(type==="stop"){editingStopId=null;$("addStopBtn").textContent="Ajouter arrêt";$("stopName").value="";$("stopLat").value="";$("stopLng").value="";if($("stopOrder"))$("stopOrder").value="";if($("stopDirection"))$("stopDirection").value="both";}if(type==="vehicle"){editingVehicleId=null;$("addVehicleBtn").textContent="Ajouter véhicule";$("vehicleName").value="";}if(type==="driver"){editingDriverId=null;$("addDriverBtn").textContent="Ajouter chauffeur";$("driverNameAdmin").value="";$("driverPhoneAdmin").value="";$("driverEmailAdmin").value="";}}
 function editLine(id){const l=lines.find(x=>x.id===id);if(!l)return;editingLineId=id;openAdminPanel("panelLines");$("lineCity").value=l.city||"Bejaia";$("lineName").value=l.name||"";$("lineType").value=l.type||"bus";$("lineColor").value=l.color||"#2563eb";$("addLineBtn").textContent="Mettre à jour ligne";window.scrollTo({top:0,behavior:"smooth"});}
-function editStop(id){const s=stops.find(x=>x.id===id);if(!s)return;editingStopId=id;openAdminPanel("panelStops");$("stopLineSelect").value=s.lineId||"";$("stopName").value=s.name||"";$("stopLat").value=s.lat??"";$("stopLng").value=s.lng??"";if($("stopOrder"))$("stopOrder").value=s.order??"";$("addStopBtn").textContent="Mettre à jour arrêt";window.scrollTo({top:0,behavior:"smooth"});}
+function editStop(id){const s=stops.find(x=>x.id===id);if(!s)return;editingStopId=id;openAdminPanel("panelStops");$("stopLineSelect").value=s.lineId||"";$("stopName").value=s.name||"";$("stopLat").value=s.lat??"";$("stopLng").value=s.lng??"";if($("stopOrder"))$("stopOrder").value=s.order??"";if($("stopDirection"))$("stopDirection").value=s.direction||"both";$("addStopBtn").textContent="Mettre à jour arrêt";window.scrollTo({top:0,behavior:"smooth"});}
 function editVehicle(id){const v=vehicles.find(x=>x.id===id);if(!v)return;editingVehicleId=id;openAdminPanel("panelVehicles");$("vehicleName").value=v.name||"";$("vehicleLineSelect").value=v.lineId||"";$("vehicleDriverSelect").value=v.driverId||"";$("addVehicleBtn").textContent="Mettre à jour véhicule";window.scrollTo({top:0,behavior:"smooth"});}
 function editDriver(id){const d=drivers.find(x=>x.id===id);if(!d)return;editingDriverId=id;openAdminPanel("panelDrivers");$("driverNameAdmin").value=d.name||"";$("driverPhoneAdmin").value=d.phone||"";$("driverEmailAdmin").value=d.email||d.uid||"";$("addDriverBtn").textContent="Mettre à jour chauffeur";window.scrollTo({top:0,behavior:"smooth"});}
 function lineName(id){const l=lines.find(x=>x.id===id);return l?(l.name||l.id):""}
@@ -122,7 +122,7 @@ async function importOsmStopsToFirebase(){
     for(const s of arr){
       await db.collection("stops").add({
         name:s.name,lineId,lineName:line?line.name:"",city:line?(line.city||"Algerie"):"Algerie",
-        lat:s.lat,lng:s.lng,order:count+1,active:true,source:"openstreetmap_geojson",osmId:s.osmId,
+        lat:s.lat,lng:s.lng,order:count+1,direction:"both",active:true,source:"openstreetmap_geojson",osmId:s.osmId,
         createdAt:now(),updatedAt:now()
       });
       count++;
@@ -300,6 +300,43 @@ function renderAdminStopsFilterOptions(){
 }
 
 
+
+function stopDirection(s){
+  return (s && s.direction) ? s.direction : "both";
+}
+function directionLabel(d){
+  if(d === "aller") return "Aller";
+  if(d === "retour") return "Retour";
+  return "Aller + Retour";
+}
+function stopAllowedForDirection(stop, direction){
+  const d = stopDirection(stop);
+  return d === "both" || d === direction;
+}
+function lineStopsByDirection(lineId, direction){
+  const base = activeStopsOnly().filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null && stopAllowedForDirection(s, direction));
+  return base.sort((a,b)=>{
+    const oa = Number(a.order || 9999);
+    const ob = Number(b.order || 9999);
+    if(oa !== ob) return direction === "retour" ? ob - oa : oa - ob;
+    return (a.name || "").localeCompare(b.name || "");
+  });
+}
+function bestDirectionForStops(fromStop, toStop){
+  if(!fromStop || !toStop || fromStop.lineId !== toStop.lineId) return null;
+  const dirs = ["aller","retour"];
+  for(const dir of dirs){
+    const arr = lineStopsByDirection(fromStop.lineId, dir);
+    const fi = arr.findIndex(s => s.id === fromStop.id);
+    const ti = arr.findIndex(s => s.id === toStop.id);
+    if(fi >= 0 && ti >= 0 && fi <= ti) return dir;
+  }
+  return null;
+}
+function vehicleDirection(v){
+  return (v && v.direction) ? v.direction : "aller";
+}
+
 function isLineActive(lineId){
   const line = lines.find(l => l.id === lineId);
   return !!line && line.active !== false;
@@ -378,7 +415,7 @@ function etaMinutesForVehicleToStop(vehicle, stop){
   return Math.max(1, min);
 }
 function nextStopForVehicle(vehicle){
-  const lineStops = orderedStopsForLine(vehicle.lineId);
+  const lineStops = lineStopsByDirection(vehicle.lineId, vehicleDirection(vehicle));
   if(!lineStops.length) return null;
 
   let best = null;
@@ -436,13 +473,13 @@ const visibleStops = selectedLineStopsForList();
 
 $("linesAdminList").innerHTML=lines.length?lines.map(l=>`<div class="item"><strong>${l.name}</strong><span class="muted">${l.city||""} · ${l.type||"bus"}</span><div class="actions"><button class="editBtn" data-edit-line="${l.id}" type="button">Modifier</button><button class="${l.active===false?`activateBtn`:`disableBtn`}" data-toggle-line="${l.id}" data-active="${l.active===false?`true`:`false`}" type="button">${l.active===false?`Réactiver`:`Désactiver`}</button><button class="deleteBtn" data-del-line="${l.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucune ligne.</div>';
 
-const adminStops=adminFilteredStops();if($("adminStopsCount"))$("adminStopsCount").textContent=adminStops.length+" arrêt(s) affiché(s)";$("stopsAdminList").innerHTML=adminStops.length?adminStops.map(s=>`<div class="item"><strong>${s.name}</strong><span class="muted">${lineName(s.lineId)} · ${s.lat}, ${s.lng}</span><div class="actions"><button class="editBtn" data-edit-stop="${s.id}" type="button">Modifier</button><button class="deleteBtn" data-del-stop="${s.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucun arrêt trouvé.</div>';
+const adminStops=adminFilteredStops();if($("adminStopsCount"))$("adminStopsCount").textContent=adminStops.length+" arrêt(s) affiché(s)";$("stopsAdminList").innerHTML=adminStops.length?adminStops.map(s=>`<div class="item"><strong>${s.name}</strong><span class="muted">${lineName(s.lineId)} · ${directionLabel(s.direction||"both")} · ${s.lat}, ${s.lng}</span><div class="actions"><button class="editBtn" data-edit-stop="${s.id}" type="button">Modifier</button><button class="deleteBtn" data-del-stop="${s.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucun arrêt trouvé.</div>';
 
 $("vehiclesAdminList").innerHTML=vehicles.length?vehicles.map(v=>{const c=computeVisibility(v);return `<div class="item"><strong>${v.name}</strong><span class="muted">${lineName(v.lineId)} · ${driverName(v.driverId)} · ${v.status||"offline"} · ${c.visible?"visible client":"caché client"}</span><div class="actions"><button class="editBtn" data-edit-vehicle="${v.id}" type="button">Modifier</button><button class="deleteBtn" data-del-vehicle="${v.id}" type="button">Supprimer</button></div></div>`}).join(""):'<div class="muted">Aucun véhicule.</div>';
 
 $("driversAdminList").innerHTML=drivers.length?drivers.map(d=>`<div class="item"><strong>${d.name}</strong><span class="muted">${d.phone||""} · ${d.email||""}</span><div class="actions"><button class="editBtn" data-edit-driver="${d.id}" type="button">Modifier</button><button class="deleteBtn" data-del-driver="${d.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucun chauffeur.</div>';
 
-$("stopsList").innerHTML=visibleStops.length?visibleStops.map(s=>`<div class="item"><strong>🚏 ${s.name}</strong><span class="muted">${lineName(s.lineId)} · ${s.lat}, ${s.lng}</span></div>`).join(""):'<div class="muted">Aucun arrêt.</div>';
+$("stopsList").innerHTML=visibleStops.length?visibleStops.map(s=>`<div class="item"><strong>🚏 ${s.name}</strong><span class="muted">${lineName(s.lineId)} · ${directionLabel(s.direction||"both")} · ${s.lat}, ${s.lng}</span></div>`).join(""):'<div class="muted">Aucun arrêt.</div>';
 
 const clientVehicles=visibleVehiclesForClients();
 $("vehiclesList").innerHTML=clientVehicles.length?clientVehicles.map(v=>`<div class="item"><strong>🚌 ${v.name}</strong><span class="muted">${lineName(v.lineId)} · En ligne · GPS récent</span></div>`).join(""):'<div class="muted">Aucun bus en ligne sur sa ligne.</div>';
@@ -551,12 +588,12 @@ if(clientMarker) clientMarker.addTo(map);
 function renderAll(){renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
-async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
+async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
 async function saveVehicle(){if(!requireAdmin())return;const btn=$("addVehicleBtn");btn.disabled=true;btn.textContent=editingVehicleId?"Mise à jour...":"Enregistrement...";const name=val("vehicleName").trim();if(!name){btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule";return alert("Nom véhicule obligatoire.")}const data={name,lineId:val("vehicleLineSelect"),driverId:val("vehicleDriverSelect"),active:true};let ok=false;if(editingVehicleId){ok=await updateDoc("vehicles",editingVehicleId,data,"vehicleStatus")}else{ok=await addDoc("vehicles",{...data,status:"offline",visibleToClients:false,lat:null,lng:null,createdAt:now(),updatedAt:now()},"vehicleStatus")}if(ok){resetEdit("vehicle")}btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule"}
 async function saveDriver(){if(!requireAdmin())return;const btn=$("addDriverBtn");btn.disabled=true;btn.textContent=editingDriverId?"Mise à jour...":"Enregistrement...";const name=val("driverNameAdmin").trim();if(!name){btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur";return alert("Nom chauffeur obligatoire.")}const data={name,phone:val("driverPhoneAdmin").trim(),email:val("driverEmailAdmin").trim(),uid:val("driverEmailAdmin").trim(),active:true};let ok=false;if(editingDriverId){ok=await updateDoc("drivers",editingDriverId,data,"driverAdminStatus")}else{ok=await addDoc("drivers",{...data,createdAt:now(),updatedAt:now()},"driverAdminStatus")}if(ok){resetEdit("driver")}btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur"}
 function currentDriverVehicle(){return vehicles.find(v=>v.id===val("driverVehicleSelect"))}
 function renderDriverWorkStatus(){const v=currentDriverVehicle();const badge=$("driverWorkBadge");if(!badge)return;if(!v||v.status!=="online"){badge.textContent="Hors ligne";badge.className="workBadge offline";return}const c=computeVisibility(v);badge.textContent=c.visible?"En ligne · Visible client":"En ligne · Hors ligne client";badge.className=c.visible?"workBadge online":"workBadge warning"}
-async function goOnline(){if(!currentUser)return alert("Connecte-toi.");const vehicleId=val("driverVehicleSelect");if(!vehicleId)return alert("Choisis un véhicule.");const v=currentDriverVehicle();if(!v)return alert("Véhicule introuvable.");setText("driverStatus","Demande GPS...");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);await db.collection("vehicles").doc(vehicleId).set({status:"online",driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,onlineAt:now(),updatedAt:now()}, {merge:true});driverWatchId=navigator.geolocation.watchPosition(async p=>{const t=Date.now();const interval=Number(val("driverGpsFrequency")||30000);if(t-lastGpsWrite<interval)return;lastGpsWrite=t;const temp={...v,lat:p.coords.latitude,lng:p.coords.longitude,status:"online",lastGpsUpdate:t};const c=computeVisibility(temp);try{await db.collection("vehicles").doc(vehicleId).set({lat:p.coords.latitude,lng:p.coords.longitude,status:"online",driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,lastGpsUpdate:firebase.firestore.Timestamp.fromDate(new Date()),speedKmh: p.coords.speed && p.coords.speed > 0 ? Math.round(p.coords.speed*3.6) : estimateSpeedKmh(temp),updatedAt:now(),visibleToClients:c.visible,offRoute:!c.near,distanceFromLineMeters:Math.round(c.distance||0)}, {merge:true});setText("driverStatus",c.visible?"En ligne ✅ visible aux clients":"En ligne mais caché client: hors ligne de bus ou GPS ancien");renderDriverWorkStatus()}catch(e){alert("Erreur GPS Firebase: "+e.message)}},e=>{setText("driverStatus","GPS impossible ou refusé.");alert("GPS impossible ou refusé.")},{enableHighAccuracy:false,timeout:20000,maximumAge:10000});setText("driverStatus","En ligne. GPS démarré.")}
+async function goOnline(){if(!currentUser)return alert("Connecte-toi.");const vehicleId=val("driverVehicleSelect");if(!vehicleId)return alert("Choisis un véhicule.");const v=currentDriverVehicle();if(!v)return alert("Véhicule introuvable.");setText("driverStatus","Demande GPS...");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);await db.collection("vehicles").doc(vehicleId).set({status:"online",direction:val("driverDirectionSelect")||"aller",driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,onlineAt:now(),updatedAt:now()}, {merge:true});driverWatchId=navigator.geolocation.watchPosition(async p=>{const t=Date.now();const interval=Number(val("driverGpsFrequency")||30000);if(t-lastGpsWrite<interval)return;lastGpsWrite=t;const temp={...v,lat:p.coords.latitude,lng:p.coords.longitude,status:"online",direction:val("driverDirectionSelect")||"aller",lastGpsUpdate:t};const c=computeVisibility(temp);try{await db.collection("vehicles").doc(vehicleId).set({lat:p.coords.latitude,lng:p.coords.longitude,status:"online",direction:val("driverDirectionSelect")||"aller",driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,lastGpsUpdate:firebase.firestore.Timestamp.fromDate(new Date()),speedKmh: p.coords.speed && p.coords.speed > 0 ? Math.round(p.coords.speed*3.6) : estimateSpeedKmh(temp),updatedAt:now(),visibleToClients:c.visible,offRoute:!c.near,distanceFromLineMeters:Math.round(c.distance||0)}, {merge:true});setText("driverStatus",c.visible?"En ligne ✅ visible aux clients":"En ligne mais caché client: hors ligne de bus ou GPS ancien");renderDriverWorkStatus()}catch(e){alert("Erreur GPS Firebase: "+e.message)}},e=>{setText("driverStatus","GPS impossible ou refusé.");alert("GPS impossible ou refusé.")},{enableHighAccuracy:false,timeout:20000,maximumAge:10000});setText("driverStatus","En ligne. GPS démarré.")}
 async function goOffline(){const vehicleId=val("driverVehicleSelect");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);driverWatchId=null;if(vehicleId){await db.collection("vehicles").doc(vehicleId).set({status:"offline",visibleToClients:false,offRoute:false,offlineAt:now(),updatedAt:now()}, {merge:true})}setText("driverStatus","Hors ligne. Le bus est caché aux clients.");renderDriverWorkStatus()}
 
 function clientGps(){if(!navigator.geolocation)return alert("GPS non disponible.");navigator.geolocation.getCurrentPosition(p=>{const lat=p.coords.latitude,lng=p.coords.longitude;map.setView([lat,lng],16);if(clientMarker)clientMarker.setLatLng([lat,lng]);else clientMarker=L.circleMarker([lat,lng],{radius:10,weight:3,fillOpacity:.85}).addTo(map);clientMarker.bindPopup("Ma position").openPopup()},()=>alert("GPS impossible ou refusé."),{enableHighAccuracy:false,timeout:20000,maximumAge:60000})}
@@ -1051,6 +1088,7 @@ async function importAlgeriaLines(){
           lat: Number(stop.lat),
           lng: Number(stop.lng),
           order: Number(stop.order || (i+1)),
+          direction: stop.direction || "both",
           active: stop.active !== false,
           source: stop.source || "import_admin",
           createdAt: now(),
@@ -1227,7 +1265,7 @@ async function importBejaiaAutoLinesAndStops(){
       const s=stopsList[i];
       await db.collection("stops").add({
         name:s.name,lineId:lineRef.id,lineName:"Béjaïa OSM - Arrêts importés",city:"Bejaia",
-        lat:s.lat,lng:s.lng,order:i+1,active:true,source:"bejaia_osm_auto_no_routes",osmId:s.osmId,
+        lat:s.lat,lng:s.lng,order:i+1,direction:"both",active:true,source:"bejaia_osm_auto_no_routes",osmId:s.osmId,
         createdAt:now(),updatedAt:now()
       });
       stopsCreated++;
@@ -1272,6 +1310,7 @@ async function importBejaiaAutoLinesAndStops(){
             lat: s.lat,
             lng: s.lng,
             order: j+1,
+            direction:"both",
             active: true,
             source: "bejaia_osm_auto",
           routeGeometryType: ((route.geometry||{}).type || null),
@@ -1501,13 +1540,8 @@ function stopLabel(s){
 function allValidStops(){
   return activeStopsOnly().filter(s => s && s.id && s.lineId && num(s.lat)!==null && num(s.lng)!==null);
 }
-function routeLineStops(lineId){
-  const arr = stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
-  return arr.sort((a,b)=>{
-    const oa = Number(a.order || 9999), ob = Number(b.order || 9999);
-    if(oa !== ob) return oa - ob;
-    return stopLabel(a).localeCompare(stopLabel(b));
-  });
+function routeLineStops(lineId, direction="aller"){
+  return lineStopsByDirection(lineId, direction);
 }
 function uniqueStopKey(stop){
   return stop.id;
@@ -1520,15 +1554,16 @@ function buildTransportGraph(){
 
   // Bus edges along each line, forward and backward
   activeLinesOnly().forEach(line => {
-    const ls = routeLineStops(line.id);
-    for(let i=0;i<ls.length-1;i++){
-      const a=ls[i], b=ls[i+1];
-      const d=distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
-      const minutes = (d / (BUS_AVG_KMH*1000/3600)) / 60;
-      const cost = minutes + 0.5; // bus movement cost
-      graph[uniqueStopKey(a)].push({to:uniqueStopKey(b), type:"bus", lineId:line.id, distance:d, minutes, cost});
-      graph[uniqueStopKey(b)].push({to:uniqueStopKey(a), type:"bus", lineId:line.id, distance:d, minutes, cost});
-    }
+    ["aller","retour"].forEach(direction => {
+      const ls = routeLineStops(line.id, direction);
+      for(let i=0;i<ls.length-1;i++){
+        const a=ls[i], b=ls[i+1];
+        const d=distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
+        const minutes = (d / (BUS_AVG_KMH*1000/3600)) / 60;
+        const cost = minutes + 0.5;
+        graph[uniqueStopKey(a)].push({to:uniqueStopKey(b), type:"bus", lineId:line.id, direction, distance:d, minutes, cost});
+      }
+    });
   });
 
   // Walking transfer edges only for close stops, never huge walks
@@ -1595,7 +1630,7 @@ function compactSegments(path){
     if(!fromStop || !toStop) continue;
 
     const last = segments[segments.length-1];
-    if(last && last.type === step.edge.type && last.lineId === step.edge.lineId){
+    if(last && last.type === step.edge.type && last.lineId === step.edge.lineId && last.direction === step.edge.direction){
       last.to = toStop;
       last.toId = toStop.id;
       last.distance += step.edge.distance;
@@ -1605,6 +1640,7 @@ function compactSegments(path){
       segments.push({
         type:step.edge.type,
         lineId:step.edge.lineId,
+        direction:step.edge.direction || null,
         from:fromStop,
         to:toStop,
         fromId:fromStop.id,
@@ -1621,7 +1657,7 @@ function routeSummaryText(segments){
   if(!segments.length) return "Aucun trajet.";
   return segments.map(seg=>{
     if(seg.type === "bus"){
-      return `🚌 ${lineName(seg.lineId)} (${Math.max(1,Math.round(seg.minutes))} min)`;
+      return `🚌 ${lineName(seg.lineId)} · ${directionLabel(seg.direction||"aller")} (${Math.max(1,Math.round(seg.minutes))} min)`;
     }
     return `🚶 ${Math.round(seg.distance)} m (${Math.max(1,Math.round(seg.minutes))} min)`;
   }).join(" → ");
@@ -1797,7 +1833,7 @@ function renderRouteSteps(segments){
           <div class="stepIcon">🚌</div>
           <div class="stepContent">
             <div class="stepTitle">Monter à <b>${stopLabel(seg.from)}</b></div>
-            <div class="stepLine">${lineBadgeHtml(seg.lineId)}</div>
+            <div class="stepLine">${lineBadgeHtml(seg.lineId)} <span class="directionBadge">${directionLabel(seg.direction||"aller")}</span></div>
             <div class="stepMeta">Descendre à <b>${stopLabel(seg.to)}</b> · ${min} min</div>
           </div>
         </div>

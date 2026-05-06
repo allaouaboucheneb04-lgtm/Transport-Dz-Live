@@ -47,7 +47,8 @@
 
     <label>Véhicule</label><select id="driverVehicleSelect"></select>
 
-    <label>Fréquence GPS</label>
+    <label>Sens de travail</label><select id="driverDirectionSelect"><option value="aller">Aller</option><option value="retour">Retour</option></select>
+      <label>Fréquence GPS</label>
     <select id="driverGpsFrequency">
       <option value="15000">15 secondes</option>
       <option value="30000" selected>30 secondes</option>
@@ -92,6 +93,7 @@
   <div id="panelStops" class="adminPanel">
     <div class="card"><h3>Ajouter un arrêt</h3>
       <label>Ligne</label><select id="stopLineSelect"></select><div class="hint">Chaque arrêt est relié uniquement à cette ligne.</div>
+      <label>Sens</label><select id="stopDirection"><option value="both">Aller + Retour</option><option value="aller">Aller</option><option value="retour">Retour</option></select>
       <label>Nom arrêt</label><input id="stopName" placeholder="Ex: Sidi Aïch">
       <label>Latitude</label><input id="stopLat" inputmode="decimal" placeholder="36.6122">
       <label>Longitude</label><input id="stopLng" inputmode="decimal" placeholder="4.6865">
@@ -100,7 +102,7 @@
       <button id="addStopBtn" class="primary" type="button">Ajouter arrêt</button><div id="stopStatus" class="result"></div>
     </div>
     <div class="card">
-        <h3>Arrêts enregistrés</h3>
+        <h3>Arrêts enregistrés</h3><p class="hintBox">Sens aller / retour : un arrêt peut être “Aller”, “Retour” ou “Aller + Retour”.</p>
 
         <label>Filtrer par ligne</label>
         <select id="adminStopsLineFilter">
@@ -234,6 +236,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=route-search-fix-1"></script>
+<script src="app.js?v=direction-aller-retour-1"></script>
 </body>
 </html>
