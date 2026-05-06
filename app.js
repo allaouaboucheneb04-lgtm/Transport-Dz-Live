@@ -1330,3 +1330,14 @@ if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImpor
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
+
+
+// Firestore nested array fix applied
+function parseStoredRouteGeometry(value){
+  try{
+    if(typeof value === "string") return JSON.parse(value);
+    return value || null;
+  }catch(e){
+    return null;
+  }
+}
