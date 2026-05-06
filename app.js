@@ -1027,10 +1027,232 @@ function loadExampleImport(){
   setImportStatus("Exemple chargé. Tu peux modifier les noms/coordonnées puis importer.");
 }
 
+
+const AUTO_LINE_COLORS = ["#2563eb","#16a34a","#dc2626","#9333ea","#f59e0b","#0891b2","#db2777","#22c55e","#f97316","#4f46e5","#0f766e","#be123c"];
+
+function geoDistanceMeters(lat1,lng1,lat2,lng2){
+  return distanceMeters(Number(lat1),Number(lng1),Number(lat2),Number(lng2));
+}
+function featureCoords(feature){
+  const g = feature.geometry || {};
+  if(g.type === "LineString") return g.coordinates || [];
+  if(g.type === "MultiLineString") return (g.coordinates || []).flat();
+  return [];
+}
+function featureCenter(feature){
+  const coords = featureCoords(feature);
+  if(!coords.length) return null;
+  let lat=0,lng=0;
+  coords.forEach(c => { lng += Number(c[0]); lat += Number(c[1]); });
+  return {lat:lat/coords.length,lng:lng/coords.length};
+}
+function nearestDistancePointToFeature(stop, feature){
+  const coords = featureCoords(feature);
+  if(!coords.length) return Infinity;
+  let best = Infinity;
+  coords.forEach(c => {
+    const d = geoDistanceMeters(stop.lat, stop.lng, Number(c[1]), Number(c[0]));
+    if(d < best) best = d;
+  });
+  return best;
+}
+function bejaiaAllStopsFromGeojson(){
+  if(!bejaiaGeojson || !Array.isArray(bejaiaGeojson.features)) return [];
+  return bejaiaGeojson.features
+    .filter(f => f.geometry && f.geometry.type === "Point" && Array.isArray(f.geometry.coordinates))
+    .map((f,i) => {
+      const p=f.properties||{}, c=f.geometry.coordinates;
+      return {
+        index:i,
+        name:p.name || p.local_ref || p.ref || ("Arrêt OSM " + (i+1)),
+        lat:Number(c[1]),
+        lng:Number(c[0]),
+        osmId:p["@id"] || p.id || f.id || "",
+        props:p
+      };
+    })
+    .filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng));
+}
+function bejaiaRouteFeaturesOnly(){
+  if(!bejaiaGeojson || !Array.isArray(bejaiaGeojson.features)) return [];
+  const routes = bejaiaGeojson.features.filter(f => {
+    const g=(f.geometry||{}).type;
+    const p=f.properties||{};
+    return g==="LineString" || g==="MultiLineString" || p.route==="bus" || p.type==="route";
+  });
+  // Deduplicate by name/ref + geometry type
+  const seen = new Set();
+  return routes.filter((f,i) => {
+    const p=f.properties||{};
+    const name=p.name || p.ref || p["@id"] || f.id || ("route-"+i);
+    const key = String(name) + "|" + ((f.geometry||{}).type);
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+function routeDisplayName(feature, index){
+  const p=feature.properties||{};
+  return p.name || p.ref || p.operator || ("Ligne OSM Béjaïa " + (index+1));
+}
+function assignStopsToRoutes(routeFeatures, stopsList){
+  const assignments = new Map();
+  const maxDistance = 180; // meters from line geometry
+  routeFeatures.forEach((route, routeIndex) => {
+    assignments.set(routeIndex, []);
+  });
+
+  const unassigned = [];
+
+  stopsList.forEach(stop => {
+    let bestRouteIndex = -1;
+    let bestDistance = Infinity;
+
+    routeFeatures.forEach((route, idx) => {
+      const d = nearestDistancePointToFeature(stop, route);
+      if(d < bestDistance){
+        bestDistance = d;
+        bestRouteIndex = idx;
+      }
+    });
+
+    if(bestRouteIndex >= 0 && bestDistance <= maxDistance){
+      assignments.get(bestRouteIndex).push({...stop, distanceToRoute:Math.round(bestDistance)});
+    }else{
+      unassigned.push(stop);
+    }
+  });
+
+  // Sort stops inside each route by nearest point order approximation:
+  // use distance from route center then fallback name
+  routeFeatures.forEach((route, idx) => {
+    const coords = featureCoords(route);
+    assignments.get(idx).sort((a,b) => {
+      if(coords.length){
+        const first = coords[0];
+        const da = geoDistanceMeters(a.lat,a.lng,Number(first[1]),Number(first[0]));
+        const db = geoDistanceMeters(b.lat,b.lng,Number(first[1]),Number(first[0]));
+        return da-db;
+      }
+      return (a.name||"").localeCompare(b.name||"");
+    });
+  });
+
+  return {assignments, unassigned};
+}
+async function importBejaiaAutoLinesAndStops(){
+  if(!requireAdmin()) return;
+  if(!bejaiaGeojson) await loadBejaiaLinesStopsGeojson();
+
+  const routeFeatures = bejaiaRouteFeaturesOnly();
+  const stopsList = bejaiaAllStopsFromGeojson();
+
+  if(!stopsList.length){
+    alert("Aucun arrêt dans le GeoJSON.");
+    return;
+  }
+
+  const btn = $("autoImportBejaiaBtn");
+  if(btn){btn.disabled=true;btn.textContent="Import automatique...";}
+
+  try{
+    const {assignments, unassigned} = assignStopsToRoutes(routeFeatures, stopsList);
+    let linesCreated = 0;
+    let stopsCreated = 0;
+
+    if(routeFeatures.length){
+      for(let i=0;i<routeFeatures.length;i++){
+        const route = routeFeatures[i];
+        const color = AUTO_LINE_COLORS[i % AUTO_LINE_COLORS.length];
+        const p = route.properties || {};
+        const lineName = routeDisplayName(route, i);
+        const routeStops = assignments.get(i) || [];
+
+        // Create only useful line if it has stops or geometry
+        const lineRef = await db.collection("lines").add({
+          name: lineName,
+          city: "Bejaia",
+          type: "bus",
+          color,
+          active: true,
+          source: "bejaia_osm_auto",
+          osmId: p["@id"] || p.id || route.id || "",
+          routeGeometry: route.geometry || null,
+          createdAt: now(),
+          updatedAt: now()
+        });
+        linesCreated++;
+
+        for(let j=0;j<routeStops.length;j++){
+          const s = routeStops[j];
+          await db.collection("stops").add({
+            name: s.name,
+            lineId: lineRef.id,
+            lineName,
+            city: "Bejaia",
+            lat: s.lat,
+            lng: s.lng,
+            order: j+1,
+            active: true,
+            source: "bejaia_osm_auto",
+            osmId: s.osmId,
+            distanceToRoute: s.distanceToRoute || null,
+            createdAt: now(),
+            updatedAt: now()
+          });
+          stopsCreated++;
+        }
+        setText("bejaiaGeojsonStatus", `Import auto... ${linesCreated} ligne(s), ${stopsCreated} arrêt(s)`);
+      }
+    }
+
+    if(unassigned.length){
+      const lineRef = await db.collection("lines").add({
+        name: "Arrêts Béjaïa non classés",
+        city: "Bejaia",
+        type: "bus",
+        color: "#64748b",
+        active: true,
+        source: "bejaia_osm_unassigned",
+        createdAt: now(),
+        updatedAt: now()
+      });
+      linesCreated++;
+      for(let k=0;k<unassigned.length;k++){
+        const s = unassigned[k];
+        await db.collection("stops").add({
+          name: s.name,
+          lineId: lineRef.id,
+          lineName: "Arrêts Béjaïa non classés",
+          city: "Bejaia",
+          lat: s.lat,
+          lng: s.lng,
+          order: k+1,
+          active: true,
+          source: "bejaia_osm_unassigned",
+          osmId: s.osmId,
+          createdAt: now(),
+          updatedAt: now()
+        });
+        stopsCreated++;
+      }
+    }
+
+    setText("bejaiaGeojsonStatus", `Import automatique terminé ✅ ${linesCreated} ligne(s), ${stopsCreated} arrêt(s). Couleurs attribuées automatiquement.`);
+    alert("Import automatique terminé ✅");
+  }catch(e){
+    console.error(e);
+    setText("bejaiaGeojsonStatus", "Erreur import auto: " + (e.message || e));
+    alert("Erreur import auto: " + (e.message || e));
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Importer lignes + arrêts automatiquement";}
+  }
+}
+
 function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
-if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteGoogleLike().catch(e=>{console.error(e);setText("routeResult","Erreur calcul trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
+if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteGoogleLike().catch(e=>{console.error(e);setText("routeResult","Erreur calcul trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
