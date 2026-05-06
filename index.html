@@ -31,6 +31,7 @@
   <div class="mapWrap"><div id="map"></div></div>
   <div class="card"><h3>Arrêts</h3><div id="stopsList" class="list"></div></div>
   <div class="card"><h3>Bus visibles aux clients</h3><div id="vehiclesList" class="list"></div></div>
+  <div class="card"><h3>⏱️ Prochain bus par arrêt</h3><div id="etaList" class="list"></div></div>
 </section>
 
 <section id="driverPage" class="page">
@@ -94,6 +95,7 @@
       <label>Nom arrêt</label><input id="stopName" placeholder="Ex: Sidi Aïch">
       <label>Latitude</label><input id="stopLat" inputmode="decimal" placeholder="36.6122">
       <label>Longitude</label><input id="stopLng" inputmode="decimal" placeholder="4.6865">
+      <label>Ordre dans la ligne</label><input id="stopOrder" inputmode="numeric" placeholder="1, 2, 3...">
       <div class="row"><button id="useMyLocationStopBtn" class="secondary" type="button">📍 Utiliser ma position</button><button id="pickStopOnMapBtn" class="secondary" type="button">🗺️ Choisir sur la carte</button></div>
       <button id="addStopBtn" class="primary" type="button">Ajouter arrêt</button><div id="stopStatus" class="result"></div>
     </div>
@@ -167,6 +169,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=walking-learning-safe-1"></script>
+<script src="app.js?v=eta-bus-1"></script>
 </body>
 </html>

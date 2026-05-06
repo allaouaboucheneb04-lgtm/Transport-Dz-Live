@@ -18,9 +18,9 @@ function requireAdmin(){if(!currentUser){alert("Connecte-toi d’abord.");return
 async function addDoc(collection,data,statusId){try{const ref=await db.collection(collection).add(data);setText(statusId,"Sauvegardé dans Firebase ✅");return ref}catch(e){console.error(e);const m="Erreur Firebase: "+(e.code||"")+" "+(e.message||e);setText(statusId,m);alert(m);return null}}
 async function updateDoc(collection,id,data,statusId){try{await db.collection(collection).doc(id).set({...data,updatedAt:now()},{merge:true});setText(statusId,"Mis à jour dans Firebase ✅");return true}catch(e){console.error(e);const m="Erreur modification Firebase: "+(e.code||"")+" "+(e.message||e);setText(statusId,m);alert(m);return false}}
 function openAdminPanel(panelId){document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));const panel=$(panelId);if(panel)panel.classList.add("active");const tab=document.querySelector(`[data-panel="${panelId}"]`);if(tab)tab.classList.add("active");document.querySelector('[data-page="adminPage"]')?.click();}
-function resetEdit(type){if(type==="line"){editingLineId=null;$("addLineBtn").textContent="Ajouter ligne";$("lineName").value="";}if(type==="stop"){editingStopId=null;$("addStopBtn").textContent="Ajouter arrêt";$("stopName").value="";$("stopLat").value="";$("stopLng").value="";}if(type==="vehicle"){editingVehicleId=null;$("addVehicleBtn").textContent="Ajouter véhicule";$("vehicleName").value="";}if(type==="driver"){editingDriverId=null;$("addDriverBtn").textContent="Ajouter chauffeur";$("driverNameAdmin").value="";$("driverPhoneAdmin").value="";$("driverEmailAdmin").value="";}}
+function resetEdit(type){if(type==="line"){editingLineId=null;$("addLineBtn").textContent="Ajouter ligne";$("lineName").value="";}if(type==="stop"){editingStopId=null;$("addStopBtn").textContent="Ajouter arrêt";$("stopName").value="";$("stopLat").value="";$("stopLng").value="";if($("stopOrder"))$("stopOrder").value="";}if(type==="vehicle"){editingVehicleId=null;$("addVehicleBtn").textContent="Ajouter véhicule";$("vehicleName").value="";}if(type==="driver"){editingDriverId=null;$("addDriverBtn").textContent="Ajouter chauffeur";$("driverNameAdmin").value="";$("driverPhoneAdmin").value="";$("driverEmailAdmin").value="";}}
 function editLine(id){const l=lines.find(x=>x.id===id);if(!l)return;editingLineId=id;openAdminPanel("panelLines");$("lineCity").value=l.city||"Bejaia";$("lineName").value=l.name||"";$("lineType").value=l.type||"bus";$("lineColor").value=l.color||"#2563eb";$("addLineBtn").textContent="Mettre à jour ligne";window.scrollTo({top:0,behavior:"smooth"});}
-function editStop(id){const s=stops.find(x=>x.id===id);if(!s)return;editingStopId=id;openAdminPanel("panelStops");$("stopLineSelect").value=s.lineId||"";$("stopName").value=s.name||"";$("stopLat").value=s.lat??"";$("stopLng").value=s.lng??"";$("addStopBtn").textContent="Mettre à jour arrêt";window.scrollTo({top:0,behavior:"smooth"});}
+function editStop(id){const s=stops.find(x=>x.id===id);if(!s)return;editingStopId=id;openAdminPanel("panelStops");$("stopLineSelect").value=s.lineId||"";$("stopName").value=s.name||"";$("stopLat").value=s.lat??"";$("stopLng").value=s.lng??"";if($("stopOrder"))$("stopOrder").value=s.order??"";$("addStopBtn").textContent="Mettre à jour arrêt";window.scrollTo({top:0,behavior:"smooth"});}
 function editVehicle(id){const v=vehicles.find(x=>x.id===id);if(!v)return;editingVehicleId=id;openAdminPanel("panelVehicles");$("vehicleName").value=v.name||"";$("vehicleLineSelect").value=v.lineId||"";$("vehicleDriverSelect").value=v.driverId||"";$("addVehicleBtn").textContent="Mettre à jour véhicule";window.scrollTo({top:0,behavior:"smooth"});}
 function editDriver(id){const d=drivers.find(x=>x.id===id);if(!d)return;editingDriverId=id;openAdminPanel("panelDrivers");$("driverNameAdmin").value=d.name||"";$("driverPhoneAdmin").value=d.phone||"";$("driverEmailAdmin").value=d.email||d.uid||"";$("addDriverBtn").textContent="Mettre à jour chauffeur";window.scrollTo({top:0,behavior:"smooth"});}
 function lineName(id){const l=lines.find(x=>x.id===id);return l?(l.name||l.id):""}
@@ -90,6 +90,88 @@ function renderAdminStopsFilterOptions(){
 
 function renderSelects(){renderAdminStopsFilterOptions();const city=val("clientCity")||"Bejaia";const vis=lines.filter(l=>!l.city||l.city===city);const old=val("clientLineSelect")||"all";$("clientLineSelect").innerHTML='<option value="all">Toutes les lignes</option>'+vis.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("clientLineSelect").value=[...$("clientLineSelect").options].some(o=>o.value===old)?old:"all";const lo=lines.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("stopLineSelect").innerHTML=lo;$("vehicleLineSelect").innerHTML=lo;const dro='<option value="">Aucun chauffeur</option>'+drivers.map(d=>`<option value="${d.id}">${d.name||d.email||d.id}</option>`).join("");$("vehicleDriverSelect").innerHTML=dro;$("driverVehicleSelect").innerHTML=vehicles.map(v=>`<option value="${v.id}">${v.name} · ${lineName(v.lineId)}</option>`).join("")}
 function selectedLineStopsForList(){ const sel=val("clientLineSelect")||"all"; return sel==="all" ? stops : stops.filter(s=>s.lineId===sel); }
+
+function orderedStopsForLine(lineId){
+  return stops
+    .filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null)
+    .sort((a,b) => {
+      const oa = Number(a.order || 9999);
+      const ob = Number(b.order || 9999);
+      if(oa !== ob) return oa - ob;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+}
+function estimateSpeedKmh(vehicle){
+  const s = Number(vehicle.speedKmh || vehicle.speed || 0);
+  if(Number.isFinite(s) && s >= 5) return Math.min(s, 70);
+  return 25; // vitesse moyenne bus urbain
+}
+function etaMinutesForVehicleToStop(vehicle, stop){
+  if(!vehicle || !stop) return null;
+  const vLat = num(vehicle.lat), vLng = num(vehicle.lng), sLat = num(stop.lat), sLng = num(stop.lng);
+  if(vLat===null || vLng===null || sLat===null || sLng===null) return null;
+
+  const c = computeVisibility(vehicle);
+  if(!c.visible) return null;
+
+  const meters = distanceMeters(vLat, vLng, sLat, sLng);
+  const speedMps = estimateSpeedKmh(vehicle) * 1000 / 3600;
+  const min = Math.ceil((meters / speedMps) / 60);
+  return Math.max(1, min);
+}
+function nextStopForVehicle(vehicle){
+  const lineStops = orderedStopsForLine(vehicle.lineId);
+  if(!lineStops.length) return null;
+
+  let best = null;
+  for(const stop of lineStops){
+    const eta = etaMinutesForVehicleToStop(vehicle, stop);
+    if(eta === null) continue;
+    const dist = distanceMeters(num(vehicle.lat), num(vehicle.lng), num(stop.lat), num(stop.lng));
+    if(!best || dist < best.distance){
+      best = {stop, eta, distance:dist};
+    }
+  }
+  return best;
+}
+function bestBusForStop(stop){
+  const candidates = visibleVehiclesForClients()
+    .filter(v => v.lineId === stop.lineId)
+    .map(v => ({vehicle:v, eta:etaMinutesForVehicleToStop(v, stop)}))
+    .filter(x => x.eta !== null)
+    .sort((a,b) => a.eta - b.eta);
+
+  return candidates[0] || null;
+}
+function renderEtaList(){
+  const box = $("etaList");
+  if(!box) return;
+
+  const selected = val("clientLineSelect") || "all";
+  const lineStops = (selected === "all")
+    ? stops.filter(s => num(s.lat)!==null && num(s.lng)!==null)
+    : orderedStopsForLine(selected);
+
+  if(!lineStops.length){
+    box.innerHTML = '<div class="muted">Aucun arrêt pour calculer l’arrivée.</div>';
+    return;
+  }
+
+  box.innerHTML = lineStops.map(stop => {
+    const best = bestBusForStop(stop);
+    if(!best){
+      return `<div class="item"><strong>🚏 ${stop.name || "Arrêt"}</strong><span class="muted">${lineName(stop.lineId)} · Aucun bus en ligne</span></div>`;
+    }
+    const next = nextStopForVehicle(best.vehicle);
+    return `<div class="item etaItem">
+      <strong>🚏 ${stop.name || "Arrêt"}</strong>
+      <span class="muted">${lineName(stop.lineId)}</span>
+      <div class="etaBadge">🚌 ${best.vehicle.name || "Bus"} arrive dans ${best.eta} min</div>
+      <span class="muted">Prochain arrêt du bus: ${next && next.stop ? next.stop.name : "calcul..."}</span>
+    </div>`;
+  }).join("");
+}
+
 function renderLists(){
 const sel=val("clientLineSelect")||"all";
 const visibleStops = selectedLineStopsForList();
@@ -205,15 +287,15 @@ visibleVehiclesForClients().forEach(v=>{
 
 if(clientMarker) clientMarker.addTo(map);
 }
-function renderAll(){renderSelects();fillWalkingStopSelectsSafe();renderLists();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
+function renderAll(){renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
-async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
+async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
 async function saveVehicle(){if(!requireAdmin())return;const btn=$("addVehicleBtn");btn.disabled=true;btn.textContent=editingVehicleId?"Mise à jour...":"Enregistrement...";const name=val("vehicleName").trim();if(!name){btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule";return alert("Nom véhicule obligatoire.")}const data={name,lineId:val("vehicleLineSelect"),driverId:val("vehicleDriverSelect"),active:true};let ok=false;if(editingVehicleId){ok=await updateDoc("vehicles",editingVehicleId,data,"vehicleStatus")}else{ok=await addDoc("vehicles",{...data,status:"offline",visibleToClients:false,lat:null,lng:null,createdAt:now(),updatedAt:now()},"vehicleStatus")}if(ok){resetEdit("vehicle")}btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule"}
 async function saveDriver(){if(!requireAdmin())return;const btn=$("addDriverBtn");btn.disabled=true;btn.textContent=editingDriverId?"Mise à jour...":"Enregistrement...";const name=val("driverNameAdmin").trim();if(!name){btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur";return alert("Nom chauffeur obligatoire.")}const data={name,phone:val("driverPhoneAdmin").trim(),email:val("driverEmailAdmin").trim(),uid:val("driverEmailAdmin").trim(),active:true};let ok=false;if(editingDriverId){ok=await updateDoc("drivers",editingDriverId,data,"driverAdminStatus")}else{ok=await addDoc("drivers",{...data,createdAt:now(),updatedAt:now()},"driverAdminStatus")}if(ok){resetEdit("driver")}btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur"}
 function currentDriverVehicle(){return vehicles.find(v=>v.id===val("driverVehicleSelect"))}
 function renderDriverWorkStatus(){const v=currentDriverVehicle();const badge=$("driverWorkBadge");if(!badge)return;if(!v||v.status!=="online"){badge.textContent="Hors ligne";badge.className="workBadge offline";return}const c=computeVisibility(v);badge.textContent=c.visible?"En ligne · Visible client":"En ligne · Hors ligne client";badge.className=c.visible?"workBadge online":"workBadge warning"}
-async function goOnline(){if(!currentUser)return alert("Connecte-toi.");const vehicleId=val("driverVehicleSelect");if(!vehicleId)return alert("Choisis un véhicule.");const v=currentDriverVehicle();if(!v)return alert("Véhicule introuvable.");setText("driverStatus","Demande GPS...");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);await db.collection("vehicles").doc(vehicleId).set({status:"online",driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,onlineAt:now(),updatedAt:now()}, {merge:true});driverWatchId=navigator.geolocation.watchPosition(async p=>{const t=Date.now();const interval=Number(val("driverGpsFrequency")||30000);if(t-lastGpsWrite<interval)return;lastGpsWrite=t;const temp={...v,lat:p.coords.latitude,lng:p.coords.longitude,status:"online",lastGpsUpdate:t};const c=computeVisibility(temp);try{await db.collection("vehicles").doc(vehicleId).set({lat:p.coords.latitude,lng:p.coords.longitude,status:"online",driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,lastGpsUpdate:firebase.firestore.Timestamp.fromDate(new Date()),updatedAt:now(),visibleToClients:c.visible,offRoute:!c.near,distanceFromLineMeters:Math.round(c.distance||0)}, {merge:true});setText("driverStatus",c.visible?"En ligne ✅ visible aux clients":"En ligne mais caché client: hors ligne de bus ou GPS ancien");renderDriverWorkStatus()}catch(e){alert("Erreur GPS Firebase: "+e.message)}},e=>{setText("driverStatus","GPS impossible ou refusé.");alert("GPS impossible ou refusé.")},{enableHighAccuracy:false,timeout:20000,maximumAge:10000});setText("driverStatus","En ligne. GPS démarré.")}
+async function goOnline(){if(!currentUser)return alert("Connecte-toi.");const vehicleId=val("driverVehicleSelect");if(!vehicleId)return alert("Choisis un véhicule.");const v=currentDriverVehicle();if(!v)return alert("Véhicule introuvable.");setText("driverStatus","Demande GPS...");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);await db.collection("vehicles").doc(vehicleId).set({status:"online",driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,onlineAt:now(),updatedAt:now()}, {merge:true});driverWatchId=navigator.geolocation.watchPosition(async p=>{const t=Date.now();const interval=Number(val("driverGpsFrequency")||30000);if(t-lastGpsWrite<interval)return;lastGpsWrite=t;const temp={...v,lat:p.coords.latitude,lng:p.coords.longitude,status:"online",lastGpsUpdate:t};const c=computeVisibility(temp);try{await db.collection("vehicles").doc(vehicleId).set({lat:p.coords.latitude,lng:p.coords.longitude,status:"online",driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,lastGpsUpdate:firebase.firestore.Timestamp.fromDate(new Date()),speedKmh: p.coords.speed && p.coords.speed > 0 ? Math.round(p.coords.speed*3.6) : estimateSpeedKmh(temp),updatedAt:now(),visibleToClients:c.visible,offRoute:!c.near,distanceFromLineMeters:Math.round(c.distance||0)}, {merge:true});setText("driverStatus",c.visible?"En ligne ✅ visible aux clients":"En ligne mais caché client: hors ligne de bus ou GPS ancien");renderDriverWorkStatus()}catch(e){alert("Erreur GPS Firebase: "+e.message)}},e=>{setText("driverStatus","GPS impossible ou refusé.");alert("GPS impossible ou refusé.")},{enableHighAccuracy:false,timeout:20000,maximumAge:10000});setText("driverStatus","En ligne. GPS démarré.")}
 async function goOffline(){const vehicleId=val("driverVehicleSelect");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);driverWatchId=null;if(vehicleId){await db.collection("vehicles").doc(vehicleId).set({status:"offline",visibleToClients:false,offRoute:false,offlineAt:now(),updatedAt:now()}, {merge:true})}setText("driverStatus","Hors ligne. Le bus est caché aux clients.");renderDriverWorkStatus()}
 
 function clientGps(){if(!navigator.geolocation)return alert("GPS non disponible.");navigator.geolocation.getCurrentPosition(p=>{const lat=p.coords.latitude,lng=p.coords.longitude;map.setView([lat,lng],16);if(clientMarker)clientMarker.setLatLng([lat,lng]);else clientMarker=L.circleMarker([lat,lng],{radius:10,weight:3,fillOpacity:.85}).addTo(map);clientMarker.bindPopup("Ma position").openPopup()},()=>alert("GPS impossible ou refusé."),{enableHighAccuracy:false,timeout:20000,maximumAge:60000})}
