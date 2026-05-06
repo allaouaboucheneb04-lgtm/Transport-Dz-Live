@@ -14,14 +14,12 @@
   <div class="badges"><span id="firebaseStatus" class="badge blue">Firebase...</span><button id="openLoginBtn" class="badge light" type="button">Connexion</button></div>
 </header>
 
-<div id="firestoreDebugPanel" style="margin:14px;padding:14px;border:2px solid #2563eb;border-radius:18px;background:#eff6ff;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-  <b>Diagnostic Firebase</b>
-  <div id="firestoreDebugText" style="margin-top:8px;white-space:pre-wrap;font-size:14px;">Chargement diagnostic...</div>
-</div>
-
 <main>
 <section id="clientPage" class="page active">
-  <div class="hero"><div><div class="kicker">Client</div><h2>Voir les bus en direct</h2><p>Carte, lignes, arrêts et véhicules actifs.</p></div><button id="clientGpsBtn" class="primary small" type="button">📍 Ma position</button></div>
+  <div class="hero">
+    <div><div class="kicker">Client</div><h2>Voir les bus en direct</h2><p>Les clients voient seulement les bus en ligne, avec GPS récent, proches de leur ligne.</p></div>
+    <button id="clientGpsBtn" class="primary small" type="button">📍 Ma position</button>
+  </div>
   <div class="card">
     <label>Ville</label><select id="clientCity"><option value="Bejaia">Béjaïa</option><option value="Montreal">Montréal test</option></select>
     <label>Ligne</label><select id="clientLineSelect"><option value="all">Toutes les lignes</option></select>
@@ -32,23 +30,46 @@
   </div>
   <div class="mapWrap"><div id="map"></div></div>
   <div class="card"><h3>Arrêts</h3><div id="stopsList" class="list"></div></div>
-  <div class="card"><h3>Véhicules</h3><div id="vehiclesList" class="list"></div></div>
+  <div class="card"><h3>Bus visibles aux clients</h3><div id="vehiclesList" class="list"></div></div>
 </section>
 
 <section id="driverPage" class="page">
-  <div class="hero"><div><div class="kicker">Chauffeur</div><h2>GPS véhicule</h2><p>Le téléphone du chauffeur met à jour la position.</p></div></div>
-  <div class="card">
+  <div class="hero">
+    <div><div class="kicker">Chauffeur</div><h2>Espace chauffeur</h2><p>Se mettre en ligne = travailler. Hors ligne = invisible aux clients.</p></div>
+  </div>
+
+  <div class="card statusCard">
+    <h3>Statut de travail</h3>
+    <div id="driverWorkBadge" class="workBadge offline">Hors ligne</div>
+
     <label>Nom chauffeur</label><input id="driverNameInput" placeholder="Nom chauffeur">
+
     <label>Véhicule</label><select id="driverVehicleSelect"></select>
-    <label>Fréquence GPS</label><select id="driverGpsFrequency"><option value="15000">15 secondes</option><option value="30000" selected>30 secondes</option><option value="60000">60 secondes</option></select>
-    <button id="startDriverGpsBtn" class="primary" type="button">Démarrer GPS</button>
-    <button id="stopDriverGpsBtn" class="danger" type="button">Arrêter</button>
-    <div id="driverStatus" class="result">GPS arrêté.</div>
+
+    <label>Fréquence GPS</label>
+    <select id="driverGpsFrequency">
+      <option value="15000">15 secondes</option>
+      <option value="30000" selected>30 secondes</option>
+      <option value="60000">60 secondes</option>
+    </select>
+
+    <div class="row">
+      <button id="goOnlineBtn" class="primary" type="button">🟢 Se mettre en ligne</button>
+      <button id="goOfflineBtn" class="danger" type="button">🔴 Hors ligne</button>
+    </div>
+
+    <div id="driverStatus" class="result">Hors ligne. Aucun GPS envoyé.</div>
+  </div>
+
+  <div class="card">
+    <h3>Règle automatique</h3>
+    <p>Si tu sors de ta ligne de bus, ton véhicule reste connecté mais il disparaît de la carte client.</p>
+    <div class="result">Tolérance actuelle : <b>500 mètres</b> autour des arrêts de la ligne.</div>
   </div>
 </section>
 
 <section id="adminPage" class="page">
-  <div class="hero"><div><div class="kicker">Admin</div><h2>Gestion simple</h2><p>Tout est sauvegardé dans Firestore.</p></div></div>
+  <div class="hero"><div><div class="kicker">Admin</div><h2>Gestion Firebase</h2><p>Lignes, arrêts, véhicules et chauffeurs sauvegardés dans Firestore.</p></div></div>
   <div class="tabs">
     <button class="tab active" type="button" data-panel="panelLines">Lignes</button>
     <button class="tab" type="button" data-panel="panelStops">Arrêts</button>
@@ -70,10 +91,10 @@
   <div id="panelStops" class="adminPanel">
     <div class="card"><h3>Ajouter un arrêt</h3>
       <label>Ligne</label><select id="stopLineSelect"></select>
-      <label>Nom arrêt</label><input id="stopName" placeholder="Ex: Gare routière">
-      <label>Latitude</label><input id="stopLat" inputmode="decimal" placeholder="36.7509">
-      <label>Longitude</label><input id="stopLng" inputmode="decimal" placeholder="5.0567">
-      <div class="row"><button id="useMyLocationStopBtn" class="secondary" type="button">Utiliser ma position</button><button id="pickStopOnMapBtn" class="secondary" type="button">Choisir sur la carte</button></div>
+      <label>Nom arrêt</label><input id="stopName" placeholder="Ex: Sidi Aïch">
+      <label>Latitude</label><input id="stopLat" inputmode="decimal" placeholder="36.6122">
+      <label>Longitude</label><input id="stopLng" inputmode="decimal" placeholder="4.6865">
+      <div class="row"><button id="useMyLocationStopBtn" class="secondary" type="button">📍 Utiliser ma position</button><button id="pickStopOnMapBtn" class="secondary" type="button">🗺️ Choisir sur la carte</button></div>
       <button id="addStopBtn" class="primary" type="button">Ajouter arrêt</button><div id="stopStatus" class="result"></div>
     </div>
     <div class="card"><h3>Arrêts enregistrés</h3><div id="stopsAdminList" class="list"></div></div>
@@ -100,6 +121,7 @@
   </div>
 </section>
 </main>
+
 <nav class="bottomNav"><button class="navBtn active" type="button" data-page="clientPage">🗺️<span>Client</span></button><button class="navBtn" type="button" data-page="driverPage">🚌<span>Chauffeur</span></button><button class="navBtn" type="button" data-page="adminPage">⚙️<span>Admin</span></button></nav>
 
 <div id="loginModal" class="modal hidden"><div class="modalCard">
@@ -114,8 +136,10 @@
 </div></div>
 
 <div id="stopPickerModal" class="modal hidden"><div class="modalCard mapModal">
-  <h2>Choisir l’arrêt</h2><p>Clique sur la carte.</p><div id="stopPickerMap"></div><div id="pickedCoords" class="result">Aucune position choisie</div>
-  <button id="pickerUseGpsBtn" class="secondary" type="button">Ma position</button><button id="pickerConfirmBtn" class="primary" type="button">Utiliser cette position</button><button id="pickerCloseBtn" class="ghost" type="button">Fermer</button>
+  <h2>Choisir l’arrêt</h2><p>Clique sur la carte pour choisir la position exacte.</p><div id="stopPickerMap"></div><div id="pickedCoords" class="result">Aucune position choisie</div>
+  <button id="pickerUseGpsBtn" class="secondary" type="button">Ma position</button>
+  <button id="pickerConfirmBtn" class="primary" type="button">Utiliser cette position</button>
+  <button id="pickerCloseBtn" class="ghost" type="button">Fermer</button>
 </div></div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -123,6 +147,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=server-debug-1"></script>
+<script src="app.js?v=driver-online-1"></script>
 </body>
 </html>
