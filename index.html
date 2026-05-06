@@ -84,10 +84,12 @@
       <label>Ville</label><select id="lineCity"><option value="Bejaia">Béjaïa</option><option value="Montreal">Montréal test</option></select>
       <label>Nom ligne</label><input id="lineName" placeholder="Ex: Tidjounane">
       <label>Type</label><select id="lineType"><option value="bus">bus</option><option value="tram">tram</option><option value="metro">metro</option><option value="taxi_collectif">taxi collectif</option></select>
+      <label>Point départ ligne</label><select id="lineStartStopSelect"><option value="">Auto / aucun</option></select>
+      <label>Point arrivée ligne</label><select id="lineEndStopSelect"><option value="">Auto / aucun</option></select>
       <label>Couleur</label><input id="lineColor" type="color" value="#2563eb">
       <button id="addLineBtn" class="primary" type="button">Ajouter ligne</button><div id="lineStatus" class="result"></div>
     </div>
-    <div class="card"><h3>Lignes enregistrées</h3><div id="linesAdminList" class="list"></div></div>
+    <div class="card"><h3>Lignes enregistrées</h3><p class="hintBox">Terminus : un bus au point départ/arrivée est caché aux clients jusqu’à son redémarrage.</p><div id="linesAdminList" class="list"></div></div>
   </div>
 
   <div id="panelStops" class="adminPanel">
@@ -236,6 +238,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=direction-aller-retour-1"></script>
+<script src="app.js?v=terminus-logic-1"></script>
 </body>
 </html>
