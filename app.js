@@ -88,3 +88,62 @@ window.addEventListener("load",init);
     }, 1200);
   });
 })();
+
+
+/* SERVER FIRESTORE DEBUG */
+(function(){
+  function ready(fn){ document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", fn) : fn(); }
+  function out(msg){
+    var el = document.getElementById("firestoreDebugText");
+    if(el) el.textContent = msg;
+    console.log("[SERVER DEBUG]", msg);
+  }
+  function safe(v){ try { return JSON.stringify(v, null, 2); } catch(e){ return String(v); } }
+
+  ready(function(){
+    setTimeout(async function(){
+      try{
+        if(!window.firebase){ out("❌ Firebase SDK non chargé"); return; }
+        if(!firebase.apps.length){ out("❌ Firebase app non initialisée"); return; }
+        if(!window.db){ out("❌ window.db non chargé"); return; }
+
+        const appProject = firebase.app().options.projectId;
+        const authUser = window.auth && window.auth.currentUser ? window.auth.currentUser : null;
+
+        let msg = "✅ SDK chargé\n";
+        msg += "projectId réel du site: " + appProject + "\n";
+        msg += "auth email: " + (authUser ? authUser.email : "NON CONNECTÉ") + "\n";
+        msg += "auth uid: " + (authUser ? authUser.uid : "NON CONNECTÉ") + "\n\n";
+
+        msg += "Lecture serveur Firestore...\n";
+        out(msg);
+
+        const lineSnap = await window.db.collection("lines").get({source:"server"});
+        const stopSnap = await window.db.collection("stops").get({source:"server"});
+
+        msg += "\nlines serveur trouvées: " + lineSnap.size + "\n";
+        if(lineSnap.size){
+          lineSnap.docs.slice(0,5).forEach(function(d){
+            msg += "- " + d.id + " => " + safe(d.data()) + "\n";
+          });
+        } else {
+          msg += "Aucune ligne sur le serveur.\n";
+        }
+
+        msg += "\nstops serveur trouvés: " + stopSnap.size + "\n";
+        if(stopSnap.size){
+          stopSnap.docs.slice(0,5).forEach(function(d){
+            msg += "- " + d.id + " => " + safe(d.data()) + "\n";
+          });
+        } else {
+          msg += "Aucun arrêt sur le serveur.\n";
+        }
+
+        out(msg);
+      }catch(e){
+        out("❌ ERREUR LECTURE SERVEUR\n" + (e.code || "") + "\n" + (e.message || e));
+        console.error(e);
+      }
+    }, 1800);
+  });
+})();
