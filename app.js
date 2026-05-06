@@ -1598,6 +1598,7 @@ function clearMultiRouteLayers(){
 async function drawMultiLineRoute(segments){
   if(!map) return;
   routeFocusActive = true;
+  renderRouteSteps(segments);
   clearMultiRouteLayers();
   const pts=[];
 
@@ -1609,8 +1610,8 @@ async function drawMultiLineRoute(segments){
   }
 
   if(segments.length){
-    addMarker(segments[0].from, "Départ: "+stopLabel(segments[0].from));
-    addMarker(segments[segments.length-1].to, "Destination: "+stopLabel(segments[segments.length-1].to));
+    addRouteMarker(segments[0].from, "Départ", "📍");
+    addRouteMarker(segments[segments.length-1].to, "Arrivée", "🏁");
   }
 
   for(const seg of segments){
@@ -1619,14 +1620,16 @@ async function drawMultiLineRoute(segments){
       const latlngs = seg.stops.map(s=>[num(s.lat),num(s.lng)]).filter(p=>p[0]!==null&&p[1]!==null);
       const layer = L.polyline(latlngs, {color:(line&&line.color)||"#2563eb", weight:7, opacity:.82}).addTo(map);
       routeSearchLayers.push(layer);
+      addRouteMarker(seg.from, "Monter", "🚌");
+      addRouteMarker(seg.to, "Descendre", "⬇️");
       latlngs.forEach(p=>pts.push(p));
     }else{
       const latlngs = [[num(seg.from.lat),num(seg.from.lng)],[num(seg.to.lat),num(seg.to.lng)]];
       const layer = L.polyline(latlngs, {color:"#111827", weight:5, opacity:.9, dashArray:"4,12"}).addTo(map);
       routeSearchLayers.push(layer);
       latlngs.forEach(p=>pts.push(p));
-      addMarker(seg.from, "Marche depuis: "+stopLabel(seg.from));
-      addMarker(seg.to, "Reprendre ici: "+stopLabel(seg.to));
+      addRouteMarker(seg.from, "Descendre", "⬇️");
+      addRouteMarker(seg.to, "Reprendre", "⬆️");
     }
   }
 
@@ -1690,7 +1693,66 @@ function resetRouteSearchView(){
     routeSearchLayers=[];
   }
   renderAll();
-  setText("routeResult","Prêt. Écris un arrêt de départ et un arrêt de destination.");
+  setText("routeResult","Prêt. Écris un arrêt de départ et un arrêt de destination.");if($("routeStepsList"))$("routeStepsList").innerHTML="";
+}
+
+
+function lineBadgeHtml(lineId){
+  const line = lines.find(l => l.id === lineId);
+  const color = (line && line.color) || "#2563eb";
+  const name = lineName(lineId);
+  return `<span class="lineBadge" style="background:${color}">${name}</span>`;
+}
+function renderRouteSteps(segments){
+  const box = $("routeStepsList");
+  if(!box) return;
+  if(!segments || !segments.length){
+    box.innerHTML = "";
+    return;
+  }
+
+  let html = "";
+  segments.forEach((seg, i) => {
+    const min = Math.max(1, Math.round(seg.minutes || 0));
+    const dist = Math.round(seg.distance || 0);
+
+    if(seg.type === "bus"){
+      html += `
+        <div class="routeStepCard busStep">
+          <div class="stepIcon">🚌</div>
+          <div class="stepContent">
+            <div class="stepTitle">Monter à <b>${stopLabel(seg.from)}</b></div>
+            <div class="stepLine">${lineBadgeHtml(seg.lineId)}</div>
+            <div class="stepMeta">Descendre à <b>${stopLabel(seg.to)}</b> · ${min} min</div>
+          </div>
+        </div>
+      `;
+    }else{
+      html += `
+        <div class="routeStepCard walkStep">
+          <div class="stepIcon">🚶</div>
+          <div class="stepContent">
+            <div class="stepTitle">Marcher jusqu’à <b>${stopLabel(seg.to)}</b></div>
+            <div class="stepMeta">${dist} m · ${min} min</div>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  box.innerHTML = html;
+}
+function addRouteMarker(stop,label,emoji){
+  if(!map || !stop || num(stop.lat)===null || num(stop.lng)===null) return null;
+  const icon = L.divIcon({
+    className:"routeMarkerLabel",
+    html:`<div class="routeMarkerBubble">${emoji} ${label}</div>`,
+    iconSize:[150,34],
+    iconAnchor:[20,34]
+  });
+  const marker = L.marker([num(stop.lat),num(stop.lng)],{icon}).addTo(map).bindPopup(label + ": " + stopLabel(stop));
+  routeSearchLayers.push(marker);
+  return marker;
 }
 
 function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
