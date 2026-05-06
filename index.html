@@ -26,7 +26,7 @@
     <label>Départ</label><input id="fromInput" placeholder="Ex: Gare routière">
     <label>Destination</label><input id="toInput" placeholder="Ex: Université">
     <button id="searchRouteBtn" class="primary" type="button">Chercher trajet</button>
-    <div class="routeNote">L’app propose la meilleur trajet multi-lignes : moins de marche, moins de temps, moins de correspondances.</div><button id="clearRouteBtn" type="button" class="secondary smallBtn">Afficher toutes les lignes</button><div id="routeResult" class="result">Prêt. Écris un arrêt de départ et un arrêt de destination.</div>
+    <div class="routeNote">L’app propose la meilleur trajet multi-lignes : moins de marche, moins de temps, moins de correspondances.</div><div class="routeOnlyNote">Mode trajet : la carte affiche seulement le chemin à suivre.</div><button id="clearRouteBtn" type="button" class="secondary smallBtn">Afficher toutes les lignes</button><div id="routeResult" class="result">Prêt. Écris un arrêt de départ et un arrêt de destination.</div>
   </div>
   <div class="mapWrap"><div id="map"></div></div>
   <div class="card"><h3>Arrêts</h3><div id="stopsList" class="list"></div></div>
@@ -234,6 +234,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=route-steps-pro-1"></script>
+<script src="app.js?v=only-route-clean-1"></script>
 </body>
 </html>

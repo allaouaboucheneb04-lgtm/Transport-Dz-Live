@@ -1374,6 +1374,7 @@ function findClosestTransferBetweenLines(fromStop,toStop){
 async function drawSimpleRouteResult(fromStop,toStop,transfer){
   if(!map) return;
   routeFocusActive = true;
+  cleanMapForRouteOnly();
   safeClearSearchLayers();
   const pts=[];
   function addMarker(s,label){
@@ -1598,6 +1599,8 @@ function clearMultiRouteLayers(){
 async function drawMultiLineRoute(segments){
   if(!map) return;
   routeFocusActive = true;
+  cleanMapForRouteOnly();
+  cleanMapForRouteOnly();
   renderRouteSteps(segments);
   clearMultiRouteLayers();
   const pts=[];
@@ -1686,8 +1689,32 @@ async function searchRouteMultiLines(){
 }
 
 
+
+function cleanMapForRouteOnly(){
+  if(!map) return;
+
+  // remove previous focused route layers
+  if(Array.isArray(routeSearchLayers)){
+    routeSearchLayers.forEach(layer => { try{ map.removeLayer(layer); }catch(e){} });
+    routeSearchLayers = [];
+  }
+
+  // remove OSM imported layer / GeoJSON layer if present
+  try{ if(osmStopsLayer){ map.removeLayer(osmStopsLayer); osmStopsLayer=null; } }catch(e){}
+  try{ if(bejaiaGeojsonLayer){ map.removeLayer(bejaiaGeojsonLayer); bejaiaGeojsonLayer=null; } }catch(e){}
+
+  // remove all dynamic leaflet overlays, keep only tile layer
+  map.eachLayer(layer => {
+    if(layer instanceof L.Marker || layer instanceof L.CircleMarker || layer instanceof L.Polyline || layer instanceof L.Polygon || layer instanceof L.GeoJSON){
+      try{ map.removeLayer(layer); }catch(e){}
+    }
+  });
+}
+
 function resetRouteSearchView(){
   routeFocusActive = false;
+  if(typeof loadOsmStopsGeojson==="function") loadOsmStopsGeojson();
+  if(typeof loadBejaiaLinesStopsGeojson==="function") loadBejaiaLinesStopsGeojson();
   if(Array.isArray(routeSearchLayers)){
     routeSearchLayers.forEach(layer=>{try{map.removeLayer(layer)}catch(e){}});
     routeSearchLayers=[];
