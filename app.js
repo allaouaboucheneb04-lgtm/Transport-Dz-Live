@@ -1204,8 +1204,9 @@ async function importBejaiaAutoLinesAndStops(){
           color,
           active: true,
           source: "bejaia_osm_auto",
+          routeGeometryType: ((route.geometry||{}).type || null),
           osmId: p["@id"] || p.id || route.id || "",
-          routeGeometry: route.geometry || null,
+          routeGeometry: null,
           createdAt: now(),
           updatedAt: now()
         });
@@ -1223,6 +1224,7 @@ async function importBejaiaAutoLinesAndStops(){
             order: j+1,
             active: true,
             source: "bejaia_osm_auto",
+          routeGeometryType: ((route.geometry||{}).type || null),
             osmId: s.osmId,
             distanceToRoute: s.distanceToRoute || null,
             createdAt: now(),
