@@ -145,6 +145,23 @@
   <div id="panelImport" class="adminPanel">
 
     <div class="card">
+      <h3>GeoJSON Béjaïa lignes + arrêts</h3>
+      <p>Fichier intégré : <b>/data/bejaia-lines-stops.geojson</b></p>
+      <div class="result">Analyse fichier : 306 éléments · Points: 297 · Lignes: 9 · Routes détectées: 54</div>
+
+      <label class="checkLine"><input id="showBejaiaGeojsonToggle" type="checkbox" checked> Afficher ce GeoJSON sur la carte</label>
+
+      <button id="createBejaiaLinesBtn" type="button" class="secondary">Créer les lignes OSM dans Firebase</button>
+
+      <label>Importer les arrêts dans quelle ligne Firebase?</label>
+      <select id="bejaiaImportLineSelect"></select>
+
+      <button id="importBejaiaStopsBtn" type="button" class="primary">Importer les arrêts Béjaïa dans Firebase</button>
+      <div id="bejaiaGeojsonStatus" class="result">Chargement...</div>
+    </div>
+
+
+    <div class="card">
       <h3>Arrêts OpenStreetMap GeoJSON</h3>
       <p>Ton fichier est intégré dans <b>/data/algeria-osm-stops.geojson</b>. Points orange sur la carte.</p>
       <label class="checkLine"><input id="showOsmStopsToggle" type="checkbox" checked> Afficher les arrêts OSM</label>
@@ -214,6 +231,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=osm-geojson-1"></script>
+<script src="app.js?v=bejaia-lines-stops-1"></script>
 </body>
 </html>
