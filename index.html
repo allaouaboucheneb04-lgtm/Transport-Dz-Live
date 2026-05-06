@@ -97,7 +97,20 @@
       <div class="row"><button id="useMyLocationStopBtn" class="secondary" type="button">📍 Utiliser ma position</button><button id="pickStopOnMapBtn" class="secondary" type="button">🗺️ Choisir sur la carte</button></div>
       <button id="addStopBtn" class="primary" type="button">Ajouter arrêt</button><div id="stopStatus" class="result"></div>
     </div>
-    <div class="card"><h3>Arrêts enregistrés</h3><div id="stopsAdminList" class="list"></div></div>
+    <div class="card">
+        <h3>Arrêts enregistrés</h3>
+
+        <label>Filtrer par ligne</label>
+        <select id="adminStopsLineFilter">
+          <option value="all">Toutes les lignes</option>
+        </select>
+
+        <label>Recherche arrêt</label>
+        <input id="adminStopsSearch" placeholder="Ex: Sidi Aïch, 28 eme...">
+
+        <div id="adminStopsCount" class="result">0 arrêt</div>
+        <div id="stopsAdminList" class="list"></div>
+      </div>
   </div>
 
   <div id="panelVehicles" class="adminPanel">
@@ -147,6 +160,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=osrm-routes-1"></script>
+<script src="app.js?v=stops-filter-1"></script>
 </body>
 </html>

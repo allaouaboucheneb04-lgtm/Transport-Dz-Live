@@ -3,3 +3,6 @@
 .editBtn{width:auto;min-height:40px;border:0;border-radius:14px;background:#dbeafe;color:#1d4ed8;font-weight:900;padding:9px 12px;margin-top:8px}
 
 .hint{font-size:14px;color:#64748b;margin:6px 0 8px;font-weight:700}
+
+#adminStopsSearch{margin-bottom:10px}
+#adminStopsCount{font-weight:900;color:#1d4ed8}
