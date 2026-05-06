@@ -23,3 +23,5 @@
 .autoImportNote{font-size:14px;color:#475569;font-weight:800;margin-top:8px}
 
 .dangerNote{margin-top:10px;padding:12px;border-radius:16px;background:#fff1f2;color:#be123c;font-weight:900;border:1px solid #fecdd3}
+
+.routeStep{padding:8px 10px;border-radius:12px;background:#f8fafc;margin-top:6px;font-weight:800}

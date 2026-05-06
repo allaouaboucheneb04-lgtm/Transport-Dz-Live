@@ -1427,10 +1427,261 @@ async function searchRouteFixedAllStops(){
   }
 }
 
+
+// =========================
+// MULTI-LIGNES PATHFINDING
+// =========================
+const MULTI_WALK_LIMIT_METERS = 850;
+const MULTI_TRANSFER_LIMIT_METERS = 550;
+const BUS_AVG_KMH = 25;
+const WALK_MPS = 1.25;
+
+function ensureSearchHelpers(){
+  if(typeof normalizeSearchText !== "function"){
+    window.normalizeSearchText = function(txt){
+      return (txt || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+    };
+  }
+}
+function stopLabel(s){
+  return s ? (s.name || s.id || "Arrêt") : "Arrêt";
+}
+function allValidStops(){
+  return stops.filter(s => s && s.id && s.lineId && num(s.lat)!==null && num(s.lng)!==null);
+}
+function routeLineStops(lineId){
+  const arr = stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+  return arr.sort((a,b)=>{
+    const oa = Number(a.order || 9999), ob = Number(b.order || 9999);
+    if(oa !== ob) return oa - ob;
+    return stopLabel(a).localeCompare(stopLabel(b));
+  });
+}
+function uniqueStopKey(stop){
+  return stop.id;
+}
+function buildTransportGraph(){
+  const graph = {};
+  const valid = allValidStops();
+
+  valid.forEach(s => { graph[uniqueStopKey(s)] = []; });
+
+  // Bus edges along each line, forward and backward
+  lines.forEach(line => {
+    const ls = routeLineStops(line.id);
+    for(let i=0;i<ls.length-1;i++){
+      const a=ls[i], b=ls[i+1];
+      const d=distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
+      const minutes = (d / (BUS_AVG_KMH*1000/3600)) / 60;
+      const cost = minutes + 0.5; // bus movement cost
+      graph[uniqueStopKey(a)].push({to:uniqueStopKey(b), type:"bus", lineId:line.id, distance:d, minutes, cost});
+      graph[uniqueStopKey(b)].push({to:uniqueStopKey(a), type:"bus", lineId:line.id, distance:d, minutes, cost});
+    }
+  });
+
+  // Walking transfer edges only for close stops, never huge walks
+  for(let i=0;i<valid.length;i++){
+    for(let j=i+1;j<valid.length;j++){
+      const a=valid[i], b=valid[j];
+      if(a.lineId === b.lineId) continue;
+      const d=distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
+      if(d <= MULTI_TRANSFER_LIMIT_METERS){
+        const minutes = (d / WALK_MPS) / 60;
+        const cost = minutes * 1.8 + 4; // walking + transfer penalty
+        graph[uniqueStopKey(a)].push({to:uniqueStopKey(b), type:"walk", lineId:null, distance:d, minutes, cost});
+        graph[uniqueStopKey(b)].push({to:uniqueStopKey(a), type:"walk", lineId:null, distance:d, minutes, cost});
+      }
+    }
+  }
+
+  return graph;
+}
+function dijkstraRoute(startId, endId){
+  const graph = buildTransportGraph();
+  const dist = {}, prev = {}, visited = new Set();
+  Object.keys(graph).forEach(k => dist[k] = Infinity);
+  dist[startId] = 0;
+
+  while(true){
+    let u = null, best = Infinity;
+    for(const k of Object.keys(dist)){
+      if(!visited.has(k) && dist[k] < best){
+        best = dist[k]; u = k;
+      }
+    }
+    if(u === null) break;
+    if(u === endId) break;
+    visited.add(u);
+
+    for(const edge of (graph[u] || [])){
+      const alt = dist[u] + edge.cost;
+      if(alt < dist[edge.to]){
+        dist[edge.to] = alt;
+        prev[edge.to] = {from:u, edge};
+      }
+    }
+  }
+
+  if(!prev[endId] && startId !== endId) return null;
+
+  const path = [];
+  let cur = endId;
+  while(cur !== startId){
+    const p = prev[cur];
+    if(!p) return null;
+    path.unshift({from:p.from, to:cur, edge:p.edge});
+    cur = p.from;
+  }
+  return {cost:dist[endId], path};
+}
+function compactSegments(path){
+  const stopById = Object.fromEntries(stops.map(s => [s.id,s]));
+  const segments = [];
+  for(const step of path){
+    const fromStop = stopById[step.from];
+    const toStop = stopById[step.to];
+    if(!fromStop || !toStop) continue;
+
+    const last = segments[segments.length-1];
+    if(last && last.type === step.edge.type && last.lineId === step.edge.lineId){
+      last.to = toStop;
+      last.toId = toStop.id;
+      last.distance += step.edge.distance;
+      last.minutes += step.edge.minutes;
+      last.stops.push(toStop);
+    }else{
+      segments.push({
+        type:step.edge.type,
+        lineId:step.edge.lineId,
+        from:fromStop,
+        to:toStop,
+        fromId:fromStop.id,
+        toId:toStop.id,
+        distance:step.edge.distance,
+        minutes:step.edge.minutes,
+        stops:[fromStop,toStop]
+      });
+    }
+  }
+  return segments;
+}
+function routeSummaryText(segments){
+  if(!segments.length) return "Aucun trajet.";
+  return segments.map(seg=>{
+    if(seg.type === "bus"){
+      return `🚌 ${lineName(seg.lineId)} (${Math.max(1,Math.round(seg.minutes))} min)`;
+    }
+    return `🚶 ${Math.round(seg.distance)} m (${Math.max(1,Math.round(seg.minutes))} min)`;
+  }).join(" → ");
+}
+function routeTotals(segments){
+  let walk=0,bus=0,min=0,transfers=0,lastBus=null;
+  segments.forEach(seg=>{
+    min += seg.minutes;
+    if(seg.type==="walk") walk += seg.distance;
+    if(seg.type==="bus"){
+      bus += seg.distance;
+      if(lastBus && lastBus !== seg.lineId) transfers++;
+      lastBus = seg.lineId;
+    }
+  });
+  return {walk,bus,min,transfers};
+}
+function clearMultiRouteLayers(){
+  if(!Array.isArray(routeSearchLayers)) routeSearchLayers=[];
+  routeSearchLayers.forEach(layer=>{ try{ map.removeLayer(layer); }catch(e){} });
+  routeSearchLayers=[];
+}
+async function drawMultiLineRoute(segments){
+  if(!map) return;
+  clearMultiRouteLayers();
+  const pts=[];
+
+  function addMarker(stop, label){
+    if(!stop || num(stop.lat)===null || num(stop.lng)===null) return;
+    const m=L.marker([num(stop.lat),num(stop.lng)]).addTo(map).bindPopup(label);
+    routeSearchLayers.push(m);
+    pts.push([num(stop.lat),num(stop.lng)]);
+  }
+
+  if(segments.length){
+    addMarker(segments[0].from, "Départ: "+stopLabel(segments[0].from));
+    addMarker(segments[segments.length-1].to, "Destination: "+stopLabel(segments[segments.length-1].to));
+  }
+
+  for(const seg of segments){
+    if(seg.type === "bus"){
+      const line = lines.find(l=>l.id===seg.lineId);
+      const latlngs = seg.stops.map(s=>[num(s.lat),num(s.lng)]).filter(p=>p[0]!==null&&p[1]!==null);
+      const layer = L.polyline(latlngs, {color:(line&&line.color)||"#2563eb", weight:7, opacity:.82}).addTo(map);
+      routeSearchLayers.push(layer);
+      latlngs.forEach(p=>pts.push(p));
+    }else{
+      const latlngs = [[num(seg.from.lat),num(seg.from.lng)],[num(seg.to.lat),num(seg.to.lng)]];
+      const layer = L.polyline(latlngs, {color:"#111827", weight:5, opacity:.9, dashArray:"4,12"}).addTo(map);
+      routeSearchLayers.push(layer);
+      latlngs.forEach(p=>pts.push(p));
+      addMarker(seg.from, "Marche depuis: "+stopLabel(seg.from));
+      addMarker(seg.to, "Reprendre ici: "+stopLabel(seg.to));
+    }
+  }
+
+  if(pts.length) map.fitBounds(L.latLngBounds(pts), {padding:[40,40]});
+}
+function findStopsForRouteQuery(q){
+  if(typeof searchStopsEverywhere === "function") return searchStopsEverywhere(q);
+  const nq = normalizeSearchText(q);
+  return stops.filter(s => normalizeSearchText(`${s.name||""} ${lineName(s.lineId)||""}`).includes(nq));
+}
+async function searchRouteMultiLines(){
+  ensureSearchHelpers();
+  const fromTxt = val("fromInput").trim();
+  const toTxt = val("toInput").trim();
+
+  if(!fromTxt || !toTxt){
+    setText("routeResult","Écris le départ ET la destination.");
+    return;
+  }
+
+  const fromCandidates = findStopsForRouteQuery(fromTxt).slice(0,8);
+  const toCandidates = findStopsForRouteQuery(toTxt).slice(0,8);
+
+  if(!fromCandidates.length || !toCandidates.length){
+    setText("routeResult",`Aucun arrêt trouvé. Départ: ${fromCandidates[0]?.name || "non"} · Destination: ${toCandidates[0]?.name || "non"}`);
+    return;
+  }
+
+  let best = null;
+  for(const start of fromCandidates){
+    for(const end of toCandidates){
+      if(!start.id || !end.id || start.id === end.id) continue;
+      const result = dijkstraRoute(start.id, end.id);
+      if(!result) continue;
+      const segments = compactSegments(result.path);
+      const totals = routeTotals(segments);
+      if(totals.walk > MULTI_WALK_LIMIT_METERS) continue;
+      const score = result.cost + totals.transfers*5 + (totals.walk/100)*1.5;
+      if(!best || score < best.score){
+        best = {start,end,result,segments,totals,score};
+      }
+    }
+  }
+
+  if(!best){
+    setText("routeResult",`Aucun trajet raisonnable trouvé. L’app refuse les longues marches. Essaie un autre arrêt proche.`);
+    return;
+  }
+
+  await drawMultiLineRoute(best.segments);
+  const totalMin = Math.max(1, Math.round(best.totals.min));
+  const walkMeters = Math.round(best.totals.walk);
+  setText("routeResult",`✅ Meilleur trajet multi-lignes (${totalMin} min, marche ${walkMeters} m, ${best.totals.transfers} correspondance): ${routeSummaryText(best.segments)}`);
+}
+
 function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
-if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteFixedAllStops().catch(e=>{console.error(e);setText("routeResult","Erreur recherche trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
+if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
