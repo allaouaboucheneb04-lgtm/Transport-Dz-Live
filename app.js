@@ -34,3 +34,57 @@ function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.r
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()})}
 window.addEventListener("load",init);
 })();
+
+
+/* Firestore visible debug */
+(function(){
+  function ready(fn){ document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", fn) : fn(); }
+  function out(msg){
+    const el = document.getElementById("firestoreDebugText") || document.getElementById("debug");
+    if(el) el.textContent = msg;
+    console.log("[Firestore Debug]", msg);
+  }
+  ready(function(){
+    setTimeout(function(){
+      if(!window.firebase){ out("❌ Firebase SDK non chargé"); return; }
+      if(!window.db){ out("❌ window.db non chargé. firebase-config.js ne marche pas."); return; }
+
+      out("Connexion Firestore...\nProjet: transport-dz-live-5d1fb\nLecture lines/stops...");
+      let lineCount = 0;
+      let stopCount = 0;
+      let lineSamples = [];
+      let stopSamples = [];
+      let errors = [];
+
+      window.db.collection("lines").onSnapshot(function(snap){
+        lineCount = snap.size;
+        lineSamples = snap.docs.slice(0,3).map(function(d){ return d.id + " => " + JSON.stringify(d.data()); });
+        render();
+      }, function(err){
+        errors.push("lines: " + err.code + " " + err.message);
+        render();
+      });
+
+      window.db.collection("stops").onSnapshot(function(snap){
+        stopCount = snap.size;
+        stopSamples = snap.docs.slice(0,3).map(function(d){ return d.id + " => " + JSON.stringify(d.data()); });
+        render();
+      }, function(err){
+        errors.push("stops: " + err.code + " " + err.message);
+        render();
+      });
+
+      function render(){
+        out(
+          "✅ Firestore chargé\n" +
+          "Projet: transport-dz-live-5d1fb\n\n" +
+          "lines trouvées: " + lineCount + "\n" +
+          (lineSamples.length ? lineSamples.join("\n") : "Aucune ligne lue") + "\n\n" +
+          "stops trouvés: " + stopCount + "\n" +
+          (stopSamples.length ? stopSamples.join("\n") : "Aucun arrêt lu") + "\n\n" +
+          (errors.length ? "ERREURS:\n" + errors.join("\n") : "Aucune erreur de lecture.")
+        );
+      }
+    }, 1200);
+  });
+})();
