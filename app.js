@@ -678,7 +678,57 @@ visibleVehiclesForClients().forEach(v=>{
 
 if(clientMarker) clientMarker.addTo(map);
 }
-function renderAll(){renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
+
+function isVehicleWaitingAtTerminus(v){
+  if(!v || v.status !== "online") return false;
+  if(!isLineActive(v.lineId)) return false;
+  if(isVehicleOffLine(v)) return false;
+  return isVehicleAtTerminus(v) && !hasVehicleStartedFromTerminus(v);
+}
+function waitingBusesByLine(){
+  const selected = val("clientLineSelect") || "all";
+  const result = {};
+  vehicles.forEach(v => {
+    if(!isVehicleWaitingAtTerminus(v)) return;
+    if(selected !== "all" && v.lineId !== selected) return;
+    const key = v.lineId || "unknown";
+    if(!result[key]) result[key] = {line: getLineById(key), start:0, end:0, total:0, vehicles:[]};
+    const line = result[key].line;
+    const dir = vehicleDirection ? vehicleDirection(v) : (v.direction || "aller");
+    const start = lineStartStop(line, dir);
+    const end = lineEndStop(line, dir);
+    const dStart = distanceVehicleToStop(v, start);
+    const dEnd = distanceVehicleToStop(v, end);
+    if(dStart <= dEnd) result[key].start++; else result[key].end++;
+    result[key].total++;
+    result[key].vehicles.push(v);
+  });
+  return result;
+}
+function renderWaitingBusesList(){
+  const box = $("waitingBusesList");
+  if(!box) return;
+  const grouped = waitingBusesByLine();
+  const keys = Object.keys(grouped);
+  if(!keys.length){
+    box.innerHTML = '<div class="muted">Aucun bus en attente au départ ou à l’arrivée.</div>';
+    return;
+  }
+  box.innerHTML = keys.map(lineId => {
+    const g = grouped[lineId];
+    const line = g.line;
+    const color = (line && line.color) || "#64748b";
+    return `
+      <div class="item waitingBusItem" style="border-left-color:${color}">
+        <strong>🚌 ${line ? line.name : lineId}</strong>
+        <div class="waitingCount">${g.total} bus en attente</div>
+        <span class="muted">Départ: ${g.start} · Arrivée: ${g.end}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderAll(){renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
