@@ -26,6 +26,17 @@ function editDriver(id){const d=drivers.find(x=>x.id===id);if(!d)return;editingD
 function lineName(id){const l=lines.find(x=>x.id===id);return l?(l.name||l.id):""}
 function driverName(id){const d=drivers.find(x=>x.id===id||x.email===id||x.uid===id);return d?(d.name||d.email||d.id):""}
 
+
+function stopsForLine(lineId){
+  if(!lineId || lineId==="all") return [];
+  return stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+}
+function clientVisibleStops(){
+  const selected = val("clientLineSelect") || "all";
+  if(selected === "all") return stops.filter(s => num(s.lat)!==null && num(s.lng)!==null);
+  return stopsForLine(selected);
+}
+
 function distanceMeters(lat1,lng1,lat2,lng2){
   const R=6371000, toRad=d=>d*Math.PI/180;
   const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
@@ -56,9 +67,10 @@ function visibleVehiclesForClients(){
 function initMap(){if(map)return;map=L.map("map").setView([36.7525,5.0843],13);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map)}
 function bindRealtime(){unsub.forEach(f=>f&&f());unsub=[];unsub.push(db.collection("lines").onSnapshot(s=>{lines=s.docs.map(d=>({id:d.id,...d.data()}));renderAll()},console.error));unsub.push(db.collection("stops").onSnapshot(s=>{stops=s.docs.map(d=>({id:d.id,...d.data()}));renderAll()},console.error));unsub.push(db.collection("vehicles").onSnapshot(s=>{vehicles=s.docs.map(d=>({id:d.id,...d.data()}));renderAll();renderDriverWorkStatus()},console.error));unsub.push(db.collection("drivers").onSnapshot(s=>{drivers=s.docs.map(d=>({id:d.id,...d.data()}));renderAll()},console.error))}
 function renderSelects(){const city=val("clientCity")||"Bejaia";const vis=lines.filter(l=>!l.city||l.city===city);const old=val("clientLineSelect")||"all";$("clientLineSelect").innerHTML='<option value="all">Toutes les lignes</option>'+vis.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("clientLineSelect").value=[...$("clientLineSelect").options].some(o=>o.value===old)?old:"all";const lo=lines.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("stopLineSelect").innerHTML=lo;$("vehicleLineSelect").innerHTML=lo;const dro='<option value="">Aucun chauffeur</option>'+drivers.map(d=>`<option value="${d.id}">${d.name||d.email||d.id}</option>`).join("");$("vehicleDriverSelect").innerHTML=dro;$("driverVehicleSelect").innerHTML=vehicles.map(v=>`<option value="${v.id}">${v.name} · ${lineName(v.lineId)}</option>`).join("")}
+function selectedLineStopsForList(){ const sel=val("clientLineSelect")||"all"; return sel==="all" ? stops : stops.filter(s=>s.lineId===sel); }
 function renderLists(){
 const sel=val("clientLineSelect")||"all";
-const visibleStops=stops.filter(s=>sel==="all"||s.lineId===sel);
+const visibleStops = selectedLineStopsForList();
 
 $("linesAdminList").innerHTML=lines.length?lines.map(l=>`<div class="item"><strong>${l.name}</strong><span class="muted">${l.city||""} · ${l.type||"bus"}</span><div class="actions"><button class="editBtn" data-edit-line="${l.id}" type="button">Modifier</button><button class="deleteBtn" data-del-line="${l.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucune ligne.</div>';
 
@@ -83,11 +95,58 @@ document.querySelectorAll("[data-del-stop]").forEach(b=>b.onclick=()=>requireAdm
 document.querySelectorAll("[data-del-vehicle]").forEach(b=>b.onclick=()=>requireAdmin()&&db.collection("vehicles").doc(b.dataset.delVehicle).delete());
 document.querySelectorAll("[data-del-driver]").forEach(b=>b.onclick=()=>requireAdmin()&&db.collection("drivers").doc(b.dataset.delDriver).delete())
 }
-function drawMap(){if(!map)return;map.eachLayer(layer=>{if(layer instanceof L.Marker||layer instanceof L.CircleMarker||layer instanceof L.Polyline)map.removeLayer(layer)});const sel=val("clientLineSelect")||"all";const visible=stops.filter(s=>num(s.lat)!==null&&num(s.lng)!==null&&(sel==="all"||s.lineId===sel));const groups={};visible.forEach(s=>{const color=lines.find(l=>l.id===s.lineId)?.color||"#2563eb";L.circleMarker([num(s.lat),num(s.lng)],{radius:8,color,fillColor:color,weight:3,fillOpacity:.9}).addTo(map).bindPopup(`🚏 ${s.name}<br>${lineName(s.lineId)}`);if(s.lineId){groups[s.lineId]=groups[s.lineId]||[];groups[s.lineId].push([num(s.lat),num(s.lng)])}});Object.keys(groups).forEach(id=>{if(groups[id].length>1){const color=lines.find(l=>l.id===id)?.color||"#2563eb";L.polyline(groups[id],{color,weight:4,opacity:.55}).addTo(map)}});visibleVehiclesForClients().forEach(v=>{L.marker([num(v.lat),num(v.lng)]).addTo(map).bindPopup(`🚌 ${v.name}<br>${lineName(v.lineId)}<br>En ligne`)});if(clientMarker)clientMarker.addTo(map)}
+function drawMap(){
+if(!map)return;
+map.eachLayer(layer=>{
+  if(layer instanceof L.Marker||layer instanceof L.CircleMarker||layer instanceof L.Polyline) map.removeLayer(layer)
+});
+
+const selected = val("clientLineSelect") || "all";
+const visible = clientVisibleStops();
+
+// Draw stops
+visible.forEach(s=>{
+  const color=lines.find(l=>l.id===s.lineId)?.color||"#2563eb";
+  L.circleMarker([num(s.lat),num(s.lng)],{
+    radius:8,color,fillColor:color,weight:3,fillOpacity:.9
+  }).addTo(map).bindPopup(`🚏 ${s.name}<br>${lineName(s.lineId)}`);
+});
+
+// Draw routes ONLY by their own lineId
+if(selected !== "all"){
+  const routeStops = stopsForLine(selected);
+  const color = lines.find(l=>l.id===selected)?.color || "#2563eb";
+  if(routeStops.length > 1){
+    L.polyline(routeStops.map(s=>[num(s.lat),num(s.lng)]),{
+      color,weight:5,opacity:.65
+    }).addTo(map);
+  }
+}else{
+  // When all lines selected, draw one polyline per line only, never connect different lines together
+  lines.forEach(line=>{
+    const routeStops = stopsForLine(line.id);
+    if(routeStops.length > 1){
+      L.polyline(routeStops.map(s=>[num(s.lat),num(s.lng)]),{
+        color:line.color||"#2563eb",weight:4,opacity:.50
+      }).addTo(map);
+    }
+  });
+}
+
+// Draw visible vehicles only
+visibleVehiclesForClients().forEach(v=>{
+  if(num(v.lat)===null||num(v.lng)===null) return;
+  L.marker([num(v.lat),num(v.lng)])
+    .addTo(map)
+    .bindPopup(`🚌 ${v.name}<br>${lineName(v.lineId)}<br>En ligne`);
+});
+
+if(clientMarker) clientMarker.addTo(map);
+}
 function renderAll(){renderSelects();renderLists();drawMap()}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
-async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
+async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
 async function saveVehicle(){if(!requireAdmin())return;const btn=$("addVehicleBtn");btn.disabled=true;btn.textContent=editingVehicleId?"Mise à jour...":"Enregistrement...";const name=val("vehicleName").trim();if(!name){btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule";return alert("Nom véhicule obligatoire.")}const data={name,lineId:val("vehicleLineSelect"),driverId:val("vehicleDriverSelect"),active:true};let ok=false;if(editingVehicleId){ok=await updateDoc("vehicles",editingVehicleId,data,"vehicleStatus")}else{ok=await addDoc("vehicles",{...data,status:"offline",visibleToClients:false,lat:null,lng:null,createdAt:now(),updatedAt:now()},"vehicleStatus")}if(ok){resetEdit("vehicle")}btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule"}
 async function saveDriver(){if(!requireAdmin())return;const btn=$("addDriverBtn");btn.disabled=true;btn.textContent=editingDriverId?"Mise à jour...":"Enregistrement...";const name=val("driverNameAdmin").trim();if(!name){btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur";return alert("Nom chauffeur obligatoire.")}const data={name,phone:val("driverPhoneAdmin").trim(),email:val("driverEmailAdmin").trim(),uid:val("driverEmailAdmin").trim(),active:true};let ok=false;if(editingDriverId){ok=await updateDoc("drivers",editingDriverId,data,"driverAdminStatus")}else{ok=await addDoc("drivers",{...data,createdAt:now(),updatedAt:now()},"driverAdminStatus")}if(ok){resetEdit("driver")}btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur"}
 function currentDriverVehicle(){return vehicles.find(v=>v.id===val("driverVehicleSelect"))}
