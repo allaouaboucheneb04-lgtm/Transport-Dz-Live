@@ -1325,10 +1325,112 @@ async function deleteAllLinesAndStops(){
   }
 }
 
+
+function normalizeSearchText(txt){
+  return (txt || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+}
+function searchStopsEverywhere(q){
+  const nq=normalizeSearchText(q);
+  if(!nq) return [];
+  const words=nq.split(" ").filter(Boolean);
+  return stops.filter(s=>{
+    const text=normalizeSearchText(`${s.name||""} ${s.lineName||""} ${lineName(s.lineId)||""} ${s.city||""}`);
+    return text.includes(nq) || words.every(w=>text.includes(w));
+  }).map(s=>{
+    const text=normalizeSearchText(`${s.name||""} ${s.lineName||""} ${lineName(s.lineId)||""} ${s.city||""}`);
+    let score=0;
+    if(text.includes(nq)) score+=100;
+    words.forEach(w=>{if(text.includes(w)) score+=10});
+    if(normalizeSearchText(s.name||"").includes(nq)) score+=50;
+    return {...s,_score:score};
+  }).sort((a,b)=>b._score-a._score);
+}
+function bestStopMatch(q){return searchStopsEverywhere(q)[0]||null;}
+function safeClearSearchLayers(){
+  if(Array.isArray(routeSearchLayers)){
+    routeSearchLayers.forEach(layer=>{try{map.removeLayer(layer)}catch(e){}});
+    routeSearchLayers=[];
+  }
+}
+function safeOrderedStops(lineId){
+  if(typeof orderedStopsForLine==="function") return orderedStopsForLine(lineId);
+  return stops.filter(s=>s.lineId===lineId&&num(s.lat)!==null&&num(s.lng)!==null);
+}
+function findClosestTransferBetweenLines(fromStop,toStop){
+  if(!fromStop||!toStop||!fromStop.lineId||!toStop.lineId) return null;
+  const fromStops=safeOrderedStops(fromStop.lineId);
+  const toStops=safeOrderedStops(toStop.lineId);
+  let best=null;
+  for(const a of fromStops){
+    for(const b of toStops){
+      const d=distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
+      if(!best||d<best.walkDistance) best={fromLineId:fromStop.lineId,toLineId:toStop.lineId,transferFrom:a,transferTo:b,walkDistance:d};
+    }
+  }
+  return best;
+}
+async function drawSimpleRouteResult(fromStop,toStop,transfer){
+  if(!map) return;
+  safeClearSearchLayers();
+  const pts=[];
+  function addMarker(s,label){
+    if(!s||num(s.lat)===null||num(s.lng)===null) return;
+    const m=L.marker([num(s.lat),num(s.lng)]).addTo(map).bindPopup(label);
+    routeSearchLayers.push(m); pts.push([num(s.lat),num(s.lng)]);
+  }
+  addMarker(fromStop,"Départ: "+(fromStop.name||""));
+  addMarker(toStop,"Destination: "+(toStop.name||""));
+  for(const lineId of [...new Set([fromStop.lineId,toStop.lineId].filter(Boolean))]){
+    const line=lines.find(l=>l.id===lineId);
+    const lineStops=safeOrderedStops(lineId);
+    if(lineStops.length>1){
+      const latlngs=await getOsrmRoute(lineId,lineStops);
+      const layer=L.polyline(latlngs,{color:(line&&line.color)||"#2563eb",weight:6,opacity:.75}).addTo(map);
+      routeSearchLayers.push(layer); latlngs.forEach(p=>pts.push(p));
+    }
+  }
+  if(transfer&&transfer.transferFrom&&transfer.transferTo){
+    addMarker(transfer.transferFrom,"Descendre: "+transfer.transferFrom.name);
+    addMarker(transfer.transferTo,"Reprendre: "+transfer.transferTo.name);
+    const walk=[[num(transfer.transferFrom.lat),num(transfer.transferFrom.lng)],[num(transfer.transferTo.lat),num(transfer.transferTo.lng)]];
+    const walkLayer=L.polyline(walk,{color:"#111827",weight:5,opacity:.9,dashArray:"4,12"}).addTo(map);
+    routeSearchLayers.push(walkLayer); walk.forEach(p=>pts.push(p));
+  }
+  if(pts.length) map.fitBounds(L.latLngBounds(pts),{padding:[40,40]});
+}
+async function searchRouteFixedAllStops(){
+  const fromTxt=val("fromInput").trim();
+  const toTxt=val("toInput").trim();
+  if(!fromTxt||!toTxt){setText("routeResult","Écris le départ ET la destination.");return;}
+  const fromStop=bestStopMatch(fromTxt);
+  const toStop=bestStopMatch(toTxt);
+  if(!fromStop||!toStop){
+    const f=searchStopsEverywhere(fromTxt).slice(0,3).map(s=>s.name).join(", ");
+    const t=searchStopsEverywhere(toTxt).slice(0,3).map(s=>s.name).join(", ");
+    setText("routeResult",`Aucun trajet trouvé. Départ trouvé: ${f||"non"} · Destination trouvée: ${t||"non"}`);
+    return;
+  }
+  if(fromStop.lineId&&toStop.lineId&&fromStop.lineId===toStop.lineId){
+    if($("clientLineSelect")) $("clientLineSelect").value=fromStop.lineId;
+    renderAll();
+    await drawSimpleRouteResult(fromStop,toStop,null);
+    setText("routeResult",`✅ Trajet direct: ${lineName(fromStop.lineId)} · ${fromStop.name} → ${toStop.name}`);
+    return;
+  }
+  const transfer=findClosestTransferBetweenLines(fromStop,toStop);
+  await drawSimpleRouteResult(fromStop,toStop,transfer);
+  if(transfer){
+    const walkMin=Math.max(1,Math.round((transfer.walkDistance/1.25)/60));
+    setText("routeResult",`✅ Trajet avec correspondance: ${lineName(fromStop.lineId)} → 🚶 ${Math.round(transfer.walkDistance)} m (${walkMin} min) → ${lineName(toStop.lineId)}`);
+  }else{
+    setText("routeResult",`✅ Arrêts trouvés: ${fromStop.name} → ${toStop.name}. Pas de correspondance calculée.`);
+  }
+}
+
 function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
-if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteGoogleLike().catch(e=>{console.error(e);setText("routeResult","Erreur calcul trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
+if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteFixedAllStops().catch(e=>{console.error(e);setText("routeResult","Erreur recherche trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
