@@ -1,6 +1,6 @@
 (function(){
 const $=id=>document.getElementById(id);
-let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;
+let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let routeLayers=[];
 const LINE_TOLERANCE_METERS=500;
 const GPS_STALE_MS=120000;
 
@@ -95,45 +95,85 @@ document.querySelectorAll("[data-del-stop]").forEach(b=>b.onclick=()=>requireAdm
 document.querySelectorAll("[data-del-vehicle]").forEach(b=>b.onclick=()=>requireAdmin()&&db.collection("vehicles").doc(b.dataset.delVehicle).delete());
 document.querySelectorAll("[data-del-driver]").forEach(b=>b.onclick=()=>requireAdmin()&&db.collection("drivers").doc(b.dataset.delDriver).delete())
 }
-function drawMap(){
+
+function stopsForLine(lineId){
+  if(!lineId || lineId==="all") return [];
+  return stops.filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+}
+function clientVisibleStops(){
+  const selected = val("clientLineSelect") || "all";
+  if(selected === "all") return stops.filter(s => num(s.lat)!==null && num(s.lng)!==null);
+  return stopsForLine(selected);
+}
+function routeKey(lineId, routeStops){
+  return lineId + ":" + routeStops.map(s => `${s.id || s.name}:${s.lat},${s.lng}`).join("|");
+}
+async function getOsrmRoute(lineId, routeStops){
+  if(!routeStops || routeStops.length < 2) return routeStops.map(s => [num(s.lat), num(s.lng)]);
+  const key = routeKey(lineId, routeStops);
+  if(routeCache[key]) return routeCache[key];
+
+  const coords = routeStops.map(s => `${num(s.lng)},${num(s.lat)}`).join(";");
+  const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&continue_straight=false`;
+
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.code === "Ok" && data.routes && data.routes[0] && data.routes[0].geometry){
+      const latlngs = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+      routeCache[key] = latlngs;
+      return latlngs;
+    }
+  }catch(e){
+    console.warn("OSRM indisponible, fallback ligne droite", e);
+  }
+
+  const fallback = routeStops.map(s => [num(s.lat), num(s.lng)]);
+  routeCache[key] = fallback;
+  return fallback;
+}
+async function drawRouteForLine(line, routeStops){
+  if(!map || !routeStops || routeStops.length < 2) return;
+  const latlngs = await getOsrmRoute(line.id, routeStops);
+  const layer = L.polyline(latlngs, {color:line.color||"#2563eb", weight:5, opacity:.70}).addTo(map);
+  routeLayers.push(layer);
+}
+function clearRouteLayers(){
+  routeLayers.forEach(layer => { try{ map.removeLayer(layer); }catch(e){} });
+  routeLayers = [];
+}
+
+async function drawMap(){
 if(!map)return;
 map.eachLayer(layer=>{
   if(layer instanceof L.Marker||layer instanceof L.CircleMarker||layer instanceof L.Polyline) map.removeLayer(layer)
 });
+clearRouteLayers();
 
 const selected = val("clientLineSelect") || "all";
 const visible = clientVisibleStops();
 
 // Draw stops
 visible.forEach(s=>{
+  if(num(s.lat)===null || num(s.lng)===null) return;
   const color=lines.find(l=>l.id===s.lineId)?.color||"#2563eb";
   L.circleMarker([num(s.lat),num(s.lng)],{
     radius:8,color,fillColor:color,weight:3,fillOpacity:.9
   }).addTo(map).bindPopup(`🚏 ${s.name}<br>${lineName(s.lineId)}`);
 });
 
-// Draw routes ONLY by their own lineId
+// Draw road routes via OSRM, line by line only
 if(selected !== "all"){
+  const line = lines.find(l=>l.id===selected);
   const routeStops = stopsForLine(selected);
-  const color = lines.find(l=>l.id===selected)?.color || "#2563eb";
-  if(routeStops.length > 1){
-    L.polyline(routeStops.map(s=>[num(s.lat),num(s.lng)]),{
-      color,weight:5,opacity:.65
-    }).addTo(map);
-  }
+  if(line && routeStops.length > 1) await drawRouteForLine(line, routeStops);
 }else{
-  // When all lines selected, draw one polyline per line only, never connect different lines together
-  lines.forEach(line=>{
+  for(const line of lines){
     const routeStops = stopsForLine(line.id);
-    if(routeStops.length > 1){
-      L.polyline(routeStops.map(s=>[num(s.lat),num(s.lng)]),{
-        color:line.color||"#2563eb",weight:4,opacity:.50
-      }).addTo(map);
-    }
-  });
+    if(routeStops.length > 1) await drawRouteForLine(line, routeStops);
+  }
 }
 
-// Draw visible vehicles only
 visibleVehiclesForClients().forEach(v=>{
   if(num(v.lat)===null||num(v.lng)===null) return;
   L.marker([num(v.lat),num(v.lng)])
@@ -143,7 +183,7 @@ visibleVehiclesForClients().forEach(v=>{
 
 if(clientMarker) clientMarker.addTo(map);
 }
-function renderAll(){renderSelects();renderLists();drawMap()}
+function renderAll(){renderSelects();renderLists();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
