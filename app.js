@@ -305,39 +305,39 @@ function clearSearchRouteLayers(){
   routeSearchLayers = [];
 }
 async function getOsrmFootRoute(a,b){
-  if(!a || !b) return [];
-  const key = `foot:${a.lat},${a.lng}:${b.lat},${b.lng}`;
+  if(!a || !b) return {latlngs:[], distance:0, duration:0};
+  const key = `walk:${a.lat},${a.lng}:${b.lat},${b.lng}`;
   if(routeCache[key]) return routeCache[key];
 
-  // OSRM public server does not always support walking profile; use driving as fallback road-following route.
-  const url = `https://router.project-osrm.org/route/v1/foot/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
-  const urlFallback = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
-
-  async function fetchRoute(u){
-    const res = await fetch(u);
-    const data = await res.json();
-    if(data.code === "Ok" && data.routes && data.routes[0]){
-      return {
-        latlngs: data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]),
-        distance: data.routes[0].distance || 0,
-        duration: data.routes[0].duration || 0
-      };
-    }
-    return null;
-  }
+  // Public OSRM may not support foot everywhere. We first try foot.
+  // If unavailable, we draw a dotted walking line and calculate realistic walking time.
+  const footUrl = `https://router.project-osrm.org/route/v1/foot/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
 
   try{
-    let route = await fetchRoute(url);
-    if(!route) route = await fetchRoute(urlFallback);
-    if(route){ routeCache[key] = route; return route; }
+    const res = await fetch(footUrl);
+    const data = await res.json();
+    if(data.code === "Ok" && data.routes && data.routes[0]){
+      const route = {
+        latlngs: data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]),
+        distance: data.routes[0].distance || distanceMeters(a.lat,a.lng,b.lat,b.lng),
+        duration: data.routes[0].duration || distanceMeters(a.lat,a.lng,b.lat,b.lng)/1.25
+      };
+      routeCache[key]=route;
+      return route;
+    }
   }catch(e){
-    console.warn("Walking OSRM failed", e);
+    console.warn("OSRM foot unavailable, using pedestrian fallback", e);
   }
 
-  const dist = distanceMeters(a.lat,a.lng,b.lat,b.lng);
-  const fallback = {latlngs:[[a.lat,a.lng],[b.lat,b.lng]], distance:dist, duration:dist/1.2};
-  routeCache[key] = fallback;
-  return fallback;
+  // pedestrian fallback: straight walking segment, NOT car route
+  const d = distanceMeters(a.lat,a.lng,b.lat,b.lng);
+  const route = {
+    latlngs:[[a.lat,a.lng],[b.lat,b.lng]],
+    distance:d,
+    duration:d/1.25
+  };
+  routeCache[key]=route;
+  return route;
 }
 function stopPoint(s){ return {lat:num(s.lat), lng:num(s.lng), stop:s}; }
 function formatKm(m){ return m >= 1000 ? (m/1000).toFixed(1)+" km" : Math.round(m)+" m"; }
@@ -351,22 +351,75 @@ function findLineStops(lineId){
 }
 function findBestTransfer(fromStop, toStop){
   if(!fromStop || !toStop) return null;
+
+  // Direct line always priority
   if(fromStop.lineId === toStop.lineId){
-    return {type:"direct", lineId:fromStop.lineId, fromStop, toStop};
+    const busDistance = distanceMeters(num(fromStop.lat),num(fromStop.lng),num(toStop.lat),num(toStop.lng));
+    return {type:"direct", lineId:fromStop.lineId, fromStop, toStop, score:busDistance};
   }
 
   const fromLineStops = findLineStops(fromStop.lineId);
   const toLineStops = findLineStops(toStop.lineId);
+
   let best = null;
+  const MAX_WALK_METERS = 900; // don't propose too long walking transfers
 
   for(const a of fromLineStops){
     for(const b of toLineStops){
-      const d = distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
-      if(!best || d < best.walkDistance){
-        best = {type:"transfer", fromLineId:fromStop.lineId, toLineId:toStop.lineId, fromStop, toStop, transferFrom:a, transferTo:b, walkDistance:d};
+      const walkDistance = distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
+      if(walkDistance > MAX_WALK_METERS) continue;
+
+      const bus1 = distanceMeters(num(fromStop.lat),num(fromStop.lng),num(a.lat),num(a.lng));
+      const bus2 = distanceMeters(num(b.lat),num(b.lng),num(toStop.lat),num(toStop.lng));
+
+      // Score: prioritize less walking, then shorter global distance.
+      // Walking is more expensive than bus because user feels it.
+      const score = (walkDistance * 4) + bus1 + bus2;
+
+      if(!best || score < best.score){
+        best = {
+          type:"transfer",
+          fromLineId:fromStop.lineId,
+          toLineId:toStop.lineId,
+          fromStop,
+          toStop,
+          transferFrom:a,
+          transferTo:b,
+          walkDistance,
+          busDistance:bus1+bus2,
+          score
+        };
       }
     }
   }
+
+  // If no transfer under 900m, pick the shortest walking transfer but mark it long
+  if(!best){
+    for(const a of fromLineStops){
+      for(const b of toLineStops){
+        const walkDistance = distanceMeters(num(a.lat),num(a.lng),num(b.lat),num(b.lng));
+        const bus1 = distanceMeters(num(fromStop.lat),num(fromStop.lng),num(a.lat),num(a.lng));
+        const bus2 = distanceMeters(num(b.lat),num(b.lng),num(toStop.lat),num(toStop.lng));
+        const score = (walkDistance * 5) + bus1 + bus2;
+        if(!best || score < best.score){
+          best = {
+            type:"transfer",
+            fromLineId:fromStop.lineId,
+            toLineId:toStop.lineId,
+            fromStop,
+            toStop,
+            transferFrom:a,
+            transferTo:b,
+            walkDistance,
+            busDistance:bus1+bus2,
+            score,
+            longWalk:true
+          };
+        }
+      }
+    }
+  }
+
   return best;
 }
 async function drawGoogleLikeRoute(plan){
@@ -417,7 +470,7 @@ async function drawGoogleLikeRoute(plan){
 
     const walk = await getOsrmFootRoute(stopPoint(plan.transferFrom), stopPoint(plan.transferTo));
     if(walk && walk.latlngs){
-      const walkLayer = L.polyline(walk.latlngs,{color:"#111827",weight:5,opacity:.85,dashArray:"8,10"}).addTo(map);
+      const walkLayer = L.polyline(walk.latlngs,{color:"#111827",weight:5,opacity:.90,dashArray:"4,12"}).addTo(map);
       routeSearchLayers.push(walkLayer);
       walk.latlngs.forEach(p=>boundsPoints.push(p));
     }
@@ -469,7 +522,7 @@ async function searchRouteGoogleLike(){
     const l2 = lines.find(l=>l.id===plan.toLineId);
     await drawGoogleLikeRoute(plan);
     const walk = await getOsrmFootRoute(stopPoint(plan.transferFrom), stopPoint(plan.transferTo));
-    setText("routeResult",`✅ Trajet avec correspondance: ${l1?l1.name:plan.fromLineId} → marche ${formatKm(walk.distance)} (${formatMin(walk.duration)}) → ${l2?l2.name:plan.toLineId}`);
+    setText("routeResult",`✅ Meilleure correspondance: 🚌 ${l1?l1.name:plan.fromLineId} → 🚶 ${formatKm(walk.distance)} (${formatMin(walk.duration)}) → 🚌 ${l2?l2.name:plan.toLineId}${plan.longWalk ? " · marche longue" : ""}`);
   }
 }
 
