@@ -151,7 +151,10 @@
 
       <label class="checkLine"><input id="showBejaiaGeojsonToggle" type="checkbox" checked> Afficher ce GeoJSON sur la carte</label>
 
-      <button id="createBejaiaLinesBtn" type="button" class="secondary">Créer les lignes OSM dans Firebase</button>
+      <button id="autoImportBejaiaBtn" type="button" class="primary">Importer automatiquement TOUT : lignes + arrêts + couleurs</button>
+      <button id="deleteAllLinesStopsBtn" type="button" class="danger">⚠️ Supprimer toutes les lignes et tous les arrêts Firebase</button>
+      <div class="dangerNote">Attention : ce bouton supprime toutes les collections <b>lines</b> et <b>stops</b>.</div>
+      <button id="createBejaiaLinesBtn" type="button" class="secondary">Créer seulement les lignes OSM</button>
 
       <label>Importer les arrêts dans quelle ligne Firebase?</label>
       <select id="bejaiaImportLineSelect"></select>
@@ -231,6 +234,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=bejaia-lines-stops-1"></script>
+<script src="app.js?v=full-auto-import-delete-1"></script>
 </body>
 </html>

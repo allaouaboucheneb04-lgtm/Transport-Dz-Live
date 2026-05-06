@@ -19,3 +19,7 @@
 
 .checkLine{display:flex;align-items:center;gap:10px;margin:14px 0;font-weight:900;color:#334155}
 .checkLine input{width:auto;min-height:auto;box-shadow:none}
+
+.autoImportNote{font-size:14px;color:#475569;font-weight:800;margin-top:8px}
+
+.dangerNote{margin-top:10px;padding:12px;border-radius:16px;background:#fff1f2;color:#be123c;font-weight:900;border:1px solid #fecdd3}
