@@ -75,7 +75,7 @@
     <button class="tab active" type="button" data-panel="panelLines">Lignes</button>
     <button class="tab" type="button" data-panel="panelStops">Arrêts</button>
     <button class="tab" type="button" data-panel="panelVehicles">Véhicules</button>
-    <button class="tab" type="button" data-panel="panelDrivers">Chauffeurs</button><button class="tab" type="button" data-panel="panelWalking">Marche</button>
+    <button class="tab" type="button" data-panel="panelDrivers">Chauffeurs</button><button class="tab" type="button" data-panel="panelWalking">Marche</button><button class="tab" type="button" data-panel="panelImport">Import</button>
   </div>
 
   <div id="panelLines" class="adminPanel active">
@@ -141,6 +141,51 @@
       <div id="walkingTracksAdminList" class="list"></div>
     </div>
   </div>
+
+  <div id="panelImport" class="adminPanel">
+
+    <div class="card">
+      <h3>Arrêts OpenStreetMap GeoJSON</h3>
+      <p>Ton fichier est intégré dans <b>/data/algeria-osm-stops.geojson</b>. Points orange sur la carte.</p>
+      <label class="checkLine"><input id="showOsmStopsToggle" type="checkbox" checked> Afficher les arrêts OSM</label>
+      <label>Importer dans quelle ligne Firebase?</label>
+      <select id="osmImportLineSelect"></select>
+      <button id="importOsmStopsBtn" type="button" class="primary">Importer ces arrêts OSM dans Firebase</button>
+      <div id="osmImportStatus" class="result">Chargement GeoJSON...</div>
+    </div>
+
+    <div class="card">
+      <h3>Importer lignes Algérie</h3>
+      <p>Colle un JSON avec les lignes et arrêts. L’app crée automatiquement <b>lines</b> et <b>stops</b> dans Firebase.</p>
+
+      <button id="loadExampleImportBtn" type="button" class="secondary">Charger exemple Béjaïa</button>
+
+      <label>JSON lignes + arrêts</label>
+      <textarea id="importJsonText" class="jsonBox" placeholder='{"lines":[...]}'></textarea>
+
+      <button id="importLinesBtn" type="button" class="primary">Importer dans Firebase</button>
+      <div id="importStatus" class="result">Prêt.</div>
+    </div>
+
+    <div class="card">
+      <h3>Format attendu</h3>
+      <pre class="codeBox">{
+  "lines": [
+    {
+      "name": "Tidjounane - Takarietz",
+      "city": "Bejaia",
+      "type": "bus",
+      "color": "#2563eb",
+      "stops": [
+        {"name":"Sidi Aich", "lat":36.6122, "lng":4.6865},
+        {"name":"Takarietz", "lat":36.60, "lng":4.70}
+      ]
+    }
+  ]
+}</pre>
+    </div>
+  </div>
+
 </section>
 </main>
 
@@ -169,6 +214,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=eta-bus-1"></script>
+<script src="app.js?v=osm-geojson-1"></script>
 </body>
 </html>

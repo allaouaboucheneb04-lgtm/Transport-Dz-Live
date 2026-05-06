@@ -1,0 +1,2758 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-05-06T17:46:02Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/418101357",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Usine Remila",
+        "name:ar": "مصنع رميلة",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7495393,
+          36.6445119
+        ]
+      },
+      "id": "node/418101357"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1368552313",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Tighilt",
+        "name:ar": "ثيغيلت",
+        "name:fr": "Tighilt",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6626979,
+          36.6203514
+        ]
+      },
+      "id": "node/1368552313"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1368552320",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6789779,
+          36.6074686
+        ]
+      },
+      "id": "node/1368552320"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1368552369",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Polyclinique Leflaye",
+        "name:ar": "مركز الصحة الجوارية لفلاي",
+        "name:fr": "Polyclinique Leflaye",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6702356,
+          36.6123642
+        ]
+      },
+      "id": "node/1368552369"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1368552404",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6732489,
+          36.6114033
+        ]
+      },
+      "id": "node/1368552404"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1368552430",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6659926,
+          36.6159302
+        ]
+      },
+      "id": "node/1368552430"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1368552897",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sedduq Seddouk",
+        "name:ar": "سدوق",
+        "name:en": "Seddouk",
+        "name:fr": "Seddouk",
+        "name:kab": "Sedduq",
+        "network": "DZ:transport",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6843723,
+          36.612354
+        ]
+      },
+      "id": "node/1368552897"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1368554907",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Maxen",
+        "name:ar": "ماكسن",
+        "name:ber": "ⵎⴰⴿⵙⴻⵏ",
+        "name:en": "Maxen",
+        "name:fr": "Maxen",
+        "network": "DZ:transport",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6619774,
+          36.6132301
+        ]
+      },
+      "id": "node/1368554907"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1368555563",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Mezgoug",
+        "name:ar": "مزقوق",
+        "name:ber": "ⵎⴻⵣⴳⵓⴳ",
+        "name:en": "Mezgoug",
+        "name:fr": "Mezgoug",
+        "name:kab": "Mezgug",
+        "name:kab-Arab": "مزڤوڤ",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6468459,
+          36.6066947
+        ]
+      },
+      "id": "node/1368555563"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2073781820",
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Tablakt n Telwaqadi",
+        "name:ar": "ثابلاكث ن تيليواقاضي",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.63363,
+          36.6032971
+        ]
+      },
+      "id": "node/2073781820"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2073784179",
+        "addr:city": "Souk-Oufella",
+        "addr:postcode": "06042",
+        "addr:street": "CW 173",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Souk Oufella",
+        "name:ar": "سوق أوفلا",
+        "name:en": "Souk Oufella",
+        "name:fr": "Souk Oufella",
+        "name:kab": "Ssuk Ufella",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6389267,
+          36.6054879
+        ]
+      },
+      "id": "node/2073784179"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2073786002",
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "La poste",
+        "name:ar": "البريد",
+        "name:en": "The post office",
+        "name:fr": "La Poste",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6306615,
+          36.6025895
+        ]
+      },
+      "id": "node/2073786002"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2073787860",
+        "addr:postcode": "06042",
+        "addr:street": "CW173",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ayaten",
+        "name:ar": "إعياضن",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6290227,
+          36.6007513
+        ]
+      },
+      "id": "node/2073787860"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2073792113",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Lota",
+        "name:ar": "لوظا",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6202452,
+          36.598839
+        ]
+      },
+      "id": "node/2073792113"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2074364122",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Azru",
+        "name:ar": "آزرو",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6212781,
+          36.5941536
+        ]
+      },
+      "id": "node/2074364122"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2074364652",
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Maison de jeunes",
+        "name:ar": "دار الشباب",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6205447,
+          36.5935577
+        ]
+      },
+      "id": "node/2074364652"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2340588538",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.5125921,
+          36.6663693
+        ]
+      },
+      "id": "node/2340588538"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2424076717",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Larbâa",
+        "name:ar": "لاربعا",
+        "name:kab": "Larebɛa",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6205124,
+          36.597402
+        ]
+      },
+      "id": "node/2424076717"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2424076897",
+        "bench": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "El Hemmam",
+        "name:ar": "الحمام",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6232673,
+          36.599868
+        ]
+      },
+      "id": "node/2424076897"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2465615346",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Zountar",
+        "name:ar": "زونطار",
+        "name:de": "Zountar",
+        "name:en": "Zountar",
+        "name:fr": "Zountar",
+        "name:kab": "Zuntar",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.644319,
+          36.5973295
+        ]
+      },
+      "id": "node/2465615346"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2468070446",
+        "alt_name:ar": "ثاقريتس",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Takrietz",
+        "name:ar": "تقريت",
+        "name:en": "Takrietz",
+        "name:fr": "Takrietz",
+        "name:kab": "Taqeṛyet",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6865399,
+          36.612202
+        ]
+      },
+      "id": "node/2468070446"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2470528733",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Tibane",
+        "name:ar": "طيبان",
+        "network": "DZ:transport",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6562828,
+          36.6096022
+        ]
+      },
+      "id": "node/2470528733"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2474577211",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt de bus hôpital",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6976176,
+          36.6149279
+        ]
+      },
+      "id": "node/2474577211"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2492439957",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Tinebdar centre",
+        "name:ar": "ثينبذار المركز",
+        "name:ber": "ⵝⵉⵏⴻⴲⴸⴰⵔ",
+        "name:fr": "Tinebdar",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6775357,
+          36.6232769
+        ]
+      },
+      "id": "node/2492439957"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2498459365",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Terminus Chemini (Lycée)",
+        "name:ar": "ثالا علي",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.614812,
+          36.5932921
+        ]
+      },
+      "id": "node/2498459365"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2653513465",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6655651,
+          36.6233691
+        ]
+      },
+      "id": "node/2653513465"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2657795141",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "network": "DZ:transport",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6610249,
+          36.6115677
+        ]
+      },
+      "id": "node/2657795141"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2657795176",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "network": "DZ:transport",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6635292,
+          36.6145633
+        ]
+      },
+      "id": "node/2657795176"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2684967000",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sidi Aïch - Tibane",
+        "name:ar": "سيدي عيش - طيبان",
+        "name:fr": "Sidi Aïch - Tibane",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.691601,
+          36.6128781
+        ]
+      },
+      "id": "node/2684967000"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2687505502",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6085111,
+          36.5375351
+        ]
+      },
+      "id": "node/2687505502"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2704836224",
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "La Poste",
+        "name:ar": "البريد",
+        "name:en": "The post office",
+        "name:fr": "La Poste",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6305859,
+          36.6025406
+        ]
+      },
+      "id": "node/2704836224"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2737249938",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt de Fourgons",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.5204115,
+          36.6661295
+        ]
+      },
+      "id": "node/2737249938"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2918523241",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Takrietz Terminus",
+        "name:ar": "ثاقريتس",
+        "name:fr": "Takrietz Terminus",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.649818,
+          36.5786445
+        ]
+      },
+      "id": "node/2918523241"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2918523242",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Takrietz",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6509254,
+          36.5790985
+        ]
+      },
+      "id": "node/2918523242"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3094313995",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt bus Lodha",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6201253,
+          36.5984082
+        ]
+      },
+      "id": "node/3094313995"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3266108937",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Trois chemins",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6090137,
+          36.5378302
+        ]
+      },
+      "id": "node/3266108937"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3266201495",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Trois chemins",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6085152,
+          36.5376463
+        ]
+      },
+      "id": "node/3266201495"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3266205571",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ighzer Amokran-Sidi Aich-Bejaia",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6066244,
+          36.5359514
+        ]
+      },
+      "id": "node/3266205571"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3266210734",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "La CAPS",
+        "name:fr": "La CAPS",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6170432,
+          36.5453454
+        ]
+      },
+      "id": "node/3266210734"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3266218674",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Takrietz - Sidi Aïch - Béjaïa - Jijel",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6145635,
+          36.5426525
+        ]
+      },
+      "id": "node/3266218674"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3267291635",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Semaoune",
+        "name:ar": "سمعون",
+        "name:fr": "Semaoune",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6145509,
+          36.5933602
+        ]
+      },
+      "id": "node/3267291635"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3504757685",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Takalitust",
+        "name:ar": "ثكاليتوسث",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6503199,
+          36.6115076
+        ]
+      },
+      "id": "node/3504757685"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3979505837",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sidi Ayad",
+        "name:ar": "سيذي عياذ",
+        "name:fr": "Sidi Ayad",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7151233,
+          36.6121854
+        ]
+      },
+      "id": "node/3979505837"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3997434994",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "At Chetla",
+        "name:ar": "آث شثلى",
+        "name:en": "Ath Chetla",
+        "name:fr": "Ath Chetla",
+        "network": "DZ:transport",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6591983,
+          36.611539
+        ]
+      },
+      "id": "node/3997434994"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3999160077",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ouzayed (Terminus)",
+        "name:ar": "أوزايذ النهاية",
+        "name:kab": "Uzayed (Terminus)",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6659264,
+          36.6079502
+        ]
+      },
+      "id": "node/3999160077"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3999160078",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ajegu nel hutt",
+        "name:ar": "آجقو نل هت",
+        "name:kab": "Ajegu nel hutt",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6679933,
+          36.6092253
+        ]
+      },
+      "id": "node/3999160078"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3999160079",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6693591,
+          36.6103971
+        ]
+      },
+      "id": "node/3999160079"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3999160082",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.671064,
+          36.6119242
+        ]
+      },
+      "id": "node/3999160082"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3999160088",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6756229,
+          36.6086311
+        ]
+      },
+      "id": "node/3999160088"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4001509383",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Village agricole",
+        "name:ar": "القرية الاشتراكية الصومام",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7719637,
+          36.6482033
+        ]
+      },
+      "id": "node/4001509383"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4001509384",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Village agricole",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7718973,
+          36.6482984
+        ]
+      },
+      "id": "node/4001509384"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4001509385",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Usine Remila",
+        "name:ar": "مصنع رميلة",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7494025,
+          36.6445539
+        ]
+      },
+      "id": "node/4001509385"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4001676857",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Embranchement",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6570203,
+          36.5821752
+        ]
+      },
+      "id": "node/4001676857"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4038505006",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6560599,
+          36.6134592
+        ]
+      },
+      "id": "node/4038505006"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4038505008",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6587393,
+          36.6143899
+        ]
+      },
+      "id": "node/4038505008"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4038505015",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Tighilt",
+        "name:ar": "ثيغيلت",
+        "name:fr": "Tighilt",
+        "network": "DZ:transport",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6625652,
+          36.6202606
+        ]
+      },
+      "id": "node/4038505015"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4038505017",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6683953,
+          36.6247937
+        ]
+      },
+      "id": "node/4038505017"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4038505022",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "network": "DZ:transport",
+        "public_transport": "stop_position"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.678382,
+          36.6218361
+        ]
+      },
+      "id": "node/4038505022"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4040264033",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "loc_name": "Xarbac",
+        "name": "Kherveche",
+        "name:ar": "خرباش",
+        "name:ber": "ⵅⴰⵔⴲⴰⵛ",
+        "name:en": "Kherveche",
+        "name:fr": "Kherbache",
+        "name:kab": "Xarbac",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.639434,
+          36.6032574
+        ]
+      },
+      "id": "node/4040264033"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4040351495",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ath Oubelaïd",
+        "name:ar": "آث أوبلعيذ",
+        "name:fr": "Ath Oubelaïd",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6666809,
+          36.6133008
+        ]
+      },
+      "id": "node/4040351495"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4041849183",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6688273,
+          36.6099052
+        ]
+      },
+      "id": "node/4041849183"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4061333706",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ighzer Amokran - Bejaia",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6113283,
+          36.5399581
+        ]
+      },
+      "id": "node/4061333706"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4061333707",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "ighzer-Akbou-Tazmalt-Alger",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6133044,
+          36.5413705
+        ]
+      },
+      "id": "node/4061333707"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4061905623",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Bourafaa - Tigrine - Sidi Younes - Adouare",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6122396,
+          36.5411229
+        ]
+      },
+      "id": "node/4061905623"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4062404710",
+        "bench": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "operator": "Bourafaa",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6008097,
+          36.550663
+        ]
+      },
+      "id": "node/4062404710"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4063579551",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Hellouane-Akbou-Alger",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6065512,
+          36.5361137
+        ]
+      },
+      "id": "node/4063579551"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4070525498",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "El Hemmam",
+        "name:ar": "الحمام",
+        "name:ber": "ⵍⵃⴻⵎⵎⴰⵎ",
+        "name:en": "El Hemmam",
+        "name:fr": "El Hemmam",
+        "name:kab": "Lḥemmam",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.671491,
+          36.6944566
+        ]
+      },
+      "id": "node/4070525498"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4070525499",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt Tizi-Ouzou/Alger",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6715526,
+          36.694448
+        ]
+      },
+      "id": "node/4070525499"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4070525500",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt Aït-Maamar",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6736474,
+          36.6925769
+        ]
+      },
+      "id": "node/4070525500"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4070525501",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt Aguemoune",
+        "name:ar": "موقف أقمون",
+        "name:ber": "ⴰⴵⵎⵎⵓⵏ",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6734221,
+          36.6928049
+        ]
+      },
+      "id": "node/4070525501"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4070525502",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt El-kseur/Sidi Aich",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.673516,
+          36.6927189
+        ]
+      },
+      "id": "node/4070525502"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4070606134",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt Béjaia/El-kseur",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6739478,
+          36.6924758
+        ]
+      },
+      "id": "node/4070606134"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4080228865",
+        "amenity": "bus_station",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8212956,
+          36.656597
+        ]
+      },
+      "id": "node/4080228865"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4080589971",
+        "addr:city": "أوزلاقن",
+        "addr:city:ar": "أوزلاقن",
+        "bus": "yes",
+        "destination": "أقبو",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "to": "أقبو"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6122393,
+          36.5406771
+        ]
+      },
+      "id": "node/4080589971"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4289658285",
+        "bench": "yes",
+        "bus": "yes",
+        "covered": "yes",
+        "highway": "bus_stop",
+        "name": "Vers El Hed/ Ighil Amar",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7818474,
+          36.6302797
+        ]
+      },
+      "id": "node/4289658285"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4289658286",
+        "bench": "yes",
+        "bus": "yes",
+        "covered": "yes",
+        "highway": "bus_stop",
+        "name": "Béjaïa - El Kseur - Sidi Aich",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7819632,
+          36.6298732
+        ]
+      },
+      "id": "node/4289658286"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4463541399",
+        "bench": "yes",
+        "bus": "yes",
+        "covered": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt Vers Bejaia/El Kseur/Sidi Aich",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7738384,
+          36.6160625
+        ]
+      },
+      "id": "node/4463541399"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4464101244",
+        "bench": "yes",
+        "bus": "yes",
+        "covered": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt Vers Ighil Amar",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7737526,
+          36.6159396
+        ]
+      },
+      "id": "node/4464101244"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4508009889",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt de bus vers Alger",
+        "name:ar": "الجزائر",
+        "name:fr": "Arrêt de bus vers Alger",
+        "operator": "Bus BEJAIA ALGER",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.692714,
+          36.6114951
+        ]
+      },
+      "id": "node/4508009889"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4537767377",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6418504,
+          36.5690144
+        ]
+      },
+      "id": "node/4537767377"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232497",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "loc_name": "Ssuq Ufella",
+        "name": "Souk Oufella",
+        "name:ar": "سوق أوفلا",
+        "name:ber": "ⵙⵓⵇ ⵓⴼⴻⵍⵍⴰ",
+        "name:en": "Souk Oufella",
+        "public_transport": "platform",
+        "shelter": "yes",
+        "wheelchair": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6391442,
+          36.605726
+        ]
+      },
+      "id": "node/4591232497"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232498",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Souk Oufella",
+        "name:ar": "سوق أوفلا",
+        "name:en": "Souk Oufella",
+        "name:fr": "Souk Oufella",
+        "public_transport": "platform",
+        "shelter": "yes",
+        "wheelchair": "limited"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6392328,
+          36.6056635
+        ]
+      },
+      "id": "node/4591232498"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232499",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "check_date:shelter": "2023-02-28",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Tiliouacadi",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6340515,
+          36.6033788
+        ]
+      },
+      "id": "node/4591232499"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232500",
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "loc_name": "Tablakt n Telwaqaḍi",
+        "name": "Tiliouacadi",
+        "name:ar": "ثابلاكث ن تيليواقاضي",
+        "name:ber": "ⵝⴰⵒⵍⴰⴽⵝ ⵏ ⵜⵍⵡⴰⵇⴰⴹⵉ",
+        "name:en": "Tiliouacadi",
+        "name:fr": "Tiliouacadi",
+        "name:kab": "Tablakt n Telwaqaḍi",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6336312,
+          36.6032444
+        ]
+      },
+      "id": "node/4591232500"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232501",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "La poste",
+        "name:ar": "البريد",
+        "name:en": "The post office",
+        "name:fr": "La Poste",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6304964,
+          36.6025562
+        ]
+      },
+      "id": "node/4591232501"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232502",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ayaten",
+        "name:ar": "إعياضن",
+        "name:en": "Ayaten",
+        "name:fr": "Ayaten",
+        "name:kab": "Iɛayaḍen",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6290784,
+          36.600797
+        ]
+      },
+      "id": "node/4591232502"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232503",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ayaten",
+        "name:ar": "إعياضن",
+        "name:en": "Ayaten",
+        "name:fr": "Ayaten",
+        "name:kab": "Iɛayaḍen",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6289998,
+          36.6007019
+        ]
+      },
+      "id": "node/4591232503"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232504",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Lodha",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6202156,
+          36.5988675
+        ]
+      },
+      "id": "node/4591232504"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232505",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6201861,
+          36.5984473
+        ]
+      },
+      "id": "node/4591232505"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232506",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Azrou",
+        "name:ar": "آزرو",
+        "name:fr": "Azrou",
+        "name:kab": "Azru",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6212972,
+          36.5941764
+        ]
+      },
+      "id": "node/4591232506"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232507",
+        "bench": "no",
+        "bin": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Maison de jeunes",
+        "name:ar": "دار الشباب",
+        "name:fr": "Maison de jeunes",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6205322,
+          36.5935062
+        ]
+      },
+      "id": "node/4591232507"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4591232509",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Thala Ali Lycée",
+        "name:ar": "ثالا علي الثانوية",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6151063,
+          36.5933094
+        ]
+      },
+      "id": "node/4591232509"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4592742153",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6732762,
+          36.6113647
+        ]
+      },
+      "id": "node/4592742153"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4592742154",
+        "bench": "yes",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6710621,
+          36.6118897
+        ]
+      },
+      "id": "node/4592742154"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4592742155",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "El Qahwa",
+        "name:ar": "القهوة",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.668888,
+          36.6098904
+        ]
+      },
+      "id": "node/4592742155"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4592742156",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ouzayed",
+        "name:ar": "أوزايذ",
+        "name:ber": "ⵓⵣⴰⵢⴻⴸ",
+        "name:kab": "Uzayed",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6661154,
+          36.607984
+        ]
+      },
+      "id": "node/4592742156"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4592742157",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ajgu n Lḥut",
+        "name:ar": "آجقو نل هت",
+        "name:kab": "Ajgu n Lḥut",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6680306,
+          36.6091925
+        ]
+      },
+      "id": "node/4592742157"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4592781631",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "ماكسن",
+        "name:ar": "ماكسن",
+        "name:en": "Maxen",
+        "name:fr": "Maxen",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6619976,
+          36.6131872
+        ]
+      },
+      "id": "node/4592781631"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4756173388",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6253126,
+          36.5505987
+        ]
+      },
+      "id": "node/4756173388"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4756173389",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6296644,
+          36.5567884
+        ]
+      },
+      "id": "node/4756173389"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4756173390",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6498352,
+          36.5785969
+        ]
+      },
+      "id": "node/4756173390"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4756178315",
+        "alt_name": "بُوثَاقُوثْ",
+        "alt_name:ar": "بُوثَاقُوثْ",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Bouthagouth",
+        "name:ar": "فوثاقوث",
+        "name:fr": "Bouthagouth",
+        "name:kab-Arab": "بُوثَاڤُوثْ",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.631544,
+          36.5622093
+        ]
+      },
+      "id": "node/4756178315"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4756178316",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6337078,
+          36.5653389
+        ]
+      },
+      "id": "node/4756178316"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4758219087",
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "La CAPS",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6171707,
+          36.5452398
+        ]
+      },
+      "id": "node/4758219087"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4788317805",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Akabiou",
+        "name:ar": "أقابيو",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.7697195,
+          36.6203449
+        ]
+      },
+      "id": "node/4788317805"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4815012274",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6030488,
+          36.5331469
+        ]
+      },
+      "id": "node/4815012274"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4815012966",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Helouane",
+        "name:ar": "هلوان",
+        "name:ber": "ⵁⴻⵍⵡⴰⵏ",
+        "name:en": "Helouane",
+        "name:fr": "Helouane",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.5872706,
+          36.5123563
+        ]
+      },
+      "id": "node/4815012966"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4816543425",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Assam",
+        "name:ar": "عصام",
+        "name:ber": "ⵖⴰⵚⴰⵎ",
+        "name:en": "Assam",
+        "name:kab": "Ɛeṣam",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6910918,
+          36.6676937
+        ]
+      },
+      "id": "node/4816543425"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5009953965",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "CEM",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.5982366,
+          36.522321
+        ]
+      },
+      "id": "node/5009953965"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5009953966",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.5904213,
+          36.5140191
+        ]
+      },
+      "id": "node/5009953966"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5009971322",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6502441,
+          36.57889
+        ]
+      },
+      "id": "node/5009971322"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5051503674",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.81446,
+          36.6543864
+        ]
+      },
+      "id": "node/5051503674"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5051504041",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.8479186,
+          36.6761804
+        ]
+      },
+      "id": "node/5051504041"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5117866096",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6923839,
+          36.6321943
+        ]
+      },
+      "id": "node/5117866096"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5125153323",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6611447,
+          36.5847251
+        ]
+      },
+      "id": "node/5125153323"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5125163381",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6610386,
+          36.5848237
+        ]
+      },
+      "id": "node/5125163381"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6810242646",
+        "highway": "bus_stop",
+        "name": "Arrêt de bus Akbou"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.5985227,
+          36.5279342
+        ]
+      },
+      "id": "node/6810242646"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7475095194",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "أكفادو",
+        "name:ar": "أكفادو",
+        "name:en": "Aqadoum",
+        "name:fr": "Aqadoum",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6242764,
+          36.6317082
+        ]
+      },
+      "id": "node/7475095194"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8221135111",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Terminus de bus Sidi Ayad - Sidi Aïch",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6886348,
+          36.610948
+        ]
+      },
+      "id": "node/8221135111"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8235586015",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt de bus Tighezratine",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6820407,
+          36.6233184
+        ]
+      },
+      "id": "node/8235586015"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8579657847",
+        "bus": "yes",
+        "departures_board": "no",
+        "highway": "bus_stop",
+        "name": "Terminus Chemini",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6949583,
+          36.6125411
+        ]
+      },
+      "id": "node/8579657847"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8579670173",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Terminus Akbou - Sidi Aich",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6883467,
+          36.6109142
+        ]
+      },
+      "id": "node/8579670173"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8579677171",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Terminus Seddouk - Sidi Aïch",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.688848,
+          36.610969
+        ]
+      },
+      "id": "node/8579677171"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8648196165",
+        "bus": "yes",
+        "departures_board": "no",
+        "highway": "bus_stop",
+        "name": "Terminus Akfadou",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6953139,
+          36.6124934
+        ]
+      },
+      "id": "node/8648196165"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8898648968",
+        "bus": "yes",
+        "departures_board": "no",
+        "highway": "bus_stop",
+        "name": "Terminus Tibane",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6947658,
+          36.6125517
+        ]
+      },
+      "id": "node/8898648968"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8898648969",
+        "bus": "yes",
+        "departures_board": "no",
+        "highway": "bus_stop",
+        "name": "Terminus Leflaye",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6945057,
+          36.6125452
+        ]
+      },
+      "id": "node/8898648969"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9239228323",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6406185,
+          36.6490137
+        ]
+      },
+      "id": "node/9239228323"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9239228324",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.638351,
+          36.6473744
+        ]
+      },
+      "id": "node/9239228324"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9562075266",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Terminus Tinebdar",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.694368,
+          36.6125467
+        ]
+      },
+      "id": "node/9562075266"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9562075267",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Terminus Ikedjan",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6955077,
+          36.6124825
+        ]
+      },
+      "id": "node/9562075267"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9562075269",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sidi Aïch - El Kseur",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6938008,
+          36.6126214
+        ]
+      },
+      "id": "node/9562075269"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9562075271",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sidi Aïch - Béjaïa",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6942233,
+          36.612614
+        ]
+      },
+      "id": "node/9562075271"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9776888039",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt de bus de Chebirdou",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6849664,
+          36.6272596
+        ]
+      },
+      "id": "node/9776888039"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9863632645",
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Imaâliouene",
+        "name:fr": "Imaâliouene",
+        "network": "DZ:transport",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6182871,
+          36.5931244
+        ]
+      },
+      "id": "node/9863632645"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11932743254",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt de bus Tighezratine",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6820464,
+          36.6232276
+        ]
+      },
+      "id": "node/11932743254"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11932743255",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt de bus La Cité",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6801658,
+          36.6229145
+        ]
+      },
+      "id": "node/11932743255"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11932743256",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Arrêt de bus La Cité",
+        "public_transport": "platform"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.6797794,
+          36.6228878
+        ]
+      },
+      "id": "node/11932743256"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 (function(){
 const $=id=>document.getElementById(id);
-let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],walkingTracks=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let walkingTrackWatchId=null,walkingTrackPoints=[],walkingTrackStart=0;let routeLayers=[];let routeSearchLayers=[];
+let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],walkingTracks=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let osmStopsLayer=null,osmStopsGeojson=null;let walkingTrackWatchId=null,walkingTrackPoints=[],walkingTrackStart=0;let routeLayers=[];let routeSearchLayers=[];
 const LINE_TOLERANCE_METERS=500;
 const GPS_STALE_MS=120000;
 
@@ -64,6 +64,80 @@ function visibleVehiclesForClients(){
   });
 }
 
+
+async function loadOsmStopsGeojson(){
+  try{
+    const res = await fetch("./data/algeria-osm-stops.geojson?v=1");
+    if(!res.ok) throw new Error("Fichier GeoJSON introuvable");
+    osmStopsGeojson = await res.json();
+    renderOsmStopsOnMap();
+    setText("osmImportStatus","GeoJSON OSM chargé ✅");
+  }catch(e){
+    console.warn(e);
+    setText("osmImportStatus","GeoJSON OSM non chargé: "+(e.message||e));
+  }
+}
+function renderOsmStopsOnMap(){
+  if(!map || !osmStopsGeojson) return;
+  if(osmStopsLayer){ try{map.removeLayer(osmStopsLayer)}catch(e){} osmStopsLayer=null; }
+  const toggle=$("showOsmStopsToggle");
+  if(toggle && !toggle.checked) return;
+  osmStopsLayer=L.geoJSON(osmStopsGeojson,{
+    pointToLayer:function(feature,latlng){
+      return L.circleMarker(latlng,{radius:6,color:"#fff",weight:2,fillColor:"#f59e0b",fillOpacity:.95});
+    },
+    onEachFeature:function(feature,layer){
+      const p=feature.properties||{};
+      const name=p.name||p.local_ref||p.ref||"Arrêt OSM";
+      layer.bindPopup("🚌 "+name+"<br><small>OpenStreetMap</small>");
+    }
+  }).addTo(map);
+}
+function osmStopsArray(){
+  if(!osmStopsGeojson || !Array.isArray(osmStopsGeojson.features)) return [];
+  return osmStopsGeojson.features.filter(f=>f.geometry&&f.geometry.type==="Point").map((f,i)=>{
+    const p=f.properties||{}, c=f.geometry.coordinates||[];
+    return {name:p.name||p.local_ref||p.ref||("Arrêt OSM "+(i+1)), lat:Number(c[1]), lng:Number(c[0]), osmId:p["@id"]||f.id||""};
+  }).filter(s=>Number.isFinite(s.lat)&&Number.isFinite(s.lng));
+}
+function renderOsmLineSelect(){
+  const sel=$("osmImportLineSelect");
+  if(!sel) return;
+  const old=sel.value;
+  sel.innerHTML='<option value="">Choisir une ligne...</option>'+lines.map(l=>`<option value="${l.id}">${l.name||l.id}</option>`).join("");
+  if([...sel.options].some(o=>o.value===old)) sel.value=old;
+}
+async function importOsmStopsToFirebase(){
+  if(!requireAdmin()) return;
+  if(!osmStopsGeojson) await loadOsmStopsGeojson();
+  const lineId=val("osmImportLineSelect");
+  if(!lineId) return alert("Choisis une ligne Firebase.");
+  const line=lines.find(l=>l.id===lineId);
+  const arr=osmStopsArray();
+  if(!arr.length) return alert("Aucun arrêt dans le GeoJSON.");
+  const btn=$("importOsmStopsBtn");
+  if(btn){btn.disabled=true;btn.textContent="Import...";}
+  try{
+    let count=0;
+    for(const s of arr){
+      await db.collection("stops").add({
+        name:s.name,lineId,lineName:line?line.name:"",city:line?(line.city||"Algerie"):"Algerie",
+        lat:s.lat,lng:s.lng,order:count+1,active:true,source:"openstreetmap_geojson",osmId:s.osmId,
+        createdAt:now(),updatedAt:now()
+      });
+      count++;
+      setText("osmImportStatus","Import OSM... "+count+"/"+arr.length);
+    }
+    setText("osmImportStatus","Import terminé ✅ "+count+" arrêts ajoutés.");
+    alert("Import OSM terminé ✅");
+  }catch(e){
+    alert("Erreur import OSM: "+(e.message||e));
+    setText("osmImportStatus","Erreur: "+(e.message||e));
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Importer ces arrêts OSM dans Firebase";}
+  }
+}
+
 function initMap(){if(map)return;map=L.map("map").setView([36.7525,5.0843],13);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map)}
 function bindRealtime(){unsub.forEach(f=>f&&f());unsub=[];unsub.push(db.collection("lines").onSnapshot(s=>{lines=s.docs.map(d=>({id:d.id,...d.data()}));renderAll()},console.error));unsub.push(db.collection("stops").onSnapshot(s=>{stops=s.docs.map(d=>({id:d.id,...d.data()}));renderAll()},console.error));unsub.push(db.collection("vehicles").onSnapshot(s=>{vehicles=s.docs.map(d=>({id:d.id,...d.data()}));renderAll();renderDriverWorkStatus()},console.error));unsub.push(db.collection("drivers").onSnapshot(s=>{drivers=s.docs.map(d=>({id:d.id,...d.data()}));renderAll()},console.error))}
 
@@ -88,7 +162,7 @@ function renderAdminStopsFilterOptions(){
   sel.value = Array.from(sel.options).some(o => o.value === old) ? old : "all";
 }
 
-function renderSelects(){renderAdminStopsFilterOptions();const city=val("clientCity")||"Bejaia";const vis=lines.filter(l=>!l.city||l.city===city);const old=val("clientLineSelect")||"all";$("clientLineSelect").innerHTML='<option value="all">Toutes les lignes</option>'+vis.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("clientLineSelect").value=[...$("clientLineSelect").options].some(o=>o.value===old)?old:"all";const lo=lines.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("stopLineSelect").innerHTML=lo;$("vehicleLineSelect").innerHTML=lo;const dro='<option value="">Aucun chauffeur</option>'+drivers.map(d=>`<option value="${d.id}">${d.name||d.email||d.id}</option>`).join("");$("vehicleDriverSelect").innerHTML=dro;$("driverVehicleSelect").innerHTML=vehicles.map(v=>`<option value="${v.id}">${v.name} · ${lineName(v.lineId)}</option>`).join("")}
+function renderSelects(){renderOsmLineSelect();renderAdminStopsFilterOptions();const city=val("clientCity")||"Bejaia";const vis=lines.filter(l=>!l.city||l.city===city);const old=val("clientLineSelect")||"all";$("clientLineSelect").innerHTML='<option value="all">Toutes les lignes</option>'+vis.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("clientLineSelect").value=[...$("clientLineSelect").options].some(o=>o.value===old)?old:"all";const lo=lines.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("stopLineSelect").innerHTML=lo;$("vehicleLineSelect").innerHTML=lo;const dro='<option value="">Aucun chauffeur</option>'+drivers.map(d=>`<option value="${d.id}">${d.name||d.email||d.id}</option>`).join("");$("vehicleDriverSelect").innerHTML=dro;$("driverVehicleSelect").innerHTML=vehicles.map(v=>`<option value="${v.id}">${v.name} · ${lineName(v.lineId)}</option>`).join("")}
 function selectedLineStopsForList(){ const sel=val("clientLineSelect")||"all"; return sel==="all" ? stops : stops.filter(s=>s.lineId===sel); }
 
 function orderedStopsForLine(lineId){
@@ -700,10 +774,126 @@ function renderWalkingTracksAdminSafe(){
   document.querySelectorAll("[data-delete-walk]").forEach(b=>b.onclick=async()=>{if(!requireAdmin())return;await db.collection("walkingTracks").doc(b.dataset.deleteWalk).delete();});
 }
 
+
+const ALGERIA_IMPORT_EXAMPLE = {
+  "lines": [
+    {
+      "name": "Tidjounane - Takarietz",
+      "city": "Bejaia",
+      "type": "bus",
+      "color": "#2563eb",
+      "stops": [
+        {"name":"Sidi Aïch Centre", "lat":36.6122, "lng":4.6865},
+        {"name":"Gare Sidi Aïch", "lat":36.6110, "lng":4.6880},
+        {"name":"Takarietz", "lat":36.5840, "lng":4.7200},
+        {"name":"Tidjounane", "lat":36.5700, "lng":4.7400}
+      ]
+    },
+    {
+      "name": "Béjaïa Centre - Université",
+      "city": "Bejaia",
+      "type": "bus",
+      "color": "#16a34a",
+      "stops": [
+        {"name":"Béjaïa Centre", "lat":36.7525, "lng":5.0843},
+        {"name":"Gare routière", "lat":36.7509, "lng":5.0567},
+        {"name":"Université", "lat":36.7165, "lng":5.0614}
+      ]
+    }
+  ]
+};
+
+function setImportStatus(msg){
+  setText("importStatus", msg);
+}
+function validateImportData(data){
+  if(!data || !Array.isArray(data.lines)) throw new Error("Le JSON doit contenir: lines: []");
+  data.lines.forEach((line, i) => {
+    if(!line.name) throw new Error("Ligne #" + (i+1) + " sans name");
+    if(!Array.isArray(line.stops) || !line.stops.length) throw new Error("Ligne " + line.name + " sans stops");
+    line.stops.forEach((stop, j) => {
+      if(!stop.name) throw new Error("Arrêt #" + (j+1) + " sans name dans " + line.name);
+      if(!Number.isFinite(Number(stop.lat)) || !Number.isFinite(Number(stop.lng))) {
+        throw new Error("Arrêt " + stop.name + " latitude/longitude invalide");
+      }
+    });
+  });
+}
+async function importAlgeriaLines(){
+  if(!requireAdmin()) return;
+  const textarea = $("importJsonText");
+  if(!textarea) return;
+
+  let data;
+  try{
+    data = JSON.parse(textarea.value);
+    validateImportData(data);
+  }catch(e){
+    setImportStatus("Erreur JSON: " + (e.message || e));
+    alert("Erreur JSON: " + (e.message || e));
+    return;
+  }
+
+  const btn = $("importLinesBtn");
+  if(btn){ btn.disabled = true; btn.textContent = "Import en cours..."; }
+
+  try{
+    let lineCount = 0;
+    let stopCount = 0;
+
+    for(const line of data.lines){
+      const lineRef = await db.collection("lines").add({
+        name: line.name,
+        city: line.city || "Algerie",
+        type: line.type || "bus",
+        color: line.color || "#2563eb",
+        active: line.active !== false,
+        source: line.source || "import_admin",
+        createdAt: now(),
+        updatedAt: now()
+      });
+      lineCount++;
+
+      for(let i=0;i<line.stops.length;i++){
+        const stop = line.stops[i];
+        await db.collection("stops").add({
+          name: stop.name,
+          lineId: lineRef.id,
+          lineName: line.name,
+          city: line.city || "Algerie",
+          lat: Number(stop.lat),
+          lng: Number(stop.lng),
+          order: Number(stop.order || (i+1)),
+          active: stop.active !== false,
+          source: stop.source || "import_admin",
+          createdAt: now(),
+          updatedAt: now()
+        });
+        stopCount++;
+      }
+      setImportStatus(`Import... ${lineCount} ligne(s), ${stopCount} arrêt(s)`);
+    }
+
+    setImportStatus(`Import terminé ✅ ${lineCount} ligne(s), ${stopCount} arrêt(s) créés dans Firebase.`);
+    alert("Import terminé ✅");
+  }catch(e){
+    console.error(e);
+    setImportStatus("Erreur import Firebase: " + (e.message || e));
+    alert("Erreur import Firebase: " + (e.message || e));
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = "Importer dans Firebase"; }
+  }
+}
+function loadExampleImport(){
+  const t = $("importJsonText");
+  if(t) t.value = JSON.stringify(ALGERIA_IMPORT_EXAMPLE, null, 2);
+  setImportStatus("Exemple chargé. Tu peux modifier les noms/coordonnées puis importer.");
+}
+
 function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
-$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteGoogleLike().catch(e=>{console.error(e);setText("routeResult","Erreur calcul trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
+if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteGoogleLike().catch(e=>{console.error(e);setText("routeResult","Erreur calcul trajet: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
