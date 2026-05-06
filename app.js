@@ -434,7 +434,7 @@ function renderLists(){
 const sel=val("clientLineSelect")||"all";
 const visibleStops = selectedLineStopsForList();
 
-$("linesAdminList").innerHTML=lines.length?lines.map(l=>`<div class="item"><strong>${l.name}</strong><span class="muted">${l.city||""} · ${l.type||"bus"}</span><div class="actions"><button class="editBtn" data-edit-line="${l.id}" type="button">Modifier</button><button class="deleteBtn" data-del-line="${l.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucune ligne.</div>';
+$("linesAdminList").innerHTML=lines.length?lines.map(l=>`<div class="item"><strong>${l.name}</strong><span class="muted">${l.city||""} · ${l.type||"bus"}</span><div class="actions"><button class="editBtn" data-edit-line="${l.id}" type="button">Modifier</button><button class="${l.active===false?`activateBtn`:`disableBtn`}" data-toggle-line="${l.id}" data-active="${l.active===false?`true`:`false`}" type="button">${l.active===false?`Réactiver`:`Désactiver`}</button><button class="deleteBtn" data-del-line="${l.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucune ligne.</div>';
 
 const adminStops=adminFilteredStops();if($("adminStopsCount"))$("adminStopsCount").textContent=adminStops.length+" arrêt(s) affiché(s)";$("stopsAdminList").innerHTML=adminStops.length?adminStops.map(s=>`<div class="item"><strong>${s.name}</strong><span class="muted">${lineName(s.lineId)} · ${s.lat}, ${s.lng}</span><div class="actions"><button class="editBtn" data-edit-stop="${s.id}" type="button">Modifier</button><button class="deleteBtn" data-del-stop="${s.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucun arrêt trouvé.</div>';
 
@@ -452,6 +452,7 @@ document.querySelectorAll("[data-edit-stop]").forEach(b=>b.onclick=()=>editStop(
 document.querySelectorAll("[data-edit-vehicle]").forEach(b=>b.onclick=()=>editVehicle(b.dataset.editVehicle));
 document.querySelectorAll("[data-edit-driver]").forEach(b=>b.onclick=()=>editDriver(b.dataset.editDriver));
 
+document.querySelectorAll("[data-toggle-line]").forEach(b=>b.onclick=()=>setLineActive(b.dataset.toggleLine,b.dataset.active==="true"));
 document.querySelectorAll("[data-del-line]").forEach(b=>b.onclick=()=>requireAdmin()&&db.collection("lines").doc(b.dataset.delLine).delete());
 document.querySelectorAll("[data-del-stop]").forEach(b=>b.onclick=()=>requireAdmin()&&db.collection("stops").doc(b.dataset.delStop).delete());
 document.querySelectorAll("[data-del-vehicle]").forEach(b=>b.onclick=()=>requireAdmin()&&db.collection("vehicles").doc(b.dataset.delVehicle).delete());
