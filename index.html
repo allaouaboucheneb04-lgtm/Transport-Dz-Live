@@ -20,6 +20,12 @@
   </div>
 </div>
 
+
+<div id="gmEtaMini" class="gmEtaMini">
+  <b>⏱️ ETA</b>
+  <span id="gmEtaText">Choisis un arrêt</span>
+</div>
+
 <div id="clientMapActions" class="clientMapActions">
   <button id="gmLocateBtn" type="button" title="Ma position">➤</button>
   <button id="gmFitBtn" type="button" title="Voir tout">⌖</button>
@@ -314,6 +320,27 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=client-full-map-1"></script>
+<script src="app.js?v=client-map-pro-1"></script>
+
+<div id="gmRoutePanel" class="gmRoutePanel hidden">
+  <div class="sheetHandle"></div>
+  <div class="gmPanelTitle">Itinéraire</div>
+
+  <label>Départ</label>
+  <input id="gmFromInput" type="text" placeholder="Votre position ou arrêt de départ">
+
+  <label>Destination</label>
+  <input id="gmToInput" type="text" placeholder="Où allez-vous ?">
+
+  <div id="gmSuggestBox" class="gmSuggestBox hidden"></div>
+
+  <div class="gmPanelActions">
+    <button id="gmUseMyPosBtn" type="button" class="secondary">📍 Ma position</button>
+    <button id="gmSearchRouteBtn" type="button" class="primary">Chercher</button>
+  </div>
+
+  <div id="gmRouteResult" class="gmRouteResult">Écris un départ et une destination.</div>
+</div>
+
 </body>
 </html>

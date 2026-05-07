@@ -822,7 +822,7 @@ function renderEta(){
   `;
 }
 
-function renderAll(){renderEtaStopSelect();renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
+function renderAll(){gmUpdateEtaMini();renderEtaStopSelect();renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineNameInput").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
@@ -2602,7 +2602,7 @@ function setClientMapMode(active){
   setTimeout(()=>{ try{ if(map) map.invalidateSize(); }catch(e){} }, 250);
 }
 function toggleClientMapMode(){
-  setClientMapMode(!clientMapMode);
+  setClientMapMode(!clientMapMode); if(!clientMapMode===false){setTimeout(gmFitAll,400);}
 }
 async function gmLocate(){
   try{
@@ -2645,7 +2645,134 @@ function setupGoogleMapClientMode(){
   }
 }
 
-function setupEvents(){setupGoogleMapClientMode();setupGoogleSuggestions();if($('clearFromBtn'))$('clearFromBtn').onclick=()=>{if($('fromInput'))$('fromInput').value='';renderRouteSuggestionBoxPro();};if($('clearToBtn'))$('clearToBtn').onclick=()=>{if($('toInput'))$('toInput').value='';renderRouteSuggestionBoxPro();};setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
+
+// =========================
+// CLIENT FULL MAP PRO
+// =========================
+let gmActiveInputId = null;
+
+function gmShowRoutePanel(show=true){
+  const p = $("gmRoutePanel");
+  if(!p) return;
+  p.classList.toggle("hidden", !show);
+  if(show){
+    if($("gmFromInput") && $("fromInput")) $("gmFromInput").value = $("fromInput").value || "";
+    if($("gmToInput") && $("toInput")) $("gmToInput").value = $("toInput").value || $("gmQuickSearch")?.value || "";
+    setTimeout(()=>{ try{ $("gmToInput").focus(); }catch(e){} }, 100);
+  }
+}
+function gmSyncToMainRoute(){
+  if($("fromInput") && $("gmFromInput")) $("fromInput").value = $("gmFromInput").value || "";
+  if($("toInput") && $("gmToInput")) $("toInput").value = $("gmToInput").value || "";
+}
+function gmSuggestionList(query, limit=6){
+  if(typeof buildStopSuggestionsPro === "function") return buildStopSuggestionsPro(query, limit);
+  if(typeof buildStopSuggestions === "function") return buildStopSuggestions(query, limit);
+  return [];
+}
+function gmRenderSuggest(inputId){
+  gmActiveInputId = inputId;
+  const box = $("gmSuggestBox");
+  if(!box) return;
+  const q = val(inputId);
+  const list = gmSuggestionList(q, 6);
+  if(!q || !list.length){
+    box.classList.add("hidden");
+    box.innerHTML = "";
+    return;
+  }
+  box.innerHTML = list.map(x=>`
+    <button type="button" class="gmSuggestItem" data-value="${(x.stop.name||"").replaceAll('"','&quot;')}">
+      <span class="gPin">📍</span>
+      <span class="gText"><b>${x.stop.name||"Arrêt"}</b><small>${getLineName(x.stop.lineId)}</small></span>
+    </button>
+  `).join("");
+  box.classList.remove("hidden");
+  box.querySelectorAll(".gmSuggestItem").forEach(btn=>{
+    btn.onclick=()=>{
+      const input=$(gmActiveInputId);
+      if(input) input.value=btn.dataset.value||"";
+      box.classList.add("hidden");
+      box.innerHTML="";
+      if(gmActiveInputId==="gmFromInput") setTimeout(()=>{$("gmToInput")?.focus();},80);
+    };
+  });
+}
+async function gmUseMyPosition(){
+  try{
+    const pos = await getPosition();
+    if($("gmFromInput")) $("gmFromInput").value = "Ma position";
+    clientLat = pos[0];
+    clientLng = pos[1];
+    if(map) map.setView([clientLat,clientLng],16);
+  }catch(e){
+    alert("GPS impossible: "+(e.message||e));
+  }
+}
+async function gmSearchRoute(){
+  gmSyncToMainRoute();
+  if($("gmFromInput")?.value === "Ma position" && $("fromInput")){
+    // Use nearest stop to current GPS as starting point
+    const list = (typeof activeStopsOnly==="function" ? activeStopsOnly() : stops).filter(s=>num(s.lat)!==null&&num(s.lng)!==null);
+    if(clientLat && clientLng && list.length){
+      list.sort((a,b)=>distanceMeters(clientLat,clientLng,num(a.lat),num(a.lng))-distanceMeters(clientLat,clientLng,num(b.lat),num(b.lng)));
+      $("fromInput").value = list[0].name || "";
+    }
+  }
+  setText("gmRouteResult","Calcul du trajet...");
+  try{
+    if(typeof searchRouteMultiLines === "function"){
+      await searchRouteMultiLines();
+      $("gmRouteResult").innerHTML = $("routeResult") ? $("routeResult").innerHTML : "Trajet calculé.";
+    }else if($("searchRouteBtn")){
+      $("searchRouteBtn").click();
+      $("gmRouteResult").textContent = "Trajet envoyé au moteur.";
+    }
+    gmShowRoutePanel(true);
+  }catch(e){
+    setText("gmRouteResult","Erreur trajet: "+(e.message||e));
+  }
+}
+function gmUpdateEtaMini(){
+  const t=$("gmEtaText");
+  if(!t) return;
+  try{
+    const online = vehicles.filter(v=>v.status==="online" || v.online===true).length;
+    t.textContent = online ? `${online} bus en ligne` : "Aucun bus en ligne";
+  }catch(e){ t.textContent = "ETA indisponible"; }
+}
+function setupClientFullMapPro(){
+  if($("gmOpenRouteBtn")) $("gmOpenRouteBtn").onclick = ()=>gmShowRoutePanel(true);
+  if($("sheetExpandBtn")) $("sheetExpandBtn").onclick = ()=>gmShowRoutePanel(true);
+  if($("gmSearchRouteBtn")) $("gmSearchRouteBtn").onclick = gmSearchRoute;
+  if($("gmUseMyPosBtn")) $("gmUseMyPosBtn").onclick = gmUseMyPosition;
+
+  ["gmFromInput","gmToInput","gmQuickSearch"].forEach(id=>{
+    const input=$(id);
+    if(!input) return;
+    input.setAttribute("autocomplete","off");
+    input.addEventListener("input", ()=>{
+      if(id==="gmQuickSearch"){
+        if($("gmToInput")) $("gmToInput").value=input.value;
+        gmShowRoutePanel(true);
+        gmRenderSuggest("gmToInput");
+      }else{
+        gmRenderSuggest(id);
+      }
+    });
+    input.addEventListener("focus", ()=> {
+      if(id!=="gmQuickSearch") gmRenderSuggest(id);
+    });
+    input.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){
+        if(id==="gmQuickSearch") gmShowRoutePanel(true);
+        else gmSearchRoute();
+      }
+    });
+  });
+}
+
+function setupEvents(){setupClientFullMapPro();setupGoogleMapClientMode();setupGoogleSuggestions();if($('clearFromBtn'))$('clearFromBtn').onclick=()=>{if($('fromInput'))$('fromInput').value='';renderRouteSuggestionBoxPro();};if($('clearToBtn'))$('clearToBtn').onclick=()=>{if($('toInput'))$('toInput').value='';renderRouteSuggestionBoxPro();};setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
 if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;if($("clearRouteBtn")) $("clearRouteBtn").onclick=resetRouteSearchView;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>{saveRecentTrip(val("fromInput"),val("toInput"));return searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});};$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
