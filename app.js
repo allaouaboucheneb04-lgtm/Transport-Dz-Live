@@ -822,7 +822,7 @@ function renderEta(){
   `;
 }
 
-function renderAll(){renderEtaStopSelect();renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
+function renderAll(){applyTransitFallbackIfEmpty();renderEtaStopSelect();renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineNameInput").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
@@ -3229,4 +3229,117 @@ function updateCleanMapStatus(){
   el.textContent = `${l} lignes · ${s} arrêts`;
 }
 window.addEventListener("load",()=>setInterval(updateCleanMapStatus,1500));
+
+
+
+// =========================
+// FIREBASE EMPTY FALLBACK DATA
+// =========================
+const FALLBACK_LINES = [
+  {
+    id:"fallback_sidi_aich_bejaia",
+    name:"Sidi Aïch - Béjaïa",
+    city:"Bejaia",
+    type:"bus",
+    color:"#2563eb",
+    active:true,
+    order:1
+  },
+  {
+    id:"fallback_bus_5",
+    name:"Bus 5 : Dar Djebel - Porte Sarrasine",
+    city:"Bejaia",
+    type:"bus",
+    color:"#db2777",
+    active:true,
+    order:2
+  },
+  {
+    id:"fallback_takarietz",
+    name:"Takarietz => Sidi Aïch",
+    city:"Bejaia",
+    type:"bus",
+    color:"#16a34a",
+    active:true,
+    order:3
+  }
+];
+
+const FALLBACK_STOPS = [
+  {id:"fb_stop_1", name:"Sidi Aïch", city:"Bejaia", lineId:"fallback_sidi_aich_bejaia", lat:36.61128, lng:4.69160, order:1, active:true},
+  {id:"fb_stop_2", name:"El Kseur", city:"Bejaia", lineId:"fallback_sidi_aich_bejaia", lat:36.68195, lng:4.85550, order:2, active:true},
+  {id:"fb_stop_3", name:"Oued Ghir", city:"Bejaia", lineId:"fallback_sidi_aich_bejaia", lat:36.71410, lng:4.98640, order:3, active:true},
+  {id:"fb_stop_4", name:"Gare routière de Béjaïa", city:"Bejaia", lineId:"fallback_sidi_aich_bejaia", lat:36.74810, lng:5.05540, order:4, active:true},
+  {id:"fb_stop_5", name:"Université", city:"Bejaia", lineId:"fallback_bus_5", lat:36.75290, lng:5.04290, order:1, active:true},
+  {id:"fb_stop_6", name:"Dar Djebel", city:"Bejaia", lineId:"fallback_bus_5", lat:36.76060, lng:5.03520, order:2, active:true},
+  {id:"fb_stop_7", name:"Porte Sarrasine", city:"Bejaia", lineId:"fallback_bus_5", lat:36.75215, lng:5.07330, order:3, active:true},
+  {id:"fb_stop_8", name:"Takarietz Terminus", city:"Bejaia", lineId:"fallback_takarietz", lat:36.61720, lng:4.65850, order:1, active:true},
+  {id:"fb_stop_9", name:"Semaoune", city:"Bejaia", lineId:"fallback_takarietz", lat:36.59750, lng:4.72410, order:2, active:true},
+  {id:"fb_stop_10", name:"Terminus Sidi Aïch", city:"Bejaia", lineId:"fallback_takarietz", lat:36.61190, lng:4.69230, order:3, active:true}
+];
+
+function hasRealFirebaseTransitData(){
+  try{
+    const realLines = (typeof lines !== "undefined" ? lines : []).filter(l => l && !String(l.id||"").startsWith("fallback_"));
+    const realStops = (typeof stops !== "undefined" ? stops : []).filter(s => s && !String(s.id||"").startsWith("fb_"));
+    return realLines.length > 0 && realStops.length > 0;
+  }catch(e){
+    return false;
+  }
+}
+
+function applyTransitFallbackIfEmpty(){
+  try{
+    if(typeof lines === "undefined" || typeof stops === "undefined") return;
+
+    const realLines = lines.filter(l => l && !String(l.id||"").startsWith("fallback_"));
+    const realStops = stops.filter(s => s && !String(s.id||"").startsWith("fb_"));
+
+    if(realLines.length === 0){
+      lines = [...FALLBACK_LINES];
+    }
+    if(realStops.length === 0){
+      stops = [...FALLBACK_STOPS];
+    }
+
+    const st = document.getElementById("firebaseStatus");
+    if(st && (realLines.length === 0 || realStops.length === 0)){
+      st.textContent = "Mode démo";
+      st.style.background = "#fef3c7";
+      st.style.color = "#92400e";
+    }
+
+  }catch(e){
+    console.warn("fallback", e);
+  }
+}
+
+function renderAllWithFallback(){
+  applyTransitFallbackIfEmpty();
+  try{
+    if(typeof renderSelects === "function") renderSelects();
+    if(typeof renderLists === "function") renderLists();
+    if(typeof drawMap === "function") drawMap();
+    if(typeof updateCleanMapStatus === "function") updateCleanMapStatus();
+  }catch(e){
+    console.warn("renderAllWithFallback", e);
+  }
+}
+
+setInterval(()=>{
+  try{
+    applyTransitFallbackIfEmpty();
+    const el = document.getElementById("cleanMapStatus");
+    if(el){
+      const l = (typeof lines !== "undefined" ? lines.filter(x=>x.active!==false).length : 0);
+      const s = (typeof stops !== "undefined" ? stops.filter(x=>x.active!==false).length : 0);
+      el.textContent = `${l} lignes · ${s} arrêts`;
+    }
+  }catch(e){}
+}, 1500);
+
+window.addEventListener("load", ()=>{
+  setTimeout(renderAllWithFallback, 1200);
+  setTimeout(renderAllWithFallback, 2500);
+});
 

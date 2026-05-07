@@ -540,3 +540,14 @@ input, select, textarea, button{
   font-weight:950;
   margin:0 0 10px;
 }
+
+.fallbackWarning{
+  display:inline-flex;
+  padding:7px 10px;
+  border-radius:999px;
+  background:#fef3c7;
+  color:#92400e;
+  font-size:12px;
+  font-weight:950;
+  margin:0 0 8px;
+}
