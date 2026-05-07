@@ -69,3 +69,18 @@
 
 .driverBlocked .card:not(#driverPendingCard){opacity:.35;pointer-events:none;filter:grayscale(.5)}
 .activateBtn{background:#dcfce7!important;color:#166534!important;border:0!important;border-radius:16px;padding:12px 18px;font-weight:950}
+
+.authGate{position:fixed;inset:0;z-index:99999;background:linear-gradient(180deg,#eef6ff,#f8fbff);display:flex;align-items:center;justify-content:center;padding:22px}
+.authGate.hidden{display:none!important}
+.authHero{width:min(560px,100%);background:#fff;border:1px solid #dbe4f0;border-radius:34px;padding:28px;box-shadow:0 30px 90px rgba(15,23,42,.18)}
+.brandMini{text-transform:uppercase;letter-spacing:.35em;color:#64748b;font-weight:950;font-size:12px;margin-bottom:8px}
+.authHero h1{font-size:42px;line-height:1;margin:0 0 10px;color:#0f172a}
+.authHero p{color:#475569;font-weight:750;font-size:17px;line-height:1.4}
+.authTabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#eff6ff;border-radius:20px;padding:6px;margin:18px 0}
+.authTab{border:0;border-radius:16px;padding:14px;font-weight:950;background:transparent;color:#1d4ed8}
+.authTab.active{background:#2563eb;color:#fff;box-shadow:0 8px 18px rgba(37,99,235,.25)}
+.authBox label{display:block;margin-top:12px;font-weight:950;color:#334155}
+.authBox input,.authBox select{width:100%;min-height:54px;border:1px solid #dbe4f0;border-radius:18px;padding:0 14px;font-size:16px;background:#fff}
+.authHint{font-size:14px!important;color:#64748b!important;margin-top:10px!important}
+.authStatus{margin-top:12px;color:#dc2626;font-weight:900}
+.roleBadge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:9px 12px;background:#e0f2fe;color:#075985;font-weight:950;margin-right:8px}

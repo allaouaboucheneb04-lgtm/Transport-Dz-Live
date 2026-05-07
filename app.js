@@ -734,7 +734,18 @@ function renderWaitingBusesList(){
   }).join("");
 }
 
-function renderAll(){renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
+
+function renderRoleBadge(){
+  const b=$("roleBadge");
+  if(!b) return;
+  if(!currentUser){ b.textContent = guestMode ? "Client invité" : "Non connecté"; return; }
+  if(userRole==="admin") b.textContent="Admin";
+  else if(userRole==="driver") b.textContent="Chauffeur approuvé";
+  else if(userRole==="driver_pending") b.textContent="Chauffeur en attente";
+  else b.textContent="Client";
+}
+
+function renderAll(){renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
@@ -2090,11 +2101,101 @@ function applyRoleVisibility(){
   if(d) d.classList.toggle("driverBlocked", isDriverPending());
 }
 
-function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
+
+let guestMode = false;
+
+function showAuthGate(show){
+  const g = $("authGate");
+  if(!g) return;
+  g.classList.toggle("hidden", !show);
+}
+function showAuthTab(tab){
+  const login = tab === "login";
+  if($("authLoginBox")) $("authLoginBox").classList.toggle("hidden", !login);
+  if($("authSignupBox")) $("authSignupBox").classList.toggle("hidden", login);
+  if($("authTabLogin")) $("authTabLogin").classList.toggle("active", login);
+  if($("authTabSignup")) $("authTabSignup").classList.toggle("active", !login);
+}
+function roleHomePage(){
+  if(userRole === "admin") return "admin";
+  if(userRole === "driver" || userRole === "driver_pending") return "driver";
+  return "client";
+}
+function openRoleHome(){
+  const page = roleHomePage();
+  try{
+    document.querySelectorAll(".bottomNav button,[data-page]").forEach(b=>b.classList.remove("active"));
+  }catch(e){}
+  if(typeof switchPage === "function") switchPage(page);
+  else {
+    ["clientPage","driverPage","adminPage"].forEach(id=>{ if($(id)) $(id).classList.add("hidden"); });
+    const target = page==="admin" ? "adminPage" : page==="driver" ? "driverPage" : "clientPage";
+    if($(target)) $(target).classList.remove("hidden");
+  }
+}
+async function gateLogin(){
+  try{
+    setText("gateAuthStatus","Connexion...");
+    const cred = await auth.signInWithEmailAndPassword(val("gateEmailLogin").trim(), val("gatePasswordLogin"));
+    currentUser = cred.user;
+    await loadRole();
+    showAuthGate(false);
+    openRoleHome();
+    setText("gateAuthStatus","");
+  }catch(e){
+    setText("gateAuthStatus","Erreur connexion: "+(e.message||e));
+    alert("Erreur connexion: "+(e.message||e));
+  }
+}
+async function gateSignup(){
+  try{
+    setText("gateAuthStatus","Création du compte...");
+    const role = val("gateSignupRole") || "client";
+    const cred = await auth.createUserWithEmailAndPassword(val("gateEmailSignup").trim(), val("gatePasswordSignup"));
+    currentUser = cred.user;
+    if(typeof createUserProfileAfterSignup === "function"){
+      await createUserProfileAfterSignup(cred.user, role);
+    }else{
+      await db.collection("users").doc(cred.user.uid).set({
+        email:cred.user.email || "",
+        role: role === "driver" ? "driver_pending" : "client",
+        active: role !== "driver",
+        createdAt:now(),
+        updatedAt:now()
+      }, {merge:true});
+      if(role === "driver"){
+        await db.collection("driverRequests").doc(cred.user.uid).set({
+          uid:cred.user.uid,email:cred.user.email||"",status:"pending",createdAt:now(),updatedAt:now()
+        }, {merge:true});
+      }
+    }
+    await loadRole();
+    showAuthGate(false);
+    openRoleHome();
+    setText("gateAuthStatus", role==="driver" ? "Compte chauffeur en attente admin." : "Compte client créé.");
+    if(role==="driver") alert("Compte chauffeur créé. En attente d’approbation admin.");
+  }catch(e){
+    setText("gateAuthStatus","Erreur inscription: "+(e.message||e));
+    alert("Erreur inscription: "+(e.message||e));
+  }
+}
+function setupAuthGateEvents(){
+  if($("authTabLogin")) $("authTabLogin").onclick=()=>showAuthTab("login");
+  if($("authTabSignup")) $("authTabSignup").onclick=()=>showAuthTab("signup");
+  if($("gateLoginBtn")) $("gateLoginBtn").onclick=gateLogin;
+  if($("gateSignupBtn")) $("gateSignupBtn").onclick=gateSignup;
+  if($("continueGuestBtn")) $("continueGuestBtn").onclick=()=>{guestMode=true;showAuthGate(false);if(typeof switchPage==="function")switchPage("client");};
+}
+function refreshAuthGate(){
+  if(currentUser || guestMode) showAuthGate(false);
+  else showAuthGate(true);
+}
+
+function setupEvents(){setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
 if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;if($("clearRouteBtn")) $("clearRouteBtn").onclick=resetRouteSearchView;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
-function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();bindRealtime()});setInterval(renderAll,30000)}
+function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();refreshAuthGate();if(user)openRoleHome();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
 

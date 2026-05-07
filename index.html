@@ -9,9 +9,48 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<div id="authGate" class="authGate hidden">
+  <div class="authHero">
+    <div class="brandMini">Firebase + GPS Live</div>
+    <h1>Transport Live DZ</h1>
+    <p>Connecte-toi ou crée ton compte pour utiliser l’espace client, chauffeur ou admin.</p>
+
+    <div class="authTabs">
+      <button id="authTabLogin" class="authTab active" type="button">Connexion</button>
+      <button id="authTabSignup" class="authTab" type="button">Inscription</button>
+    </div>
+
+    <div id="authLoginBox" class="authBox">
+      <label>Email</label>
+      <input id="gateEmailLogin" type="email" placeholder="email@example.com">
+      <label>Mot de passe</label>
+      <input id="gatePasswordLogin" type="password" placeholder="••••••••">
+      <button id="gateLoginBtn" class="primary" type="button">Se connecter</button>
+    </div>
+
+    <div id="authSignupBox" class="authBox hidden">
+      <label>Type de compte</label>
+      <select id="gateSignupRole">
+        <option value="client">Client</option>
+        <option value="driver">Chauffeur</option>
+      </select>
+      <label>Email</label>
+      <input id="gateEmailSignup" type="email" placeholder="email@example.com">
+      <label>Mot de passe</label>
+      <input id="gatePasswordSignup" type="password" placeholder="minimum 6 caractères">
+      <button id="gateSignupBtn" class="primary" type="button">Créer mon compte</button>
+      <p class="authHint">Client : accès direct. Chauffeur : validation admin obligatoire.</p>
+    </div>
+
+    <button id="continueGuestBtn" class="secondary" type="button">Continuer comme client sans compte</button>
+    <div id="gateAuthStatus" class="authStatus"></div>
+  </div>
+</div>
+
 <header class="topbar">
   <div><div class="kicker">Firebase + GPS Live</div><h1>Transport Live DZ</h1></div>
-  <div class="badges"><span id="firebaseStatus" class="badge blue">Firebase...</span><button id="openLoginBtn" class="badge light" type="button">Connexion</button></div>
+  <div class="badges"><span id="firebaseStatus" class="badge blue">Firebase...</span><span id="roleBadge" class="roleBadge">Invité</span><button id="openLoginBtn" class="badge light" type="button">Connexion</button></div>
 </header>
 
 <main>
@@ -240,6 +279,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=roles-separated-1"></script>
+<script src="app.js?v=auth-app-shell-1"></script>
 </body>
 </html>
