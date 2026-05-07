@@ -2507,7 +2507,7 @@ function setupRouteSuggestions(){renderRecentTrips();
   });
 }
 
-function setupEvents(){if($('clearFromBtn'))$('clearFromBtn').onclick=()=>{if($('fromInput'))$('fromInput').value='';renderRouteSuggestionBoxPro();};if($('clearToBtn'))$('clearToBtn').onclick=()=>{if($('toInput'))$('toInput').value='';renderRouteSuggestionBoxPro();};setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
+function setupEvents(){setupCleanFullMap();if($('clearFromBtn'))$('clearFromBtn').onclick=()=>{if($('fromInput'))$('fromInput').value='';renderRouteSuggestionBoxPro();};if($('clearToBtn'))$('clearToBtn').onclick=()=>{if($('toInput'))$('toInput').value='';renderRouteSuggestionBoxPro();};setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
 if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;if($("clearRouteBtn")) $("clearRouteBtn").onclick=resetRouteSearchView;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>{saveRecentTrip(val("fromInput"),val("toInput"));return searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});};$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
@@ -2534,5 +2534,141 @@ function safeRestoreMapFix(){
       if(typeof renderAll === "function") renderAll();
     }catch(e){ console.warn(e); }
   }, 600);
+}
+
+
+
+// =========================
+// CLEAN FULLSCREEN MAP MODE
+// =========================
+let cleanMapObj = null;
+let cleanMapLayers = [];
+
+function cleanClearLayers(){
+  cleanMapLayers.forEach(l=>{try{cleanMapObj.removeLayer(l)}catch(e){}});
+  cleanMapLayers = [];
+}
+
+function cleanInitMap(){
+  if(cleanMapObj) return;
+  cleanMapObj = L.map("cleanMap", {zoomControl:true}).setView([36.75, 5.05], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom:19,
+    attribution:"© OpenStreetMap"
+  }).addTo(cleanMapObj);
+}
+
+function cleanDrawMap(){
+  if(!cleanMapObj) return;
+  cleanClearLayers();
+  const pts = [];
+
+  try{
+    (typeof activeStopsOnly === "function" ? activeStopsOnly() : stops).forEach(s=>{
+      if(num(s.lat)!==null && num(s.lng)!==null){
+        const m = L.circleMarker([num(s.lat),num(s.lng)], {
+          radius:5, color:"#2563eb", fillColor:"#2563eb", fillOpacity:.8
+        }).addTo(cleanMapObj).bindPopup(s.name || "Arrêt");
+        cleanMapLayers.push(m);
+        pts.push([num(s.lat),num(s.lng)]);
+      }
+    });
+
+    (vehicles || []).forEach(v=>{
+      const online = v.status === "online" || v.online === true;
+      if(!online || num(v.lat)===null || num(v.lng)===null) return;
+      const icon = L.divIcon({
+        className:"cleanBusIcon",
+        html:"<div>🚌</div>",
+        iconSize:[42,42],
+        iconAnchor:[21,21]
+      });
+      const m = L.marker([num(v.lat),num(v.lng)], {icon}).addTo(cleanMapObj)
+        .bindPopup((v.name || "Bus") + "<br>" + getLineName(v.lineId));
+      cleanMapLayers.push(m);
+      pts.push([num(v.lat),num(v.lng)]);
+    });
+
+    (lines || []).filter(l=>l.active!==false).forEach(line=>{
+      const lineStops = (typeof activeStopsOnly === "function" ? activeStopsOnly() : stops)
+        .filter(s=>s.lineId===line.id && num(s.lat)!==null && num(s.lng)!==null)
+        .sort((a,b)=>Number(a.order||9999)-Number(b.order||9999));
+      if(lineStops.length > 1){
+        const latlngs = lineStops.map(s=>[num(s.lat),num(s.lng)]);
+        const poly = L.polyline(latlngs, {color:line.color||"#2563eb", weight:5, opacity:.7}).addTo(cleanMapObj);
+        cleanMapLayers.push(poly);
+      }
+    });
+
+    if(pts.length) cleanMapObj.fitBounds(L.latLngBounds(pts), {padding:[35,35]});
+  }catch(e){
+    console.warn("cleanDrawMap", e);
+  }
+}
+
+function openCleanFullMap(){
+  const overlay = document.getElementById("cleanMapOverlay");
+  if(!overlay) return;
+  overlay.classList.remove("hidden");
+  cleanInitMap();
+  setTimeout(()=>{
+    cleanMapObj.invalidateSize();
+    cleanDrawMap();
+  }, 250);
+}
+
+function closeCleanFullMap(){
+  const overlay = document.getElementById("cleanMapOverlay");
+  if(overlay) overlay.classList.add("hidden");
+}
+
+async function cleanLocate(){
+  try{
+    const p = await getPosition();
+    cleanInitMap();
+    cleanMapObj.setView([p[0], p[1]], 16);
+    const icon = L.divIcon({
+      className:"cleanMeIcon",
+      html:"<div>➤</div>",
+      iconSize:[44,44],
+      iconAnchor:[22,22]
+    });
+    const m = L.marker([p[0],p[1]], {icon}).addTo(cleanMapObj).bindPopup("Ma position");
+    cleanMapLayers.push(m);
+  }catch(e){
+    alert("Position impossible.");
+  }
+}
+
+function cleanOpenRoute(){
+  closeCleanFullMap();
+  const q = val("cleanSearchInput");
+  if(q && document.getElementById("toInput")) document.getElementById("toInput").value = q;
+  setTimeout(()=>{
+    try{ document.getElementById("fromInput")?.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){}
+  }, 150);
+}
+
+function setupCleanFullMap(){
+  const btn = document.getElementById("cleanFullMapBtn");
+  if(btn) btn.onclick = openCleanFullMap;
+
+  const oldModeBtns = Array.from(document.querySelectorAll("button,span")).filter(x => (x.textContent||"").trim()==="Mode carte plein écran");
+  oldModeBtns.forEach(b=>b.onclick=openCleanFullMap);
+
+  const close = document.getElementById("cleanCloseMapBtn");
+  if(close) close.onclick = closeCleanFullMap;
+
+  const locate = document.getElementById("cleanLocateBtn");
+  if(locate) locate.onclick = cleanLocate;
+
+  const itinerary = document.getElementById("cleanItineraryBtn");
+  if(itinerary) itinerary.onclick = cleanOpenRoute;
+
+  const route = document.getElementById("cleanOpenRouteBtn");
+  if(route) route.onclick = cleanOpenRoute;
+
+  const search = document.getElementById("cleanSearchInput");
+  if(search) search.addEventListener("keydown", e=>{if(e.key==="Enter") cleanOpenRoute();});
 }
 

@@ -146,3 +146,154 @@ button, input, select{
   padding:6px 12px!important;
   margin:6px 0 8px auto!important;
 }
+
+/* =========================
+   CLEAN FULLSCREEN MAP - SAFE
+========================= */
+.cleanMapOverlay{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  background:#fff;
+}
+.cleanMapOverlay.hidden{
+  display:none!important;
+}
+.cleanMap{
+  position:absolute;
+  inset:0;
+  width:100vw;
+  height:100dvh;
+  background:#e5e7eb;
+}
+.cleanMapSearch{
+  position:absolute;
+  top:calc(env(safe-area-inset-top) + 12px);
+  left:14px;
+  right:14px;
+  z-index:20;
+  min-height:64px;
+  border-radius:28px;
+  background:#fff;
+  box-shadow:0 12px 36px rgba(15,23,42,.25);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px 8px 16px;
+}
+.cleanMapSearch span{
+  font-size:24px;
+}
+.cleanMapSearch input{
+  flex:1;
+  border:0!important;
+  outline:0!important;
+  min-height:48px!important;
+  box-shadow:none!important;
+  font-size:16px!important;
+}
+.cleanMapSearch button{
+  width:auto!important;
+  min-height:46px!important;
+  border-radius:20px!important;
+  padding:0 16px!important;
+  background:#2563eb!important;
+  color:#fff!important;
+  font-weight:950!important;
+}
+.cleanFloatingBtn{
+  position:absolute;
+  z-index:25;
+  width:56px!important;
+  height:56px!important;
+  min-height:56px!important;
+  border-radius:50%!important;
+  border:0!important;
+  background:#fff!important;
+  color:#0f172a!important;
+  box-shadow:0 12px 30px rgba(15,23,42,.25)!important;
+  font-weight:950!important;
+  font-size:28px!important;
+  padding:0!important;
+}
+.cleanCloseBtn{
+  top:calc(env(safe-area-inset-top) + 88px);
+  right:14px;
+}
+.cleanLocateBtn{
+  right:14px;
+  bottom:calc(env(safe-area-inset-bottom) + 165px);
+  color:#2563eb!important;
+  transform:rotate(-45deg);
+}
+.cleanBottomSheet{
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:calc(env(safe-area-inset-bottom) + 86px);
+  z-index:22;
+  background:#fff;
+  border-radius:28px;
+  padding:12px 18px 18px;
+  box-shadow:0 -12px 36px rgba(15,23,42,.22);
+}
+.cleanHandle{
+  width:54px;
+  height:6px;
+  border-radius:999px;
+  background:#cbd5e1;
+  margin:0 auto 12px;
+}
+.cleanBottomSheet h2{
+  margin:0 0 6px;
+  font-size:24px;
+  color:#0f172a;
+}
+.cleanBottomSheet p{
+  margin:0 0 12px;
+  color:#64748b;
+  font-weight:850;
+}
+.cleanBottomSheet button{
+  width:auto!important;
+  min-height:48px!important;
+  border-radius:18px!important;
+  padding:0 18px!important;
+  background:#2563eb!important;
+  color:#fff!important;
+  font-weight:950!important;
+}
+.cleanBusIcon{
+  background:transparent!important;
+  border:0!important;
+}
+.cleanBusIcon div{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#fff;
+  border:3px solid #2563eb;
+  box-shadow:0 8px 22px rgba(15,23,42,.25);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+}
+.cleanMeIcon{
+  background:transparent!important;
+  border:0!important;
+}
+.cleanMeIcon div{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  background:#2563eb;
+  color:#fff;
+  border:3px solid #fff;
+  box-shadow:0 8px 22px rgba(15,23,42,.25);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  transform:rotate(-45deg);
+}

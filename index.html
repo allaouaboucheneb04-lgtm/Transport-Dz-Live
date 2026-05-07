@@ -10,6 +10,27 @@
 </head>
 <body>
 
+<div id="cleanMapOverlay" class="cleanMapOverlay hidden">
+  <div id="cleanMap" class="cleanMap"></div>
+
+  <div class="cleanMapSearch">
+    <span>🔎</span>
+    <input id="cleanSearchInput" type="text" placeholder="Où voulez-vous aller ?">
+    <button id="cleanItineraryBtn" type="button">Itinéraire</button>
+  </div>
+
+  <button id="cleanCloseMapBtn" class="cleanFloatingBtn cleanCloseBtn" type="button">×</button>
+  <button id="cleanLocateBtn" class="cleanFloatingBtn cleanLocateBtn" type="button">➤</button>
+
+  <div id="cleanBottomSheet" class="cleanBottomSheet">
+    <div class="cleanHandle"></div>
+    <h2>Transport Live DZ</h2>
+    <p>Bus en direct, trajet, ETA et arrêts proches.</p>
+    <button id="cleanOpenRouteBtn" type="button">Chercher un trajet</button>
+  </div>
+</div>
+
+
 <div id="authGate" class="authGate hidden">
   <div class="authHero">
     <div class="brandMini">Firebase + GPS Live</div>
@@ -290,6 +311,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=safe-restore-v2"></script>
+<script src="app.js?v=clean-full-map-1"></script>
 </body>
 </html>
