@@ -486,3 +486,38 @@
   color:#64748b;
 }
 .clientRouteSheet.hidden{display:none!important}
+
+/* ===== FIX SCROLL DANS LE PANNEAU ITINÉRAIRE iPHONE ===== */
+.gmRoutePanel{
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+  touch-action:auto!important;
+}
+.gmRoutePanelContent{
+  flex:1;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain;
+  padding-bottom:120px;
+}
+.gmRoutePanel.gmSheetMini .gmRoutePanelContent{
+  overflow:hidden!important;
+}
+.gmRoutePanel.gmSheetMid{
+  height:55vh!important;
+}
+.gmRoutePanel.gmSheetFull{
+  height:82vh!important;
+}
+#gmDragHandle,.sheetHandle{
+  flex:0 0 auto!important;
+  touch-action:none!important;
+}
+.gmClosePanelBtn{
+  flex:0 0 auto!important;
+}
+.gmAltRoutes{
+  -webkit-overflow-scrolling:touch!important;
+}
