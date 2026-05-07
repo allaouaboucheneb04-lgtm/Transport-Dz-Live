@@ -589,3 +589,111 @@ input,select{
   z-index:1;
 }
 
+
+
+/* =========================
+   STRONG MOBILE OVERLAP FIX
+========================= */
+:root{
+  --safe-bottom-space: 150px;
+}
+
+html, body{
+  min-height:100%;
+  overflow-x:hidden!important;
+}
+
+body{
+  padding-bottom:var(--safe-bottom-space)!important;
+}
+
+main,
+.app,
+.container,
+.page,
+#clientPage,
+#driverPage,
+#adminPage{
+  padding-bottom:var(--safe-bottom-space)!important;
+}
+
+/* fixed bottom nav must not cover content */
+.bottomNav,
+.bottom-nav,
+.navBottom,
+#bottomNav{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  z-index:99999!important;
+  min-height:92px!important;
+  padding-bottom:calc(env(safe-area-inset-bottom) + 10px)!important;
+  background:rgba(255,255,255,.96)!important;
+  backdrop-filter:blur(18px)!important;
+}
+
+/* remove floating clear buttons that overlap fields */
+#clearFromBtn,
+#clearToBtn,
+.clearFieldBtn{
+  float:none!important;
+  position:static!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-height:36px!important;
+  padding:6px 12px!important;
+  margin:6px 0 8px auto!important;
+  border-radius:999px!important;
+  font-size:13px!important;
+  line-height:1!important;
+  z-index:1!important;
+}
+
+/* fields always visible */
+input,
+select,
+textarea{
+  position:relative!important;
+  z-index:1!important;
+  max-width:100%!important;
+}
+
+/* cards must not be hidden under nav */
+.card,
+.panel,
+.client-card,
+.route-card{
+  margin-bottom:18px!important;
+}
+
+/* last content on each page gets extra breathing room */
+.page > *:last-child,
+#clientPage > *:last-child,
+#driverPage > *:last-child,
+#adminPage > *:last-child{
+  margin-bottom:var(--safe-bottom-space)!important;
+}
+
+/* map mode panels should stay above bottom nav */
+.gmRoutePanel,
+.clientRouteSheet{
+  bottom:calc(env(safe-area-inset-bottom) + 108px)!important;
+  z-index:99998!important;
+}
+
+.clientFullMap .bottomNav{
+  z-index:99999!important;
+}
+
+/* better header badges */
+header .status,
+.status,
+.roleBadge{
+  max-width:170px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
