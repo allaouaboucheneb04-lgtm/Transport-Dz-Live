@@ -605,3 +605,5 @@ input, select, textarea, button{
 .leaflet-marker-pane{
   z-index:600!important;
 }
+
+.reloadFirebaseLinesBtn{width:auto!important;min-height:36px!important;border-radius:999px!important;padding:6px 12px!important;margin:0 8px 8px 0!important;background:#dcfce7!important;color:#166534!important;font-size:12px!important;font-weight:950!important;}

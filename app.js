@@ -3768,3 +3768,99 @@ window.addEventListener("load", ()=>{
   setInterval(UME_refreshAllMaps, 10000);
 });
 
+
+
+// REAL FIREBASE LINES PRIORITY FIX
+let REAL_TRANSIT_LOADING=false;
+let REAL_TRANSIT_LOADED_ONCE=false;
+
+function isFallbackLineId(id){return String(id||"").startsWith("fallback_");}
+function isFallbackStopId(id){return String(id||"").startsWith("fb_");}
+function countRealLines(){try{return (lines||[]).filter(l=>l&&!isFallbackLineId(l.id)).length;}catch(e){return 0;}}
+function countRealStops(){try{return (stops||[]).filter(s=>s&&!isFallbackStopId(s.id)).length;}catch(e){return 0;}}
+
+async function loadRealTransitFromFirestoreNow(){
+  if(REAL_TRANSIT_LOADING) return;
+  if(typeof db==="undefined" || !db) return;
+  REAL_TRANSIT_LOADING=true;
+  try{
+    const ls=await db.collection("lines").get();
+    const ss=await db.collection("stops").get();
+    const realLines=ls.docs.map(d=>({id:d.id,active:true,...d.data()}));
+    const realStops=ss.docs.map(d=>({id:d.id,active:true,...d.data()}));
+    if(realLines.length) lines=realLines;
+    if(realStops.length) stops=realStops;
+    REAL_TRANSIT_LOADED_ONCE=true;
+    updateRealLinesStatus();
+    try{if(typeof renderSelects==="function")renderSelects();}catch(e){}
+    try{if(typeof renderLists==="function")renderLists();}catch(e){}
+    try{if(typeof UME_refreshAllMaps==="function")UME_refreshAllMaps();}catch(e){}
+    try{if(typeof drawMap==="function")drawMap();}catch(e){}
+    try{if(cleanMapObj&&typeof cleanDrawMap==="function")cleanDrawMap();}catch(e){}
+  }catch(e){console.warn("loadRealTransitFromFirestoreNow",e);}
+  finally{REAL_TRANSIT_LOADING=false;}
+}
+
+function updateRealLinesStatus(){
+  const realL=countRealLines(), realS=countRealStops();
+  const demoL=(lines||[]).filter(l=>isFallbackLineId(l.id)).length;
+  const demoS=(stops||[]).filter(s=>isFallbackStopId(s.id)).length;
+  const txt=(realL||realS)?`${realL} lignes Firebase · ${realS} arrêts`:`${demoL} lignes démo · ${demoS} arrêts démo`;
+  ["cleanMapStatus","mapStatus","firebaseStatusMini"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
+  const fw=document.getElementById("fallbackWarning"); if(fw) fw.style.display=(realL||realS)?"none":"inline-flex";
+}
+
+const oldApplyTransitFallbackIfEmpty2=typeof applyTransitFallbackIfEmpty==="function"?applyTransitFallbackIfEmpty:null;
+function applyTransitFallbackIfEmpty(){
+  if(countRealLines()>0 || countRealStops()>0){updateRealLinesStatus();return;}
+  if(!REAL_TRANSIT_LOADED_ONCE&&!REAL_TRANSIT_LOADING) loadRealTransitFromFirestoreNow();
+  if((!lines||!lines.length)&&typeof FALLBACK_LINES!=="undefined") lines=[...FALLBACK_LINES];
+  if((!stops||!stops.length)&&typeof FALLBACK_STOPS!=="undefined") stops=[...FALLBACK_STOPS];
+  updateRealLinesStatus();
+}
+
+const oldUME_makeSureData2=typeof UME_makeSureData==="function"?UME_makeSureData:null;
+function UME_makeSureData(){
+  if(countRealLines()>0 || countRealStops()>0){
+    lines=(lines||[]).map(l=>({active:true,...l}));
+    stops=(stops||[]).map(s=>({active:true,...s}));
+    vehicles=vehicles||[];
+    updateRealLinesStatus();
+    return;
+  }
+  if(!REAL_TRANSIT_LOADED_ONCE&&!REAL_TRANSIT_LOADING) loadRealTransitFromFirestoreNow();
+  if(oldUME_makeSureData2) oldUME_makeSureData2();
+  updateRealLinesStatus();
+}
+
+const oldForceFullMapDataReady2=typeof forceFullMapDataReady==="function"?forceFullMapDataReady:null;
+function forceFullMapDataReady(){
+  if(countRealLines()===0&&!REAL_TRANSIT_LOADING) loadRealTransitFromFirestoreNow();
+  if(countRealLines()>0 || countRealStops()>0){
+    lines=(lines||[]).map(l=>({active:true,...l}));
+    stops=(stops||[]).map(s=>({active:true,...s}));
+    updateRealLinesStatus();
+    return;
+  }
+  if(oldForceFullMapDataReady2) oldForceFullMapDataReady2();
+  updateRealLinesStatus();
+}
+
+const oldOpenCleanFullMapRealPriority2=typeof openCleanFullMap==="function"?openCleanFullMap:null;
+async function openCleanFullMap(){
+  await loadRealTransitFromFirestoreNow();
+  if(oldOpenCleanFullMapRealPriority2) oldOpenCleanFullMapRealPriority2();
+  setTimeout(()=>{try{updateRealLinesStatus();if(typeof UME_refreshAllMaps==="function")UME_refreshAllMaps();if(cleanMapObj&&typeof cleanDrawMap==="function")cleanDrawMap();}catch(e){}},1000);
+}
+
+window.addEventListener("load",()=>{
+  setTimeout(loadRealTransitFromFirestoreNow,900);
+  setTimeout(loadRealTransitFromFirestoreNow,2500);
+  setInterval(updateRealLinesStatus,2000);
+});
+
+
+window.addEventListener("load",()=>setTimeout(()=>{
+  const b=document.getElementById("reloadFirebaseLinesBtn");
+  if(b)b.onclick=async()=>{await loadRealTransitFromFirestoreNow();try{if(cleanMapObj)cleanDrawMap();}catch(e){}try{drawMap();}catch(e){}};
+},800));
