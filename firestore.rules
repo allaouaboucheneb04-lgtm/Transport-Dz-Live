@@ -1,33 +1,71 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    function isAdmin() {
+    function signedIn(){ return request.auth != null; }
+    function isAdmin(){
       return signedIn() && (
-        request.auth.token.email == "allaouaboucheneb04@gmail.com"
-        || (
-          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-          && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true
-        )
-        || (
-          exists(/databases/$(database)/documents/users/$(request.auth.uid))
-          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
-        )
+        request.auth.token.email == "allaouaboucheneb04@gmail.com" ||
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")
       );
     }
-    match /admins/{uid} { allow read: if signedIn() && (request.auth.uid == uid || isAdmin()); allow write: if isAdmin(); }
-    match /users/{uid} { allow read: if signedIn() && (request.auth.uid == uid || isAdmin()); allow create, update: if signedIn() && (request.auth.uid == uid || isAdmin()); allow delete: if isAdmin(); }
-    match /lines/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /stops/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /drivers/{id} { allow read: if true; allow write: if isAdmin(); }
+    function isApprovedDriver(){
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "driver" &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
+
+    match /admins/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow update: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+    match /clients/{id} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if isAdmin() || (signedIn() && request.auth.uid == id);
+    }
+    match /driverRequests/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow update, delete: if isAdmin();
+    }
+    match /drivers/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    match /lines/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /stops/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /vehicles/{id} {
       allow read: if true;
       allow create, delete: if isAdmin();
-      allow update: if isAdmin() || signedIn();
+      allow update: if isAdmin() || (isApprovedDriver() && request.resource.data.driverId == request.auth.uid);
     }
-    match /clients/{id} { allow create: if true; allow read, update, delete: if isAdmin(); }
-    match /walkingTracks/{id} { allow read: if true; allow create: if true; allow update, delete: if isAdmin(); }
-    match /reports/{id} { allow create: if true; allow read, update, delete: if isAdmin(); }
-    match /{document=**} { allow read, write: if false; }
+    match /walkingTracks/{id} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+    match /reports/{id} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }

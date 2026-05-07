@@ -1,6 +1,6 @@
 (function(){
 const $=id=>document.getElementById(id);
-let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],walkingTracks=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let osmStopsLayer=null,osmStopsGeojson=null;let bejaiaGeojson=null,bejaiaGeojsonLayer=null;let walkingTrackWatchId=null,walkingTrackPoints=[],walkingTrackStart=0;let routeLayers=[];let routeSearchLayers=[];let routeFocusActive=false;
+let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],driverRequests=[],walkingTracks=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let osmStopsLayer=null,osmStopsGeojson=null;let bejaiaGeojson=null,bejaiaGeojsonLayer=null;let walkingTrackWatchId=null,walkingTrackPoints=[],walkingTrackStart=0;let routeLayers=[];let routeSearchLayers=[];let routeFocusActive=false;
 const LINE_TOLERANCE_METERS=500;
 const GPS_STALE_MS=120000;
 
@@ -13,23 +13,18 @@ function tsMillis(v){ if(!v) return 0; if(typeof v==="number") return v; if(v.to
 function setFirebaseStatus(ok){$("firebaseStatus").textContent=ok?"Firebase connecté":"Firebase erreur";$("firebaseStatus").className=ok?"badge green":"badge blue"}
 function setAuthUi(){const b=$("openLoginBtn");if(currentUser){b.textContent="Connecté";b.className="badge green";setText("authStatus",`Connecté: ${currentUser.email} · rôle: ${currentRole}`)}else{b.textContent="Connexion";b.className="badge light";setText("authStatus","Non connecté")}}
 function authError(e){console.error(e);let m=e.message||"Erreur connexion";if(e.code==="auth/operation-not-allowed")m="Active Email/Password dans Firebase Authentication.";if(e.code==="auth/unauthorized-domain")m="Ajoute le domaine GitHub dans Authorized domains.";if(e.code==="auth/invalid-credential")m="Email ou mot de passe incorrect.";setText("authStatus",m);alert(m)}
-async function loadRole(){currentRole="guest";if(!currentUser){setAuthUi();return}const email=(currentUser.email||"").toLowerCase();if(email==="allaouaboucheneb04@gmail.com"){currentRole="admin";setAuthUi();return}try{const a=await db.collection("admins").doc(currentUser.uid).get();if(a.exists&&a.data().active===true){currentRole="admin"}else{const u=await db.collection("users").doc(currentUser.uid).get();currentRole=u.exists?(u.data().role||"driver"):"driver"}}catch(e){currentRole="driver"}setAuthUi()}
-function requireAdmin(){if(!currentUser){alert("Connecte-toi d’abord.");return false}if(currentRole!=="admin"){alert("Compte admin requis.");return false}return true}
-async function addDoc(collection,data,statusId){try{const ref=await db.collection(collection).add(data);setText(statusId,"Sauvegardé dans Firebase ✅");return ref}catch(e){console.error(e);const m="Erreur Firebase: "+(e.code||"")+" "+(e.message||e);setText(statusId,m);alert(m);return null}}
-async function updateDoc(collection,id,data,statusId){try{await db.collection(collection).doc(id).set({...data,updatedAt:now()},{merge:true});setText(statusId,"Mis à jour dans Firebase ✅");return true}catch(e){console.error(e);const m="Erreur modification Firebase: "+(e.code||"")+" "+(e.message||e);setText(statusId,m);alert(m);return false}}
-function openAdminPanel(panelId){document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));const panel=$(panelId);if(panel)panel.classList.add("active");const tab=document.querySelector(`[data-panel="${panelId}"]`);if(tab)tab.classList.add("active");document.querySelector('[data-page="adminPage"]')?.click();}
-function resetEdit(type){if(type==="line"){editingLineId=null;$("addLineBtn").textContent="Ajouter ligne";$("lineName").value="";}if(type==="stop"){editingStopId=null;$("addStopBtn").textContent="Ajouter arrêt";$("stopName").value="";$("stopLat").value="";$("stopLng").value="";if($("stopOrder"))$("stopOrder").value="";if($("stopDirection"))$("stopDirection").value="both";}if(type==="vehicle"){editingVehicleId=null;$("addVehicleBtn").textContent="Ajouter véhicule";$("vehicleName").value="";}if(type==="driver"){editingDriverId=null;$("addDriverBtn").textContent="Ajouter chauffeur";$("driverNameAdmin").value="";$("driverPhoneAdmin").value="";$("driverEmailAdmin").value="";}}
-function editLine(id){const l=lines.find(x=>x.id===id);if(!l)return;editingLineId=id;openAdminPanel("panelLines");$("lineCity").value=l.city||"Bejaia";$("lineName").value=l.name||"";$("lineType").value=l.type||"bus";$("lineColor").value=l.color||"#2563eb";if($("lineStartStopSelect"))$("lineStartStopSelect").value=l.startStopId||"";if($("lineEndStopSelect"))$("lineEndStopSelect").value=l.endStopId||"";$("addLineBtn").textContent="Mettre à jour ligne";window.scrollTo({top:0,behavior:"smooth"});}
-function editStop(id){const s=stops.find(x=>x.id===id);if(!s)return;editingStopId=id;openAdminPanel("panelStops");$("stopLineSelect").value=s.lineId||"";$("stopName").value=s.name||"";$("stopLat").value=s.lat??"";$("stopLng").value=s.lng??"";if($("stopOrder"))$("stopOrder").value=s.order??"";if($("stopDirection"))$("stopDirection").value=s.direction||"both";$("addStopBtn").textContent="Mettre à jour arrêt";window.scrollTo({top:0,behavior:"smooth"});}
-function editVehicle(id){const v=vehicles.find(x=>x.id===id);if(!v)return;editingVehicleId=id;openAdminPanel("panelVehicles");$("vehicleName").value=v.name||"";$("vehicleLineSelect").value=v.lineId||"";$("vehicleDriverSelect").value=v.driverId||"";$("addVehicleBtn").textContent="Mettre à jour véhicule";window.scrollTo({top:0,behavior:"smooth"});}
-function editDriver(id){const d=drivers.find(x=>x.id===id);if(!d)return;editingDriverId=id;openAdminPanel("panelDrivers");$("driverNameAdmin").value=d.name||"";$("driverPhoneAdmin").value=d.phone||"";$("driverEmailAdmin").value=d.email||d.uid||"";$("addDriverBtn").textContent="Mettre à jour chauffeur";window.scrollTo({top:0,behavior:"smooth"});}
-function lineName(id){const l=lines.find(x=>x.id===id);return l?(l.name||l.id):""}
-function driverName(id){const d=drivers.find(x=>x.id===id||x.email===id||x.uid===id);return d?(d.name||d.email||d.id):""}
-
-
-function stopsForLine(lineId){
-  if(!lineId || lineId==="all") return [];
-  return activeStopsOnly().filter(s => s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null);
+async function loadRole(){
+  userRole=null;
+  if(!currentUser){renderAuth();return;}
+  try{
+    if(currentUser.email==="allaouaboucheneb04@gmail.com") userRole="admin";
+    else{
+      const doc=await db.collection("users").doc(currentUser.uid).get();
+      userRole=doc.exists ? (doc.data().role||"client") : "client";
+    }
+  }catch(e){console.warn(e);userRole="client";}
+  renderAuth();
+  applyRoleVisibility();
 }
 function clientVisibleStops(){
   const selected = val("clientLineSelect") || "all";
@@ -739,7 +734,7 @@ function renderWaitingBusesList(){
   }).join("");
 }
 
-function renderAll(){renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
+function renderAll(){renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
@@ -747,7 +742,7 @@ async function saveVehicle(){if(!requireAdmin())return;const btn=$("addVehicleBt
 async function saveDriver(){if(!requireAdmin())return;const btn=$("addDriverBtn");btn.disabled=true;btn.textContent=editingDriverId?"Mise à jour...":"Enregistrement...";const name=val("driverNameAdmin").trim();if(!name){btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur";return alert("Nom chauffeur obligatoire.")}const data={name,phone:val("driverPhoneAdmin").trim(),email:val("driverEmailAdmin").trim(),uid:val("driverEmailAdmin").trim(),active:true};let ok=false;if(editingDriverId){ok=await updateDoc("drivers",editingDriverId,data,"driverAdminStatus")}else{ok=await addDoc("drivers",{...data,createdAt:now(),updatedAt:now()},"driverAdminStatus")}if(ok){resetEdit("driver")}btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur"}
 function currentDriverVehicle(){return vehicles.find(v=>v.id===val("driverVehicleSelect"))}
 function renderDriverWorkStatus(){const v=currentDriverVehicle();const badge=$("driverWorkBadge");if(!badge)return;if(!v||v.status!=="online"){badge.textContent="Hors ligne";badge.className="workBadge offline";return}const c=enhancedVehicleVisible(v);badge.textContent=c.visible?"En ligne · Visible client":"En ligne · Hors ligne client";badge.className=c.visible?"workBadge online":"workBadge warning"}
-async function goOnline(){if(!currentUser)return alert("Connecte-toi.");const vehicleId=val("driverVehicleSelect");if(!vehicleId)return alert("Choisis un véhicule.");const v=currentDriverVehicle();if(!v)return alert("Véhicule introuvable.");setText("driverStatus","Demande GPS...");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);await db.collection("vehicles").doc(vehicleId).set({status:"online",direction:val("driverDirectionSelect")||"aller",started:false,driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,onlineAt:now(),updatedAt:now()}, {merge:true});driverWatchId=navigator.geolocation.watchPosition(async p=>{const t=Date.now();const interval=Number(val("driverGpsFrequency")||30000);if(t-lastGpsWrite<interval)return;lastGpsWrite=t;const temp={...v,lat:p.coords.latitude,lng:p.coords.longitude,status:"online",direction:val("driverDirectionSelect")||"aller",started:false,lastGpsUpdate:t};const c=computeVisibility(temp);try{await db.collection("vehicles").doc(vehicleId).set({lat:p.coords.latitude,lng:p.coords.longitude,status:"online",direction:val("driverDirectionSelect")||"aller",started:false,driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,lastGpsUpdate:firebase.firestore.Timestamp.fromDate(new Date()),speedKmh: p.coords.speed && p.coords.speed > 0 ? Math.round(p.coords.speed*3.6) : estimateSpeedKmh(temp),updatedAt:now(),visibleToClients:c.visible,started: hasVehicleStartedFromTerminus(temp),offRoute:!c.near,distanceFromLineMeters:Math.round(c.distance||0)}, {merge:true});setText("driverStatus",c.visible?"En ligne ✅ visible aux clients":"En ligne mais caché client: hors ligne de bus ou GPS ancien");renderDriverWorkStatus()}catch(e){alert("Erreur GPS Firebase: "+e.message)}},e=>{setText("driverStatus","GPS impossible ou refusé.");alert("GPS impossible ou refusé.")},{enableHighAccuracy:false,timeout:20000,maximumAge:10000});setText("driverStatus","En ligne. GPS démarré.")}
+async function goOnline(){if(!isDriverApproved()&&!requireAdmin()) return alert("Compte chauffeur pas encore approuvé par admin.");if(!currentUser)return alert("Connecte-toi.");const vehicleId=val("driverVehicleSelect");if(!vehicleId)return alert("Choisis un véhicule.");const v=currentDriverVehicle();if(!v)return alert("Véhicule introuvable.");setText("driverStatus","Demande GPS...");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);await db.collection("vehicles").doc(vehicleId).set({status:"online",direction:val("driverDirectionSelect")||"aller",started:false,driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,onlineAt:now(),updatedAt:now()}, {merge:true});driverWatchId=navigator.geolocation.watchPosition(async p=>{const t=Date.now();const interval=Number(val("driverGpsFrequency")||30000);if(t-lastGpsWrite<interval)return;lastGpsWrite=t;const temp={...v,lat:p.coords.latitude,lng:p.coords.longitude,status:"online",direction:val("driverDirectionSelect")||"aller",started:false,lastGpsUpdate:t};const c=computeVisibility(temp);try{await db.collection("vehicles").doc(vehicleId).set({lat:p.coords.latitude,lng:p.coords.longitude,status:"online",direction:val("driverDirectionSelect")||"aller",started:false,driverId:currentUser.uid,driverName:val("driverNameInput")||currentUser.email,lastGpsUpdate:firebase.firestore.Timestamp.fromDate(new Date()),speedKmh: p.coords.speed && p.coords.speed > 0 ? Math.round(p.coords.speed*3.6) : estimateSpeedKmh(temp),updatedAt:now(),visibleToClients:c.visible,started: hasVehicleStartedFromTerminus(temp),offRoute:!c.near,distanceFromLineMeters:Math.round(c.distance||0)}, {merge:true});setText("driverStatus",c.visible?"En ligne ✅ visible aux clients":"En ligne mais caché client: hors ligne de bus ou GPS ancien");renderDriverWorkStatus()}catch(e){alert("Erreur GPS Firebase: "+e.message)}},e=>{setText("driverStatus","GPS impossible ou refusé.");alert("GPS impossible ou refusé.")},{enableHighAccuracy:false,timeout:20000,maximumAge:10000});setText("driverStatus","En ligne. GPS démarré.")}
 async function goOffline(){const vehicleId=val("driverVehicleSelect");if(driverWatchId)navigator.geolocation.clearWatch(driverWatchId);driverWatchId=null;if(vehicleId){await db.collection("vehicles").doc(vehicleId).set({status:"offline",visibleToClients:false,offRoute:false,offlineAt:now(),updatedAt:now()}, {merge:true})}setText("driverStatus","Hors ligne. Le bus est caché aux clients.");renderDriverWorkStatus()}
 
 function clientGps(){if(!navigator.geolocation)return alert("GPS non disponible.");navigator.geolocation.getCurrentPosition(p=>{const lat=p.coords.latitude,lng=p.coords.longitude;map.setView([lat,lng],16);if(clientMarker)clientMarker.setLatLng([lat,lng]);else clientMarker=L.circleMarker([lat,lng],{radius:10,weight:3,fillOpacity:.85}).addTo(map);clientMarker.bindPopup("Ma position").openPopup()},()=>alert("GPS impossible ou refusé."),{enableHighAccuracy:false,timeout:20000,maximumAge:60000})}
@@ -2020,7 +2015,82 @@ function addRouteMarker(stop,label,emoji){
   return marker;
 }
 
-function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
+
+function isAdminRole(){ return userRole === "admin"; }
+function isDriverPending(){ return currentUser && userRole === "driver_pending"; }
+function isDriverApproved(){ return currentUser && userRole === "driver"; }
+
+async function createUserProfileAfterSignup(user, role){
+  if(!user) return;
+  if(role === "driver"){
+    await db.collection("driverRequests").doc(user.uid).set({
+      uid:user.uid,email:user.email||"",name:user.email||"",status:"pending",
+      createdAt:now(),updatedAt:now()
+    }, {merge:true});
+    await db.collection("users").doc(user.uid).set({
+      email:user.email||"",role:"driver_pending",active:false,createdAt:now(),updatedAt:now()
+    }, {merge:true});
+  }else{
+    await db.collection("clients").doc(user.uid).set({
+      uid:user.uid,email:user.email||"",name:user.email||"",active:true,createdAt:now(),updatedAt:now()
+    }, {merge:true});
+    await db.collection("users").doc(user.uid).set({
+      email:user.email||"",role:"client",active:true,createdAt:now(),updatedAt:now()
+    }, {merge:true});
+  }
+}
+
+async function approveDriver(uid){
+  if(!requireAdmin()) return;
+  const r = driverRequests.find(x => (x.uid||x.id) === uid) || {};
+  try{
+    await db.collection("users").doc(uid).set({
+      email:r.email||"",role:"driver",active:true,approvedAt:now(),updatedAt:now()
+    }, {merge:true});
+    await db.collection("drivers").doc(uid).set({
+      uid,email:r.email||"",name:r.name||r.email||"",active:true,status:"offline",createdAt:now(),updatedAt:now()
+    }, {merge:true});
+    await db.collection("driverRequests").doc(uid).set({status:"approved",approvedAt:now(),updatedAt:now()},{merge:true});
+    alert("Chauffeur approuvé ✅");
+  }catch(e){ alert("Erreur approbation: "+(e.message||e)); }
+}
+
+async function rejectDriver(uid){
+  if(!requireAdmin()) return;
+  if(!confirm("Refuser cette demande chauffeur ?")) return;
+  try{
+    await db.collection("driverRequests").doc(uid).set({status:"rejected",rejectedAt:now(),updatedAt:now()},{merge:true});
+    await db.collection("users").doc(uid).set({role:"driver_rejected",active:false,updatedAt:now()},{merge:true});
+    alert("Demande refusée.");
+  }catch(e){ alert("Erreur refus: "+(e.message||e)); }
+}
+
+function renderPendingDrivers(){
+  const box=$("pendingDriversList");
+  if(!box) return;
+  const pending=(driverRequests||[]).filter(r=>r.status==="pending");
+  box.innerHTML = pending.length ? pending.map(r=>`
+    <div class="item">
+      <strong>🚕 ${r.name||r.email||r.id}</strong>
+      <span class="muted">${r.email||""} · En attente confirmation admin</span>
+      <div class="actions">
+        <button class="activateBtn" data-approve-driver="${r.uid||r.id}" type="button">Approuver</button>
+        <button class="deleteBtn" data-reject-driver="${r.uid||r.id}" type="button">Refuser</button>
+      </div>
+    </div>
+  `).join("") : '<div class="muted">Aucune demande chauffeur.</div>';
+  document.querySelectorAll("[data-approve-driver]").forEach(b=>b.onclick=()=>approveDriver(b.dataset.approveDriver));
+  document.querySelectorAll("[data-reject-driver]").forEach(b=>b.onclick=()=>rejectDriver(b.dataset.rejectDriver));
+}
+
+function applyRoleVisibility(){
+  const p=$("driverPendingCard");
+  if(p) p.classList.toggle("hidden", !isDriverPending());
+  const d=$("driverPage");
+  if(d) d.classList.toggle("driverBlocked", isDriverPending());
+}
+
+function setupEvents(){$("openLoginBtn").onclick=()=>$("loginModal").classList.remove("hidden");$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
 if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;if($("clearRouteBtn")) $("clearRouteBtn").onclick=resetRouteSearchView;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
