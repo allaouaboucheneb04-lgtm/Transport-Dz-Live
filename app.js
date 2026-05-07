@@ -822,7 +822,7 @@ function renderEta(){
   `;
 }
 
-function renderAll(){applyTransitFallbackIfEmpty();renderEtaStopSelect();renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
+function renderAll(){renderEtaStopSelect();renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineNameInput").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
@@ -3084,277 +3084,60 @@ window.addEventListener("load", () => setTimeout(setupCleanSearchFix, 700));
 
 
 
-// =========================
-// FULL MAP DRAW REAL LINES FIX
-// =========================
-function extractLineLatLngsFullMap(line){
-  const candidates = [
-    line.routeGeometry,
-    line.geometry,
-    line.path,
-    line.points,
-    line.latlngs,
-    line.coords,
-    line.coordinates,
-    line.route
-  ];
-
-  for(const raw of candidates){
-    if(!raw) continue;
-    let v = raw;
-    try{
-      if(typeof v === "string") v = JSON.parse(v);
-    }catch(e){ continue; }
-
-    if(Array.isArray(v) && v.length){
-      // [{lat,lng}]
-      if(typeof v[0] === "object" && !Array.isArray(v[0]) && num(v[0].lat)!==null && num(v[0].lng)!==null){
-        return v.map(p => [num(p.lat), num(p.lng)]).filter(p=>p[0]!==null&&p[1]!==null);
-      }
-      // [[lat,lng]]
-      if(Array.isArray(v[0]) && v[0].length >= 2){
-        // GeoJSON sometimes [lng,lat]. Detect by Algeria ranges.
-        return v.map(p => {
-          const a = Number(p[0]), b = Number(p[1]);
-          if(Math.abs(a) <= 10 && Math.abs(b) > 20) return [b,a]; // lng,lat
-          return [a,b]; // lat,lng
-        }).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
-      }
-    }
-
-    // GeoJSON LineString
-    if(v.type === "LineString" && Array.isArray(v.coordinates)){
-      return v.coordinates.map(p => [Number(p[1]), Number(p[0])]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
-    }
+// RESTORE REAL FIREBASE DATA - NO DEMO OVERRIDE
+let realFirebaseLoading=false;
+function toNumSafe(v){const n=Number(v);return Number.isFinite(n)?n:null;}
+function setTransitStatusText(text){['cleanMapStatus','mapStatus','firebaseStatusMini'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=text;});}
+async function loadRealFirebaseTransit(){
+ if(realFirebaseLoading)return; if(typeof db==='undefined'||!db){setTransitStatusText('Firebase non initialisé');return;}
+ realFirebaseLoading=true;
+ try{
+  const [lineSnap,stopSnap,vehSnap]=await Promise.all([db.collection('lines').get(),db.collection('stops').get(),db.collection('vehicles').get().catch(()=>({docs:[]}))]);
+  const realLines=lineSnap.docs.map(d=>({id:d.id,active:true,...d.data()}));
+  const realStops=stopSnap.docs.map(d=>({id:d.id,active:true,...d.data()}));
+  const realVehicles=vehSnap.docs.map(d=>({id:d.id,...d.data()}));
+  if(realLines.length) lines=realLines;
+  if(realStops.length) stops=realStops;
+  if(realVehicles.length) vehicles=realVehicles;
+  setTransitStatusText(`${(lines||[]).length} lignes Firebase · ${(stops||[]).length} arrêts`);
+  try{if(typeof renderSelects==='function')renderSelects();}catch(e){}
+  try{if(typeof renderLists==='function')renderLists();}catch(e){}
+  try{if(typeof drawMap==='function')drawMap();}catch(e){}
+  try{if(window.map&&window.map.invalidateSize)window.map.invalidateSize();}catch(e){}
+  try{if(cleanMapObj&&typeof cleanDrawMap==='function')cleanDrawMap();}catch(e){}
+ }catch(e){console.error('Erreur lecture Firebase lines/stops:',e);setTransitStatusText('Erreur lecture Firebase');}
+ finally{realFirebaseLoading=false;}
+}
+function getLineGeometrySafe(line){
+ const keys=['routeGeometry','geometry','path','points','latlngs','coords','coordinates','route'];
+ for(const k of keys){let raw=line&&line[k]; if(!raw)continue; try{if(typeof raw==='string')raw=JSON.parse(raw);}catch(e){continue;}
+  if(Array.isArray(raw)&&raw.length){
+   if(Array.isArray(raw[0])) return raw.map(p=>{const a=Number(p[0]),b=Number(p[1]); if(Math.abs(a)<=10&&Math.abs(b)>20)return[b,a]; return[a,b];}).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+   if(typeof raw[0]==='object') return raw.map(p=>[toNumSafe(p.lat),toNumSafe(p.lng)]).filter(p=>p[0]!==null&&p[1]!==null);
   }
-
-  return [];
+  if(raw&&raw.type==='LineString'&&Array.isArray(raw.coordinates)) return raw.coordinates.map(p=>[Number(p[1]),Number(p[0])]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+ }
+ return [];
 }
-
-function getStopsForLineFullMap(lineId){
-  const arr = (typeof stops !== "undefined" ? stops : [])
-    .filter(s => s && s.active !== false && s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null)
-    .sort((a,b)=>Number(a.order || a.stopOrder || 9999) - Number(b.order || b.stopOrder || 9999));
-  return arr.map(s => [num(s.lat), num(s.lng)]);
+function drawTransitOnLeafletMap(targetMap,layerStore,fit=true){
+ if(!targetMap||typeof L==='undefined')return; layerStore.forEach(l=>{try{targetMap.removeLayer(l)}catch(e){}}); layerStore.length=0;
+ const selected=(document.getElementById('clientLineSelect')||{}).value||'all';
+ const activeLines=(lines||[]).filter(l=>l&&l.active!==false&&(selected==='all'||l.id===selected));
+ const activeStops=(stops||[]).filter(s=>s&&s.active!==false&&toNumSafe(s.lat)!==null&&toNumSafe(s.lng)!==null&&(selected==='all'||s.lineId===selected));
+ const pts=[];
+ activeLines.forEach(line=>{let latlngs=getLineGeometrySafe(line); if(!latlngs.length) latlngs=activeStops.filter(s=>s.lineId===line.id).sort((a,b)=>{const ao=Number(a.order??a.stopOrder??a.sequence??9999),bo=Number(b.order??b.stopOrder??b.sequence??9999); if(ao!==bo)return ao-bo; return String(a.name||'').localeCompare(String(b.name||''));}).map(s=>[toNumSafe(s.lat),toNumSafe(s.lng)]);
+  if(latlngs.length>=2){const poly=L.polyline(latlngs,{color:line.color||'#2563eb',weight:targetMap===cleanMapObj?7:5,opacity:.9,lineCap:'round',lineJoin:'round'}).addTo(targetMap).bindPopup(line.name||'Ligne');layerStore.push(poly);latlngs.forEach(p=>pts.push(p));}
+ });
+ activeStops.forEach(s=>{const line=(lines||[]).find(l=>l.id===s.lineId);const color=(line&&line.color)||'#2563eb';const m=L.circleMarker([toNumSafe(s.lat),toNumSafe(s.lng)],{radius:targetMap===cleanMapObj?7:5,color:'#fff',weight:2,fillColor:color,fillOpacity:.95}).addTo(targetMap).bindPopup(`<b>${s.name||'Arrêt'}</b><br>${line?line.name:'Sans ligne'}`);layerStore.push(m);pts.push([toNumSafe(s.lat),toNumSafe(s.lng)]);});
+ (vehicles||[]).forEach(v=>{const online=v&&(v.status==='online'||v.online===true); if(!online||toNumSafe(v.lat)===null||toNumSafe(v.lng)===null)return; if(selected!=='all'&&v.lineId!==selected)return; const icon=L.divIcon({className:'cleanBusIcon',html:'<div>🚌</div>',iconSize:[42,42],iconAnchor:[21,21]}); const marker=L.marker([toNumSafe(v.lat),toNumSafe(v.lng)],{icon}).addTo(targetMap).bindPopup('🚌 Bus'); layerStore.push(marker); pts.push([toNumSafe(v.lat),toNumSafe(v.lng)]);});
+ if(fit&&pts.length){try{targetMap.fitBounds(L.latLngBounds(pts),{padding:[55,55],maxZoom:14});}catch(e){}}
+ setTransitStatusText(`${(lines||[]).length} lignes Firebase · ${(stops||[]).length} arrêts`); setTimeout(()=>{try{targetMap.invalidateSize(true)}catch(e){}},200);
 }
-
-function cleanDrawMap(){
-  if(!cleanMapObj) return;
-  cleanClearLayers();
-
-  const pts = [];
-  const lineFilter = (document.getElementById("clientLineSelect") || {}).value || "all";
-  const allLines = (typeof lines !== "undefined" ? lines : []).filter(l => l && l.active !== false);
-  const visibleLines = (lineFilter && lineFilter !== "all") ? allLines.filter(l => l.id === lineFilter) : allLines;
-
-  try{
-    // 1) draw every line using real geometry first, stops fallback second
-    visibleLines.forEach(line => {
-      let latlngs = extractLineLatLngsFullMap(line);
-      if(!latlngs || latlngs.length < 2) latlngs = getStopsForLineFullMap(line.id);
-
-      if(latlngs && latlngs.length >= 2){
-        const poly = L.polyline(latlngs, {
-          color: line.color || "#2563eb",
-          weight: 7,
-          opacity: .9,
-          lineCap: "round",
-          lineJoin: "round"
-        }).addTo(cleanMapObj).bindPopup(line.name || "Ligne");
-        cleanMapLayers.push(poly);
-        latlngs.forEach(p => pts.push(p));
-      }
-    });
-
-    // 2) draw stops on top
-    const visibleLineIds = new Set(visibleLines.map(l => l.id));
-    let visibleStops = (typeof stops !== "undefined" ? stops : [])
-      .filter(s => s && s.active !== false && num(s.lat)!==null && num(s.lng)!==null);
-
-    if(lineFilter && lineFilter !== "all") visibleStops = visibleStops.filter(s => s.lineId === lineFilter);
-    else if(visibleLineIds.size) visibleStops = visibleStops.filter(s => !s.lineId || visibleLineIds.has(s.lineId));
-
-    visibleStops.forEach(s => {
-      const line = allLines.find(l => l.id === s.lineId);
-      const color = (line && line.color) || "#2563eb";
-      const m = L.circleMarker([num(s.lat), num(s.lng)], {
-        radius: 6,
-        color: "#fff",
-        weight: 2,
-        fillColor: color,
-        fillOpacity: .95
-      }).addTo(cleanMapObj).bindPopup(`<b>${s.name || "Arrêt"}</b><br>${getLineName(s.lineId)}`);
-      cleanMapLayers.push(m);
-      pts.push([num(s.lat), num(s.lng)]);
-    });
-
-    // 3) draw buses
-    (typeof vehicles !== "undefined" ? vehicles : []).forEach(v => {
-      const online = v && (v.status === "online" || v.online === true);
-      if(!online || num(v.lat)===null || num(v.lng)===null) return;
-      if(lineFilter && lineFilter !== "all" && v.lineId !== lineFilter) return;
-
-      const icon = L.divIcon({
-        className:"cleanBusIcon",
-        html:"<div>🚌</div>",
-        iconSize:[42,42],
-        iconAnchor:[21,21]
-      });
-      const m = L.marker([num(v.lat), num(v.lng)], {icon}).addTo(cleanMapObj)
-        .bindPopup(`<b>${v.name || "Bus"}</b><br>${getLineName(v.lineId)}`);
-      cleanMapLayers.push(m);
-      pts.push([num(v.lat), num(v.lng)]);
-    });
-
-    if(pts.length){
-      cleanMapObj.fitBounds(L.latLngBounds(pts), {padding:[55,55], maxZoom:13});
-    }else{
-      cleanMapObj.setView([36.75, 5.05], 11);
-    }
-
-    setTimeout(()=>{ try{ cleanMapObj.invalidateSize(true); }catch(e){} }, 150);
-
-  }catch(e){
-    console.warn("cleanDrawMap lines fix", e);
-  }
-}
-
-
-
-function updateCleanMapStatus(){
-  const el = document.getElementById("cleanMapStatus");
-  if(!el) return;
-  const l = (typeof lines !== "undefined" ? lines.filter(x=>x.active!==false).length : 0);
-  const s = (typeof stops !== "undefined" ? stops.filter(x=>x.active!==false).length : 0);
-  el.textContent = `${l} lignes · ${s} arrêts`;
-}
-window.addEventListener("load",()=>setInterval(updateCleanMapStatus,1500));
-
-
-
-// =========================
-// FIREBASE EMPTY FALLBACK DATA
-// =========================
-const FALLBACK_LINES = [
-  {
-    id:"fallback_sidi_aich_bejaia",
-    name:"Sidi Aïch - Béjaïa",
-    city:"Bejaia",
-    type:"bus",
-    color:"#2563eb",
-    active:true,
-    order:1
-  },
-  {
-    id:"fallback_bus_5",
-    name:"Bus 5 : Dar Djebel - Porte Sarrasine",
-    city:"Bejaia",
-    type:"bus",
-    color:"#db2777",
-    active:true,
-    order:2
-  },
-  {
-    id:"fallback_takarietz",
-    name:"Takarietz => Sidi Aïch",
-    city:"Bejaia",
-    type:"bus",
-    color:"#16a34a",
-    active:true,
-    order:3
-  }
-];
-
-const FALLBACK_STOPS = [
-  {id:"fb_stop_1", name:"Sidi Aïch", city:"Bejaia", lineId:"fallback_sidi_aich_bejaia", lat:36.61128, lng:4.69160, order:1, active:true},
-  {id:"fb_stop_2", name:"El Kseur", city:"Bejaia", lineId:"fallback_sidi_aich_bejaia", lat:36.68195, lng:4.85550, order:2, active:true},
-  {id:"fb_stop_3", name:"Oued Ghir", city:"Bejaia", lineId:"fallback_sidi_aich_bejaia", lat:36.71410, lng:4.98640, order:3, active:true},
-  {id:"fb_stop_4", name:"Gare routière de Béjaïa", city:"Bejaia", lineId:"fallback_sidi_aich_bejaia", lat:36.74810, lng:5.05540, order:4, active:true},
-  {id:"fb_stop_5", name:"Université", city:"Bejaia", lineId:"fallback_bus_5", lat:36.75290, lng:5.04290, order:1, active:true},
-  {id:"fb_stop_6", name:"Dar Djebel", city:"Bejaia", lineId:"fallback_bus_5", lat:36.76060, lng:5.03520, order:2, active:true},
-  {id:"fb_stop_7", name:"Porte Sarrasine", city:"Bejaia", lineId:"fallback_bus_5", lat:36.75215, lng:5.07330, order:3, active:true},
-  {id:"fb_stop_8", name:"Takarietz Terminus", city:"Bejaia", lineId:"fallback_takarietz", lat:36.61720, lng:4.65850, order:1, active:true},
-  {id:"fb_stop_9", name:"Semaoune", city:"Bejaia", lineId:"fallback_takarietz", lat:36.59750, lng:4.72410, order:2, active:true},
-  {id:"fb_stop_10", name:"Terminus Sidi Aïch", city:"Bejaia", lineId:"fallback_takarietz", lat:36.61190, lng:4.69230, order:3, active:true}
-];
-
-function hasRealFirebaseTransitData(){
-  try{
-    const realLines = (typeof lines !== "undefined" ? lines : []).filter(l => l && !String(l.id||"").startsWith("fallback_"));
-    const realStops = (typeof stops !== "undefined" ? stops : []).filter(s => s && !String(s.id||"").startsWith("fb_"));
-    return realLines.length > 0 && realStops.length > 0;
-  }catch(e){
-    return false;
-  }
-}
-
-function applyTransitFallbackIfEmpty(){
-  try{
-    if(typeof lines === "undefined" || typeof stops === "undefined") return;
-
-    const realLines = lines.filter(l => l && !String(l.id||"").startsWith("fallback_"));
-    const realStops = stops.filter(s => s && !String(s.id||"").startsWith("fb_"));
-
-    if(realLines.length === 0){
-      lines = [...FALLBACK_LINES];
-    }
-    if(realStops.length === 0){
-      stops = [...FALLBACK_STOPS];
-    }
-
-    const st = document.getElementById("firebaseStatus");
-    if(st && (realLines.length === 0 || realStops.length === 0)){
-      st.textContent = "Mode démo";
-      st.style.background = "#fef3c7";
-      st.style.color = "#92400e";
-    }
-
-  }catch(e){
-    console.warn("fallback", e);
-  }
-}
-
-function renderAllWithFallback(){
-  applyTransitFallbackIfEmpty();
-  try{
-    if(typeof renderSelects === "function") renderSelects();
-    if(typeof renderLists === "function") renderLists();
-    if(typeof drawMap === "function") drawMap();
-    if(typeof updateCleanMapStatus === "function") updateCleanMapStatus();
-  }catch(e){
-    console.warn("renderAllWithFallback", e);
-  }
-}
-
-setInterval(()=>{
-  try{
-    applyTransitFallbackIfEmpty();
-    const el = document.getElementById("cleanMapStatus");
-    if(el){
-      const l = (typeof lines !== "undefined" ? lines.filter(x=>x.active!==false).length : 0);
-      const s = (typeof stops !== "undefined" ? stops.filter(x=>x.active!==false).length : 0);
-      el.textContent = `${l} lignes · ${s} arrêts`;
-    }
-  }catch(e){}
-}, 1500);
-
-window.addEventListener("load", ()=>{
-  setTimeout(renderAllWithFallback, 1200);
-  setTimeout(renderAllWithFallback, 2500);
-});
-
-
-
-// EMERGENCY STABLE PATCH
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    try {
-      if (typeof renderAll === "function") renderAll();
-      if (typeof drawMap === "function") drawMap();
-      if (window.map && window.map.invalidateSize) window.map.invalidateSize();
-    } catch(e) {
-      console.warn("emergency stable patch", e);
-    }
-  }, 1000);
-});
+let normalTransitLayers=[]; let fullTransitLayers=[];
+const oldDrawMapRealRestore=typeof drawMap==='function'?drawMap:null;
+function drawMap(){try{if(typeof map!=='undefined'&&map){drawTransitOnLeafletMap(map,normalTransitLayers,false);}else if(oldDrawMapRealRestore){oldDrawMapRealRestore();}}catch(e){console.warn('drawMap restore',e);}}
+function cleanDrawMap(){try{if(cleanMapObj){drawTransitOnLeafletMap(cleanMapObj,fullTransitLayers,true);}}catch(e){console.warn('cleanDrawMap restore',e);}}
+const oldOpenCleanFullMapRestore=typeof openCleanFullMap==='function'?openCleanFullMap:null;
+async function openCleanFullMap(){await loadRealFirebaseTransit(); if(oldOpenCleanFullMapRestore)oldOpenCleanFullMapRestore(); setTimeout(()=>{try{if(cleanMapObj){cleanMapObj.invalidateSize(true);cleanDrawMap();}}catch(e){}},900);}
+window.addEventListener('load',()=>{setTimeout(loadRealFirebaseTransit,700);setTimeout(loadRealFirebaseTransit,1800);});
 
