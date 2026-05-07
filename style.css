@@ -297,3 +297,100 @@ button, input, select{
   font-size:24px;
   transform:rotate(-45deg);
 }
+
+
+/* =========================
+   CLIENT UI CLEAN FIX
+========================= */
+:root{
+  --bottom-nav-h: 118px;
+}
+
+html, body{
+  overflow-x:hidden!important;
+  min-height:100%!important;
+}
+
+body{
+  padding-bottom:calc(var(--bottom-nav-h) + env(safe-area-inset-bottom))!important;
+}
+
+main,
+.app,
+.container,
+.page,
+#clientPage,
+#driverPage,
+#adminPage{
+  padding-bottom:calc(var(--bottom-nav-h) + 30px)!important;
+}
+
+.bottomNav,
+.bottom-nav,
+#bottomNav{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  z-index:9999!important;
+  min-height:92px!important;
+  padding-bottom:calc(env(safe-area-inset-bottom) + 10px)!important;
+  background:rgba(255,255,255,.96)!important;
+  backdrop-filter:blur(18px)!important;
+  border-top:1px solid rgba(226,232,240,.9)!important;
+}
+
+#clientPage .card:last-child,
+#clientPage > *:last-child{
+  margin-bottom:calc(var(--bottom-nav-h) + 30px)!important;
+}
+
+.fullMapBtn,
+#cleanFullMapBtn{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-height:58px!important;
+  border-radius:22px!important;
+  margin:12px 0!important;
+  background:#fff!important;
+  border:1px solid #dbe4f0!important;
+  color:#1d4ed8!important;
+  font-weight:950!important;
+  font-size:17px!important;
+}
+
+#clearFromBtn,
+#clearToBtn,
+.clearFieldBtn{
+  float:none!important;
+  position:relative!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-height:34px!important;
+  padding:6px 12px!important;
+  margin:6px 0 8px 0!important;
+  border-radius:999px!important;
+  background:#f1f5f9!important;
+  color:#334155!important;
+  font-size:13px!important;
+  font-weight:950!important;
+  z-index:1!important;
+}
+
+input, select, textarea, button{
+  pointer-events:auto!important;
+}
+
+#map{
+  min-height:420px!important;
+  height:420px!important;
+  display:block!important;
+}
+
+.cleanMapOverlay{
+  z-index:999999!important;
+}
