@@ -277,7 +277,7 @@ function adminFilteredStops(){
 
   return stops.filter(s => {
     const matchLine = lineFilter === "all" || s.lineId === lineFilter;
-    const text = `${s.name || ""} ${lineName(s.lineId) || ""} ${s.lat || ""} ${s.lng || ""}`.toLowerCase();
+    const text = `${s.name || ""} ${getLineName(s.lineId) || ""} ${s.lat || ""} ${s.lng || ""}`.toLowerCase();
     const matchSearch = !q || text.includes(q);
     return matchLine && matchSearch;
   });
@@ -462,7 +462,7 @@ function renderLineTerminusSelects(){
   if(!start || !end) return;
   const selectedLineId = editingLineId || "";
   const lineStops = selectedLineId ? stops.filter(s => s.lineId === selectedLineId) : stops;
-  const opts = '<option value="">Auto / aucun</option>' + lineStops.map(s => `<option value="${s.id}">${s.name || s.id} · ${lineName(s.lineId)}</option>`).join("");
+  const opts = '<option value="">Auto / aucun</option>' + lineStops.map(s => `<option value="${s.id}">${s.name || s.id} · ${getLineName(s.lineId)}</option>`).join("");
   const oldStart = start.value;
   const oldEnd = end.value;
   start.innerHTML = opts;
@@ -471,7 +471,7 @@ function renderLineTerminusSelects(){
   if([...end.options].some(o=>o.value===oldEnd)) end.value = oldEnd;
 }
 
-function renderSelects(){renderLineTerminusSelects();renderBejaiaImportLineSelect();renderOsmLineSelect();renderAdminStopsFilterOptions();const city=val("clientCity")||"Bejaia";const vis=lines.filter(l=>!l.city||l.city===city);const old=val("clientLineSelect")||"all";$("clientLineSelect").innerHTML='<option value="all">Toutes les lignes</option>'+vis.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("clientLineSelect").value=[...$("clientLineSelect").options].some(o=>o.value===old)?old:"all";const lo=lines.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("stopLineSelect").innerHTML=lo;$("vehicleLineSelect").innerHTML=lo;const dro='<option value="">Aucun chauffeur</option>'+drivers.map(d=>`<option value="${d.id}">${d.name||d.email||d.id}</option>`).join("");$("vehicleDriverSelect").innerHTML=dro;$("driverVehicleSelect").innerHTML=vehicles.map(v=>`<option value="${v.id}">${v.name} · ${lineName(v.lineId)}</option>`).join("")}
+function renderSelects(){renderLineTerminusSelects();renderBejaiaImportLineSelect();renderOsmLineSelect();renderAdminStopsFilterOptions();const city=val("clientCity")||"Bejaia";const vis=lines.filter(l=>!l.city||l.city===city);const old=val("clientLineSelect")||"all";$("clientLineSelect").innerHTML='<option value="all">Toutes les lignes</option>'+vis.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("clientLineSelect").value=[...$("clientLineSelect").options].some(o=>o.value===old)?old:"all";const lo=lines.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");$("stopLineSelect").innerHTML=lo;$("vehicleLineSelect").innerHTML=lo;const dro='<option value="">Aucun chauffeur</option>'+drivers.map(d=>`<option value="${d.id}">${d.name||d.email||d.id}</option>`).join("");$("vehicleDriverSelect").innerHTML=dro;$("driverVehicleSelect").innerHTML=vehicles.map(v=>`<option value="${v.id}">${v.name} · ${getLineName(v.lineId)}</option>`).join("")}
 function selectedLineStopsForList(){ const sel=val("clientLineSelect")||"all"; return sel==="all" ? stops : stops.filter(s=>s.lineId===sel); }
 
 function orderedStopsForLine(lineId){
@@ -543,12 +543,12 @@ function renderEtaList(){
   box.innerHTML = lineStops.map(stop => {
     const best = bestBusForStop(stop);
     if(!best){
-      return `<div class="item"><strong>🚏 ${stop.name || "Arrêt"}</strong><span class="muted">${lineName(stop.lineId)} · Aucun bus en ligne</span></div>`;
+      return `<div class="item"><strong>🚏 ${stop.name || "Arrêt"}</strong><span class="muted">${getLineName(stop.lineId)} · Aucun bus en ligne</span></div>`;
     }
     const next = nextStopForVehicle(best.vehicle);
     return `<div class="item etaItem">
       <strong>🚏 ${stop.name || "Arrêt"}</strong>
-      <span class="muted">${lineName(stop.lineId)}</span>
+      <span class="muted">${getLineName(stop.lineId)}</span>
       <div class="etaBadge">🚌 ${best.vehicle.name || "Bus"} arrive dans ${best.eta} min</div>
       <span class="muted">Prochain arrêt du bus: ${next && next.stop ? next.stop.name : "calcul..."}</span>
     </div>`;
@@ -561,16 +561,16 @@ const visibleStops = selectedLineStopsForList();
 
 $("linesAdminList").innerHTML=lines.length?lines.map(l=>`<div class="item"><strong>${l.name}</strong><span class="muted">${l.city||""} · ${l.type||"bus"} · Départ: ${stops.find(s=>s.id===l.startStopId)?.name||"auto"} · Arrivée: ${stops.find(s=>s.id===l.endStopId)?.name||"auto"}</span><div class="actions"><button class="editBtn" data-edit-line="${l.id}" type="button">Modifier</button><button class="${l.active===false?`activateBtn`:`disableBtn`}" data-toggle-line="${l.id}" data-active="${l.active===false?`true`:`false`}" type="button">${l.active===false?`Réactiver`:`Désactiver`}</button><button class="deleteBtn" data-del-line="${l.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucune ligne.</div>';
 
-const adminStops=adminFilteredStops();if($("adminStopsCount"))$("adminStopsCount").textContent=adminStops.length+" arrêt(s) affiché(s)";$("stopsAdminList").innerHTML=adminStops.length?adminStops.map(s=>`<div class="item"><strong>${s.name}</strong><span class="muted">${lineName(s.lineId)} · ${directionLabel(s.direction||"both")} · ${s.lat}, ${s.lng}</span><div class="actions"><button class="editBtn" data-edit-stop="${s.id}" type="button">Modifier</button><button class="deleteBtn" data-del-stop="${s.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucun arrêt trouvé.</div>';
+const adminStops=adminFilteredStops();if($("adminStopsCount"))$("adminStopsCount").textContent=adminStops.length+" arrêt(s) affiché(s)";$("stopsAdminList").innerHTML=adminStops.length?adminStops.map(s=>`<div class="item"><strong>${s.name}</strong><span class="muted">${getLineName(s.lineId)} · ${directionLabel(s.direction||"both")} · ${s.lat}, ${s.lng}</span><div class="actions"><button class="editBtn" data-edit-stop="${s.id}" type="button">Modifier</button><button class="deleteBtn" data-del-stop="${s.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucun arrêt trouvé.</div>';
 
-$("vehiclesAdminList").innerHTML=vehicles.length?vehicles.map(v=>{const c=enhancedVehicleVisible(v);return `<div class="item"><strong>${v.name}</strong><span class="muted">${lineName(v.lineId)} · ${driverName(v.driverId)} · ${v.status||"offline"} · ${c.visible?"visible client":"caché client"}</span><div class="actions"><button class="editBtn" data-edit-vehicle="${v.id}" type="button">Modifier</button><button class="deleteBtn" data-del-vehicle="${v.id}" type="button">Supprimer</button></div></div>`}).join(""):'<div class="muted">Aucun véhicule.</div>';
+$("vehiclesAdminList").innerHTML=vehicles.length?vehicles.map(v=>{const c=enhancedVehicleVisible(v);return `<div class="item"><strong>${v.name}</strong><span class="muted">${getLineName(v.lineId)} · ${driverName(v.driverId)} · ${v.status||"offline"} · ${c.visible?"visible client":"caché client"}</span><div class="actions"><button class="editBtn" data-edit-vehicle="${v.id}" type="button">Modifier</button><button class="deleteBtn" data-del-vehicle="${v.id}" type="button">Supprimer</button></div></div>`}).join(""):'<div class="muted">Aucun véhicule.</div>';
 
 $("driversAdminList").innerHTML=drivers.length?drivers.map(d=>`<div class="item"><strong>${d.name}</strong><span class="muted">${d.phone||""} · ${d.email||""}</span><div class="actions"><button class="editBtn" data-edit-driver="${d.id}" type="button">Modifier</button><button class="deleteBtn" data-del-driver="${d.id}" type="button">Supprimer</button></div></div>`).join(""):'<div class="muted">Aucun chauffeur.</div>';
 
-$("stopsList").innerHTML=visibleStops.length?visibleStops.map(s=>`<div class="item"><strong>🚏 ${s.name}</strong><span class="muted">${lineName(s.lineId)} · ${directionLabel(s.direction||"both")} · ${s.lat}, ${s.lng}</span></div>`).join(""):'<div class="muted">Aucun arrêt.</div>';
+$("stopsList").innerHTML=visibleStops.length?visibleStops.map(s=>`<div class="item"><strong>🚏 ${s.name}</strong><span class="muted">${getLineName(s.lineId)} · ${directionLabel(s.direction||"both")} · ${s.lat}, ${s.lng}</span></div>`).join(""):'<div class="muted">Aucun arrêt.</div>';
 
 const clientVehicles=visibleVehiclesForClients();
-$("vehiclesList").innerHTML=clientVehicles.length?clientVehicles.map(v=>`<div class="item"><strong>🚌 ${v.name}</strong><span class="muted">${lineName(v.lineId)} · En ligne · GPS récent</span></div>`).join(""):'<div class="muted">Aucun bus en ligne sur sa ligne.</div>';
+$("vehiclesList").innerHTML=clientVehicles.length?clientVehicles.map(v=>`<div class="item"><strong>🚌 ${v.name}</strong><span class="muted">${getLineName(v.lineId)} · En ligne · GPS récent</span></div>`).join(""):'<div class="muted">Aucun bus en ligne sur sa ligne.</div>';
 
 document.querySelectorAll("[data-edit-line]").forEach(b=>b.onclick=()=>editLine(b.dataset.editLine));
 document.querySelectorAll("[data-edit-stop]").forEach(b=>b.onclick=()=>editStop(b.dataset.editStop));
@@ -660,7 +660,7 @@ visible.forEach(s=>{
   const color=lines.find(l=>l.id===s.lineId)?.color||"#2563eb";
   L.circleMarker([num(s.lat),num(s.lng)],{
     radius:8,color,fillColor:color,weight:3,fillOpacity:.9
-  }).addTo(map).bindPopup(`🚏 ${s.name}<br>${lineName(s.lineId)}`);
+  }).addTo(map).bindPopup(`🚏 ${s.name}<br>${getLineName(s.lineId)}`);
 });
 
 // Draw road routes via OSRM, line by line only
@@ -679,7 +679,7 @@ visibleVehiclesForClients().forEach(v=>{
   if(num(v.lat)===null||num(v.lng)===null) return;
   L.marker([num(v.lat),num(v.lng)], {icon:getBusIcon()})
     .addTo(map)
-    .bindPopup(`🚌 ${v.name}<br>${lineName(v.lineId)}<br>En ligne`);
+    .bindPopup(`🚌 ${v.name}<br>${getLineName(v.lineId)}<br>En ligne`);
 });
 
 if(clientMarker) clientMarker.addTo(map);
@@ -781,7 +781,7 @@ function renderEtaStopSelect(){
   if(city) list = list.filter(s => !s.city || normalizeCity(s.city) === normalizeCity(city));
   if(lineId && lineId !== "all") list = list.filter(s => s.lineId === lineId);
   list = list.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
-  sel.innerHTML = '<option value="">Choisir un arrêt...</option>' + list.map(s => `<option value="${s.id}">${s.name || s.id} · ${lineName(s.lineId)}</option>`).join("");
+  sel.innerHTML = '<option value="">Choisir un arrêt...</option>' + list.map(s => `<option value="${s.id}">${s.name || s.id} · ${getLineName(s.lineId)}</option>`).join("");
   if([...sel.options].some(o=>o.value===old)) sel.value=old;
 }
 function etaForStop(stop){
@@ -824,7 +824,7 @@ function renderEta(){
 
 function renderAll(){renderEtaStopSelect();renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error)}
 
-async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineName").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
+async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineNameInput").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
 async function saveVehicle(){if(!requireAdmin())return;const btn=$("addVehicleBtn");btn.disabled=true;btn.textContent=editingVehicleId?"Mise à jour...":"Enregistrement...";const name=val("vehicleName").trim();if(!name){btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule";return alert("Nom véhicule obligatoire.")}const data={name,lineId:val("vehicleLineSelect"),driverId:val("vehicleDriverSelect"),active:true};let ok=false;if(editingVehicleId){ok=await updateDoc("vehicles",editingVehicleId,data,"vehicleStatus")}else{ok=await addDoc("vehicles",{...data,status:"offline",visibleToClients:false,lat:null,lng:null,createdAt:now(),updatedAt:now()},"vehicleStatus")}if(ok){resetEdit("vehicle")}btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule"}
 async function saveDriver(){if(!requireAdmin())return;const btn=$("addDriverBtn");btn.disabled=true;btn.textContent=editingDriverId?"Mise à jour...":"Enregistrement...";const name=val("driverNameAdmin").trim();if(!name){btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur";return alert("Nom chauffeur obligatoire.")}const data={name,phone:val("driverPhoneAdmin").trim(),email:val("driverEmailAdmin").trim(),uid:val("driverEmailAdmin").trim(),active:true};let ok=false;if(editingDriverId){ok=await updateDoc("drivers",editingDriverId,data,"driverAdminStatus")}else{ok=await addDoc("drivers",{...data,createdAt:now(),updatedAt:now()},"driverAdminStatus")}if(ok){resetEdit("driver")}btn.disabled=false;btn.textContent=editingDriverId?"Mettre à jour chauffeur":"Ajouter chauffeur"}
@@ -853,7 +853,7 @@ function findStopsByText(q){
   const n = normalizeText(q);
   if(!n) return [];
   return stops.filter(s => {
-    const text = normalizeText(`${s.name || ""} ${lineName(s.lineId) || ""}`);
+    const text = normalizeText(`${s.name || ""} ${getLineName(s.lineId) || ""}`);
     return text.includes(n) || n.includes(normalizeText(s.name || ""));
   });
 }
@@ -1154,7 +1154,7 @@ function fillWalkingStopSelectsSafe(){
   const from=$("walkFromStopSelect"), to=$("walkToStopSelect");
   if(!from||!to) return;
   const oldFrom=from.value, oldTo=to.value;
-  const opts=stops.map(s=>`<option value="${s.id}">${s.name||s.id} · ${lineName(s.lineId)}</option>`).join("");
+  const opts=stops.map(s=>`<option value="${s.id}">${s.name||s.id} · ${getLineName(s.lineId)}</option>`).join("");
   from.innerHTML=opts; to.innerHTML=opts;
   if([...from.options].some(o=>o.value===oldFrom)) from.value=oldFrom;
   if([...to.options].some(o=>o.value===oldTo)) to.value=oldTo;
@@ -1518,7 +1518,7 @@ async function importBejaiaAutoLinesAndStops(){
         const route = routeFeatures[i];
         const color = AUTO_LINE_COLORS[i % AUTO_LINE_COLORS.length];
         const p = route.properties || {};
-        const lineName = routeDisplayName(route, i);
+        const selectedLineName = routeDisplayName(route, i);
         const routeStops = assignments.get(i) || [];
 
         // Create only useful line if it has stops or geometry
@@ -1652,6 +1652,12 @@ async function deleteAllLinesAndStops(){
 }
 
 
+
+function getLineName(id){
+  const line = (typeof lines !== "undefined" ? lines : []).find(l => l.id === id);
+  return line ? (line.name || "Ligne inconnue") : "Ligne inconnue";
+}
+
 function normalizeSearchText(txt){
   return (txt || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
 }
@@ -1660,10 +1666,10 @@ function searchStopsEverywhere(q){
   if(!nq) return [];
   const words=nq.split(" ").filter(Boolean);
   return stops.filter(s=>{
-    const text=normalizeSearchText(`${s.name||""} ${s.lineName||""} ${lineName(s.lineId)||""} ${s.city||""}`);
+    const text=normalizeSearchText(`${s.name||""} ${s.lineName||""} ${getLineName(s.lineId)||""} ${s.city||""}`);
     return text.includes(nq) || words.every(w=>text.includes(w));
   }).map(s=>{
-    const text=normalizeSearchText(`${s.name||""} ${s.lineName||""} ${lineName(s.lineId)||""} ${s.city||""}`);
+    const text=normalizeSearchText(`${s.name||""} ${s.lineName||""} ${getLineName(s.lineId)||""} ${s.city||""}`);
     let score=0;
     if(text.includes(nq)) score+=100;
     words.forEach(w=>{if(text.includes(w)) score+=10});
@@ -1742,14 +1748,14 @@ async function searchRouteFixedAllStops(){
     if($("clientLineSelect")) $("clientLineSelect").value=fromStop.lineId;
     renderAll();
     await drawSimpleRouteResult(fromStop,toStop,null);
-    setText("routeResult",`✅ Trajet direct: ${lineName(fromStop.lineId)} · ${fromStop.name} → ${toStop.name}`);
+    setText("routeResult",`✅ Trajet direct: ${getLineName(fromStop.lineId)} · ${fromStop.name} → ${toStop.name}`);
     return;
   }
   const transfer=findClosestTransferBetweenLines(fromStop,toStop);
   await drawSimpleRouteResult(fromStop,toStop,transfer);
   if(transfer){
     const walkMin=Math.max(1,Math.round((transfer.walkDistance/1.25)/60));
-    setText("routeResult",`✅ Trajet avec correspondance: ${lineName(fromStop.lineId)} → 🚶 ${Math.round(transfer.walkDistance)} m (${walkMin} min) → ${lineName(toStop.lineId)}`);
+    setText("routeResult",`✅ Trajet avec correspondance: ${getLineName(fromStop.lineId)} → 🚶 ${Math.round(transfer.walkDistance)} m (${walkMin} min) → ${getLineName(toStop.lineId)}`);
   }else{
     setText("routeResult",`✅ Arrêts trouvés: ${fromStop.name} → ${toStop.name}. Pas de correspondance calculée.`);
   }
@@ -1894,7 +1900,7 @@ function routeSummaryText(segments){
   if(!segments.length) return "Aucun trajet.";
   return segments.map(seg=>{
     if(seg.type === "bus"){
-      return `🚌 ${lineName(seg.lineId)} · ${directionLabel(seg.direction||"aller")} (${Math.max(1,Math.round(seg.minutes))} min)`;
+      return `🚌 ${getLineName(seg.lineId)} · ${directionLabel(seg.direction||"aller")} (${Math.max(1,Math.round(seg.minutes))} min)`;
     }
     return `🚶 ${Math.round(seg.distance)} m (${Math.max(1,Math.round(seg.minutes))} min)`;
   }).join(" → ");
@@ -1962,7 +1968,7 @@ async function drawMultiLineRoute(segments){
 function findStopsForRouteQuery(q){
   if(typeof searchStopsEverywhere === "function") return searchStopsEverywhere(q);
   const nq = normalizeSearchText(q);
-  return stops.filter(s => normalizeSearchText(`${s.name||""} ${lineName(s.lineId)||""}`).includes(nq));
+  return stops.filter(s => normalizeSearchText(`${s.name||""} ${getLineName(s.lineId)||""}`).includes(nq));
 }
 async function searchRouteMultiLines(){
   ensureSearchHelpers();
@@ -2048,7 +2054,7 @@ function resetRouteSearchView(){
 function lineBadgeHtml(lineId){
   const line = lines.find(l => l.id === lineId);
   const color = (line && line.color) || "#2563eb";
-  const name = lineName(lineId);
+  const name = getLineName(lineId);
   return `<span class="lineBadge" style="background:${color}">${name}</span>`;
 }
 function renderRouteSteps(segments){
