@@ -394,3 +394,55 @@ input, select, textarea, button{
 .cleanMapOverlay{
   z-index:999999!important;
 }
+
+
+/* FULLSCREEN MAP LEAFLET IOS FIX */
+.cleanMapOverlay{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  z-index:999999!important;
+  background:#eef6ff!important;
+  overflow:hidden!important;
+}
+.cleanMapOverlay.hidden{display:none!important}
+.cleanMap{
+  position:absolute!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  background:#e0f2fe!important;
+  z-index:1!important;
+}
+#cleanMap.leaflet-container{
+  width:100vw!important;
+  height:100dvh!important;
+}
+.cleanMapSearch{
+  top:calc(env(safe-area-inset-top) + 18px)!important;
+  left:18px!important;
+  right:18px!important;
+  z-index:1000!important;
+}
+.cleanCloseBtn{
+  top:calc(env(safe-area-inset-top) + 92px)!important;
+  right:18px!important;
+  z-index:1001!important;
+}
+.cleanLocateBtn{
+  right:18px!important;
+  bottom:calc(env(safe-area-inset-bottom) + 165px)!important;
+  z-index:1001!important;
+}
+.cleanBottomSheet{z-index:1000!important}
+.cleanMap .leaflet-top.leaflet-left{
+  top:100px!important;
+  left:14px!important;
+}
+.cleanMap .leaflet-control-zoom{
+  border-radius:14px!important;
+  overflow:hidden!important;
+  box-shadow:0 8px 22px rgba(15,23,42,.22)!important;
+}

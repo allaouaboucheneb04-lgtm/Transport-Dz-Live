@@ -2684,3 +2684,111 @@ function setupCleanFullMapButtonFix(){
   }
 }
 
+
+
+// FULLSCREEN MAP LEAFLET IOS FIX OVERRIDE
+let cleanMapOpening = false;
+
+function cleanDestroyMapIfBroken(){
+  try{
+    if(cleanMapObj && cleanMapObj.remove) cleanMapObj.remove();
+  }catch(e){}
+  cleanMapObj = null;
+  cleanMapLayers = [];
+  const el = document.getElementById("cleanMap");
+  if(el){
+    el.innerHTML = "";
+    el.className = "cleanMap";
+    el.style.width = "100vw";
+    el.style.height = window.innerHeight + "px";
+    el.style.minHeight = window.innerHeight + "px";
+  }
+}
+
+function cleanInitMapIOS(){
+  const el = document.getElementById("cleanMap");
+  if(!el || typeof L === "undefined") return;
+  if(cleanMapObj) return;
+
+  el.style.display = "block";
+  el.style.width = window.innerWidth + "px";
+  el.style.height = window.innerHeight + "px";
+  el.style.minHeight = window.innerHeight + "px";
+
+  cleanMapObj = L.map("cleanMap", {
+    zoomControl:true,
+    preferCanvas:true,
+    attributionControl:true
+  });
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom:19,
+    crossOrigin:true,
+    attribution:"© OpenStreetMap"
+  }).addTo(cleanMapObj);
+
+  cleanMapObj.setView([36.75, 5.05], 12);
+}
+
+function openCleanFullMap(){
+  const overlay = document.getElementById("cleanMapOverlay");
+  if(!overlay || cleanMapOpening) return;
+  cleanMapOpening = true;
+  overlay.classList.remove("hidden");
+
+  setTimeout(()=>{
+    try{
+      cleanDestroyMapIfBroken();
+      cleanInitMapIOS();
+
+      setTimeout(()=>{
+        try{
+          cleanMapObj.invalidateSize(true);
+          cleanDrawMap();
+          cleanMapObj.invalidateSize(true);
+
+          setTimeout(()=>{
+            try{
+              cleanMapObj.invalidateSize(true);
+              cleanDrawMap();
+            }catch(e){}
+            cleanMapOpening = false;
+          }, 500);
+        }catch(e){
+          console.warn("openCleanFullMap inner", e);
+          cleanMapOpening = false;
+        }
+      }, 300);
+    }catch(e){
+      console.warn("openCleanFullMap", e);
+      cleanMapOpening = false;
+    }
+  }, 250);
+}
+
+function closeCleanFullMap(){
+  const overlay = document.getElementById("cleanMapOverlay");
+  if(overlay) overlay.classList.add("hidden");
+  cleanDestroyMapIfBroken();
+}
+
+window.addEventListener("orientationchange", ()=>{
+  setTimeout(()=>{
+    try{
+      if(cleanMapObj){
+        cleanMapObj.invalidateSize(true);
+        cleanDrawMap();
+      }
+    }catch(e){}
+  }, 700);
+});
+
+window.addEventListener("load", ()=>{
+  setTimeout(()=>{
+    const btn = document.getElementById("cleanFullMapBtn");
+    if(btn) btn.onclick = openCleanFullMap;
+    const close = document.getElementById("cleanCloseMapBtn");
+    if(close) close.onclick = closeCleanFullMap;
+  }, 600);
+});
+
