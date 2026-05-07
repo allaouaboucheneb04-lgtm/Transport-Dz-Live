@@ -2588,7 +2588,64 @@ function setupGoogleSuggestions(){
   });
 }
 
-function setupEvents(){setupGoogleSuggestions();if($('clearFromBtn'))$('clearFromBtn').onclick=()=>{if($('fromInput'))$('fromInput').value='';renderRouteSuggestionBoxPro();};if($('clearToBtn'))$('clearToBtn').onclick=()=>{if($('toInput'))$('toInput').value='';renderRouteSuggestionBoxPro();};setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
+
+// =========================
+// CLIENT GOOGLE MAPS MODE
+// =========================
+let clientMapMode = false;
+
+function setClientMapMode(active){
+  clientMapMode = !!active;
+  document.body.classList.toggle("clientFullMap", clientMapMode);
+  const btn = $("gmModeToggle");
+  if(btn) btn.textContent = clientMapMode ? "Quitter mode carte" : "Mode carte plein écran";
+  setTimeout(()=>{ try{ if(map) map.invalidateSize(); }catch(e){} }, 250);
+}
+function toggleClientMapMode(){
+  setClientMapMode(!clientMapMode);
+}
+async function gmLocate(){
+  try{
+    if(typeof clientGps === "function") await clientGps();
+    if(map && clientLat && clientLng){
+      map.setView([clientLat, clientLng], 16);
+    }
+  }catch(e){
+    alert("Position impossible: " + (e.message || e));
+  }
+}
+function gmFitAll(){
+  try{
+    const pts = [];
+    activeStopsOnly().forEach(s=>{
+      if(num(s.lat)!==null && num(s.lng)!==null) pts.push([num(s.lat),num(s.lng)]);
+    });
+    vehicles.forEach(v=>{
+      if(num(v.lat)!==null && num(v.lng)!==null) pts.push([num(v.lat),num(v.lng)]);
+    });
+    if(pts.length && map) map.fitBounds(L.latLngBounds(pts), {padding:[40,40]});
+  }catch(e){ console.warn(e); }
+}
+function gmOpenRoute(){
+  setClientMapMode(false);
+  const q = val("gmQuickSearch");
+  if(q && $("toInput")) $("toInput").value = q;
+  setTimeout(()=>{ try{$("fromInput").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){} }, 100);
+}
+function setupGoogleMapClientMode(){
+  if($("gmModeToggle")) $("gmModeToggle").onclick = toggleClientMapMode;
+  if($("gmLocateBtn")) $("gmLocateBtn").onclick = gmLocate;
+  if($("gmFitBtn")) $("gmFitBtn").onclick = gmFitAll;
+  if($("gmOpenRouteBtn")) $("gmOpenRouteBtn").onclick = gmOpenRoute;
+  if($("sheetExpandBtn")) $("sheetExpandBtn").onclick = ()=>setClientMapMode(false);
+  if($("gmQuickSearch")){
+    $("gmQuickSearch").addEventListener("keydown", e=>{
+      if(e.key === "Enter") gmOpenRoute();
+    });
+  }
+}
+
+function setupEvents(){setupGoogleMapClientMode();setupGoogleSuggestions();if($('clearFromBtn'))$('clearFromBtn').onclick=()=>{if($('fromInput'))$('fromInput').value='';renderRouteSuggestionBoxPro();};if($('clearToBtn'))$('clearToBtn').onclick=()=>{if($('toInput'))$('toInput').value='';renderRouteSuggestionBoxPro();};setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
 if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;if($("clearRouteBtn")) $("clearRouteBtn").onclick=resetRouteSearchView;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>{saveRecentTrip(val("fromInput"),val("toInput"));return searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});};$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}

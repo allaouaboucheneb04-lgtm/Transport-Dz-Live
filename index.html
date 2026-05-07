@@ -10,6 +10,29 @@
 </head>
 <body>
 
+<div id="clientMapTop" class="clientMapTop">
+  <div class="gmSearchCard">
+    <div class="gmSearchRow">
+      <span class="gmIcon">🔎</span>
+      <input id="gmQuickSearch" type="text" placeholder="Où voulez-vous aller ?">
+      <button id="gmOpenRouteBtn" type="button">Itinéraire</button>
+    </div>
+  </div>
+</div>
+
+<div id="clientMapActions" class="clientMapActions">
+  <button id="gmLocateBtn" type="button" title="Ma position">➤</button>
+  <button id="gmFitBtn" type="button" title="Voir tout">⌖</button>
+</div>
+
+<div id="clientRouteSheet" class="clientRouteSheet collapsed">
+  <div class="sheetHandle"></div>
+  <div class="sheetTitle">Transport Live DZ</div>
+  <div class="sheetSubtitle">Bus en direct, trajet, ETA et arrêts proches.</div>
+  <button id="sheetExpandBtn" type="button" class="sheetBtn">Chercher un trajet</button>
+</div>
+
+
 <div id="authGate" class="authGate hidden">
   <div class="authHero">
     <div class="brandMini">Firebase + GPS Live</div>
@@ -57,7 +80,8 @@
 <section id="clientPage" class="page active">
   <div class="hero">
     <div><div class="kicker">Client</div><h2>Voir les bus en direct</h2><p>Les clients voient seulement les bus en ligne, avec GPS récent, proches de leur ligne.</p></div>
-    <button id="clientGpsBtn" class="primary small" type="button">📍 Ma position</button>
+    <button id="gmModeToggle" type="button" class="secondary">Mode carte plein écran</button>
+      <button id="clientGpsBtn" class="primary small" type="button">📍 Ma position</button>
   </div>
   <div class="card">
     <label>Ville</label><select id="clientCity"><option value="Bejaia">Béjaïa</option><option value="Montreal">Montréal test</option></select>
@@ -290,6 +314,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=google-suggestions-1"></script>
+<script src="app.js?v=client-full-map-1"></script>
 </body>
 </html>
