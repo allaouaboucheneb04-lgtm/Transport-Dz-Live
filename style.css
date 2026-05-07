@@ -90,3 +90,11 @@
 .etaBig{font-size:22px;color:#0f172a;font-weight:950;margin-bottom:8px}
 .etaMeta{font-size:15px;line-height:1.5;color:#475569}
 .etaEmpty{color:#b45309;font-weight:950}
+
+.suggestionBox{margin:12px 0;padding:12px;border-radius:18px;background:#f8fafc;border:1px solid #dbe4f0}
+.suggestionBox.hidden{display:none!important}
+.suggestGroup{margin-bottom:12px}
+.suggestTitle{font-weight:950;color:#0f172a;margin-bottom:8px}
+.suggestBtn{width:100%;min-height:44px;margin:5px 0;border:1px solid #dbe4f0;border-radius:14px;background:#fff;color:#0f172a;font-weight:900;text-align:left;padding:10px 12px}
+.suggestBtn small{display:block;color:#64748b;font-weight:800;margin-top:3px}
+.suggestEmpty{color:#94a3b8;font-weight:800;padding:8px}

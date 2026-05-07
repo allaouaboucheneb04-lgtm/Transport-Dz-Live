@@ -2005,7 +2005,7 @@ async function searchRouteMultiLines(){
   }
 
   if(!best){
-    setText("routeResult",`Aucun trajet trouvé avec les lignes actives actuelles. Essaie un autre arrêt ou réactive certaines lignes.`);
+    setText("routeResult",`Aucun trajet trouvé. Regarde les suggestions proposées et choisis un arrêt exact.`);
     return;
   }
 
@@ -2274,7 +2274,129 @@ function refreshAuthGate(){
   else showAuthGate(true);
 }
 
-function setupEvents(){if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
+
+// =========================
+// SUGGESTIONS ARRÊTS CLIENT
+// =========================
+function normalizeSuggestText(txt){
+  return (txt || "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g," ")
+    .trim();
+}
+function suggestScore(query, text){
+  const q = normalizeSuggestText(query);
+  const t = normalizeSuggestText(text);
+  if(!q || !t) return 0;
+  if(t === q) return 1000;
+  if(t.startsWith(q)) return 800;
+  if(t.includes(q)) return 650;
+  const words = q.split(" ").filter(Boolean);
+  let score = 0;
+  words.forEach(w => {
+    if(t.includes(w)) score += 120;
+    else {
+      // simple fuzzy: letters in order
+      let pos = 0, ok = true;
+      for(const ch of w){
+        pos = t.indexOf(ch, pos);
+        if(pos === -1){ ok = false; break; }
+        pos++;
+      }
+      if(ok) score += 35;
+    }
+  });
+  return score;
+}
+function activeClientStopsForSuggest(){
+  let list = (typeof activeStopsOnly === "function") ? activeStopsOnly() : stops.filter(s=>s.active!==false);
+  const city = val("clientCity") || "";
+  const lineId = val("clientLineSelect") || "all";
+  if(city && typeof normalizeCity === "function"){
+    list = list.filter(s => !s.city || normalizeCity(s.city) === normalizeCity(city));
+  }
+  if(lineId && lineId !== "all"){
+    list = list.filter(s => s.lineId === lineId);
+  }
+  return list;
+}
+function buildStopSuggestions(query, limit=8){
+  const list = activeClientStopsForSuggest();
+  return list
+    .map(s => {
+      const label = `${s.name || ""} · ${getLineName(s.lineId)}`;
+      const score = suggestScore(query, label) + suggestScore(query, s.name || "") * 1.5;
+      return {stop:s,label,score};
+    })
+    .filter(x => x.score > 0)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,limit);
+}
+function renderInputSuggestions(inputId, datalistId){
+  const input = $(inputId);
+  const datalist = $(datalistId);
+  if(!input || !datalist) return;
+  const suggestions = buildStopSuggestions(input.value, 10);
+  datalist.innerHTML = suggestions.map(x => `<option value="${x.stop.name || ""}">${x.label}</option>`).join("");
+}
+function renderRouteSuggestionBox(){
+  const box = $("routeSuggestionBox");
+  if(!box) return;
+  const fromQ = val("fromInput");
+  const toQ = val("toInput");
+  const from = buildStopSuggestions(fromQ, 4);
+  const to = buildStopSuggestions(toQ, 4);
+
+  if(!fromQ && !toQ){
+    box.classList.add("hidden");
+    box.innerHTML = "";
+    return;
+  }
+
+  const block = (title, items, targetId) => `
+    <div class="suggestGroup">
+      <div class="suggestTitle">${title}</div>
+      ${items.length ? items.map(x => `
+        <button type="button" class="suggestBtn" data-fill="${targetId}" data-value="${x.stop.name || ""}">
+          📍 ${x.stop.name || "Arrêt"} <small>${getLineName(x.stop.lineId)}</small>
+        </button>
+      `).join("") : '<div class="suggestEmpty">Aucune suggestion</div>'}
+    </div>
+  `;
+
+  box.innerHTML = block("Suggestions départ", from, "fromInput") + block("Suggestions destination", to, "toInput");
+  box.classList.remove("hidden");
+
+  box.querySelectorAll("[data-fill]").forEach(btn=>{
+    btn.onclick=()=>{
+      $(btn.dataset.fill).value = btn.dataset.value;
+      renderInputSuggestions("fromInput","fromSuggestions");
+      renderInputSuggestions("toInput","toSuggestions");
+      renderRouteSuggestionBox();
+    };
+  });
+}
+function setupRouteSuggestions(){
+  ["fromInput","toInput"].forEach(id=>{
+    const input=$(id);
+    if(!input) return;
+    input.addEventListener("input", ()=>{
+      renderInputSuggestions("fromInput","fromSuggestions");
+      renderInputSuggestions("toInput","toSuggestions");
+      renderRouteSuggestionBox();
+    });
+    input.addEventListener("focus", ()=>{
+      renderInputSuggestions("fromInput","fromSuggestions");
+      renderInputSuggestions("toInput","toSuggestions");
+      renderRouteSuggestionBox();
+    });
+  });
+}
+
+function setupEvents(){setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
 if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;if($("clearRouteBtn")) $("clearRouteBtn").onclick=resetRouteSearchView;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
