@@ -105,3 +105,61 @@
 .recentTripBtn,.favBtn{width:100%;margin:5px 0;min-height:42px;border-radius:14px;border:1px solid #dbe4f0;background:#fff;color:#0f172a;text-align:left;padding:9px 12px;font-weight:900}
 .favRow{display:grid;grid-template-columns:1fr;gap:6px}
 .suggestBtn span{display:block;font-size:16px}
+
+/* Google Maps style suggestions */
+.googleSuggestBox{
+  margin:10px 0 14px;
+  background:#fff;
+  border:1px solid #dbe4f0;
+  border-radius:22px;
+  box-shadow:0 18px 45px rgba(15,23,42,.14);
+  overflow:hidden;
+}
+.googleSuggestBox.hidden{display:none!important}
+.gSuggestHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 14px;
+  background:#f8fafc;
+  color:#475569;
+  font-weight:950;
+  border-bottom:1px solid #e2e8f0;
+}
+.gSuggestHeader button{
+  width:34px;
+  min-height:34px;
+  border-radius:50%;
+  background:#e2e8f0;
+  color:#0f172a;
+  font-weight:950;
+  padding:0;
+}
+.gSuggestItem{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:64px;
+  border:0;
+  border-bottom:1px solid #edf2f7;
+  background:#fff;
+  text-align:left;
+  padding:10px 14px;
+  color:#0f172a;
+}
+.gSuggestItem:active{background:#eff6ff}
+.gPin{
+  width:38px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#eff6ff;
+  font-size:20px;
+}
+.gText{display:flex;flex-direction:column;gap:3px;line-height:1.2}
+.gText b{font-size:17px;font-weight:950;color:#0f172a}
+.gText small{font-size:13px;font-weight:850;color:#64748b}
+#routeSuggestionBox{display:none!important}
