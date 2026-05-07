@@ -2959,3 +2959,126 @@ window.addEventListener("load", ()=>{
   }, 800);
 });
 
+
+
+// =========================
+// FULLSCREEN SEARCH FIX
+// =========================
+function cleanSearchSuggestions(query, limit=7){
+  try{
+    if(typeof buildStopSuggestionsPro === "function") return buildStopSuggestionsPro(query, limit);
+    if(typeof buildStopSuggestions === "function") return buildStopSuggestions(query, limit);
+  }catch(e){}
+
+  const q = (query || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  if(!q) return [];
+  const list = (typeof stops !== "undefined" ? stops : []).filter(s => s && s.active !== false);
+  return list.map(s => {
+    const name = (s.name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    let score = 0;
+    if(name === q) score = 1000;
+    else if(name.startsWith(q)) score = 800;
+    else if(name.includes(q)) score = 600;
+    else {
+      q.split(/\s+/).forEach(w => { if(name.includes(w)) score += 120; });
+    }
+    return {stop:s, score};
+  }).filter(x => x.score > 0)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,limit);
+}
+
+function renderCleanSearchSuggestions(){
+  const input = document.getElementById("cleanSearchInput");
+  const box = document.getElementById("cleanSearchSuggestBox");
+  if(!input || !box) return;
+
+  const q = input.value || "";
+  const suggestions = cleanSearchSuggestions(q, 7);
+  if(!q || !suggestions.length){
+    box.classList.add("hidden");
+    box.innerHTML = "";
+    return;
+  }
+
+  box.innerHTML = suggestions.map(x => {
+    const s = x.stop || {};
+    return `
+      <button type="button" class="cleanSuggestItem" data-value="${(s.name || "").replaceAll('"','&quot;')}">
+        <span class="cleanSuggestPin">📍</span>
+        <span class="cleanSuggestText">
+          <b>${s.name || "Arrêt"}</b>
+          <small>${getLineName(s.lineId)}</small>
+        </span>
+      </button>
+    `;
+  }).join("");
+
+  box.classList.remove("hidden");
+
+  box.querySelectorAll(".cleanSuggestItem").forEach(btn => {
+    btn.onclick = () => {
+      input.value = btn.dataset.value || "";
+      box.classList.add("hidden");
+      box.innerHTML = "";
+      cleanGoToDestination(input.value);
+    };
+  });
+}
+
+function cleanGoToDestination(destination){
+  const dest = destination || (document.getElementById("cleanSearchInput") || {}).value || "";
+  if(!dest) return;
+
+  const to = document.getElementById("toInput");
+  if(to) to.value = dest;
+
+  // If route panel exists in normal page, use it; otherwise close overlay and scroll to fields
+  closeCleanFullMap();
+
+  setTimeout(() => {
+    try{
+      const to2 = document.getElementById("toInput");
+      if(to2) {
+        to2.value = dest;
+        to2.scrollIntoView({behavior:"smooth", block:"center"});
+        to2.focus();
+      }
+    }catch(e){}
+  }, 250);
+}
+
+function setupCleanSearchFix(){
+  const input = document.getElementById("cleanSearchInput");
+  const btn = document.getElementById("cleanItineraryBtn");
+  if(input){
+    input.setAttribute("autocomplete", "off");
+    input.oninput = renderCleanSearchSuggestions;
+    input.onfocus = renderCleanSearchSuggestions;
+    input.onkeydown = (e) => {
+      if(e.key === "Enter"){
+        e.preventDefault();
+        const first = document.querySelector("#cleanSearchSuggestBox .cleanSuggestItem");
+        if(first) first.click();
+        else cleanGoToDestination(input.value);
+      }
+    };
+  }
+  if(btn){
+    btn.onclick = () => {
+      const first = document.querySelector("#cleanSearchSuggestBox .cleanSuggestItem");
+      if(first) first.click();
+      else cleanGoToDestination((input || {}).value || "");
+    };
+  }
+
+  document.addEventListener("click", (e) => {
+    const box = document.getElementById("cleanSearchSuggestBox");
+    if(!box || box.classList.contains("hidden")) return;
+    if(e.target.closest(".cleanMapSearch")) return;
+    box.classList.add("hidden");
+  });
+}
+
+window.addEventListener("load", () => setTimeout(setupCleanSearchFix, 700));
+
