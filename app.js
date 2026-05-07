@@ -3422,3 +3422,235 @@ function setupSameMapFullscreen(){
 
 window.addEventListener("load", ()=>setTimeout(setupSameMapFullscreen, 700));
 
+
+
+// =========================
+// FULLSCREEN SEARCH + LOCATE + REFRESH
+// =========================
+let sameMapSelectedStop = null;
+let sameMapUserMarker = null;
+
+function normalizeSameSearch(t){
+  return String(t || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .trim();
+}
+
+function sameMapLineName(lineId){
+  try{
+    if(typeof getLineName === "function") return getLineName(lineId);
+    const l = (lines || []).find(x => x.id === lineId);
+    return l ? (l.name || "Ligne") : "Sans ligne";
+  }catch(e){ return "Sans ligne"; }
+}
+
+function sameMapStopSuggestions(q, limit=8){
+  const query = normalizeSameSearch(q);
+  if(!query) return [];
+  const list = (stops || []).filter(s => s && s.active !== false && Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lng)));
+
+  const scored = list.map(s => {
+    const name = normalizeSameSearch(s.name);
+    const line = normalizeSameSearch(sameMapLineName(s.lineId));
+    const txt = name + " " + line;
+    let score = 0;
+    if(name === query) score += 1000;
+    else if(name.startsWith(query)) score += 850;
+    else if(name.includes(query)) score += 650;
+    else if(txt.includes(query)) score += 450;
+    else {
+      query.split(/\s+/).forEach(w => {
+        if(name.includes(w)) score += 120;
+        else if(txt.includes(w)) score += 60;
+      });
+    }
+    return {stop:s, score};
+  }).filter(x => x.score > 0);
+
+  // remove duplicates by name + lineId
+  const seen = new Set();
+  return scored.sort((a,b)=>b.score-a.score).filter(x=>{
+    const key = normalizeSameSearch((x.stop.name || "") + "|" + (x.stop.lineId || ""));
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, limit);
+}
+
+function renderSameMapSuggestions(){
+  const input = document.getElementById("sameMapSearchInput");
+  const box = document.getElementById("sameMapSuggestBox");
+  if(!input || !box) return;
+  const suggestions = sameMapStopSuggestions(input.value, 8);
+
+  if(!input.value || !suggestions.length){
+    box.classList.add("hidden");
+    box.innerHTML = "";
+    return;
+  }
+
+  box.innerHTML = suggestions.map(x => {
+    const s = x.stop;
+    return `
+      <button type="button" class="sameMapSuggestItem" data-stop-id="${s.id}">
+        <span class="sameMapPin">📍</span>
+        <span class="sameMapSuggestText">
+          <b>${s.name || "Arrêt"}</b>
+          <small>${sameMapLineName(s.lineId)}</small>
+        </span>
+      </button>
+    `;
+  }).join("");
+
+  box.classList.remove("hidden");
+
+  box.querySelectorAll(".sameMapSuggestItem").forEach(btn => {
+    btn.onclick = () => {
+      const s = (stops || []).find(x => x.id === btn.dataset.stopId);
+      if(!s) return;
+      sameMapSelectedStop = s;
+      input.value = s.name || "";
+      box.classList.add("hidden");
+      box.innerHTML = "";
+      sameMapZoomToStop(s);
+    };
+  });
+}
+
+function sameMapZoomToStop(s){
+  try{
+    const lat = Number(s.lat), lng = Number(s.lng);
+    if(!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if(window.map){
+      window.map.setView([lat, lng], 16);
+      if(typeof L !== "undefined"){
+        const marker = L.circleMarker([lat,lng], {
+          radius: 12,
+          color:"#1d4ed8",
+          weight:4,
+          fillColor:"#60a5fa",
+          fillOpacity:.75
+        }).addTo(window.map).bindPopup(`<b>${s.name || "Arrêt"}</b><br>${sameMapLineName(s.lineId)}`).openPopup();
+
+        setTimeout(()=>{ try{ window.map.removeLayer(marker); }catch(e){} }, 7000);
+      }
+    }
+  }catch(e){ console.warn("sameMapZoomToStop", e); }
+}
+
+function sameMapUseItinerary(){
+  const input = document.getElementById("sameMapSearchInput");
+  const value = (input && input.value) || (sameMapSelectedStop && sameMapSelectedStop.name) || "";
+  if(!value) return;
+
+  const to = document.getElementById("toInput");
+  if(to) to.value = value;
+
+  if(typeof closeSameMapFullscreen === "function") closeSameMapFullscreen();
+
+  setTimeout(()=>{
+    try{
+      const to2 = document.getElementById("toInput");
+      if(to2){
+        to2.scrollIntoView({behavior:"smooth", block:"center"});
+        to2.focus();
+      }
+    }catch(e){}
+  }, 300);
+}
+
+function sameMapRefresh(){
+  try{
+    if(typeof renderAll === "function") renderAll();
+    if(typeof drawMap === "function") drawMap();
+    if(window.map && window.map.invalidateSize) window.map.invalidateSize(true);
+  }catch(e){ console.warn("sameMapRefresh", e); }
+}
+
+function sameMapLocate(){
+  if(!navigator.geolocation){
+    alert("GPS non disponible.");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    try{
+      if(window.map){
+        window.map.setView([lat,lng], 16);
+        if(sameMapUserMarker){
+          try{ window.map.removeLayer(sameMapUserMarker); }catch(e){}
+        }
+        if(typeof L !== "undefined"){
+          const icon = L.divIcon({
+            className:"sameMapMeIcon",
+            html:"<div>➤</div>",
+            iconSize:[46,46],
+            iconAnchor:[23,23]
+          });
+          sameMapUserMarker = L.marker([lat,lng], {icon}).addTo(window.map).bindPopup("Ma position").openPopup();
+        }
+      }
+    }catch(e){ console.warn(e); }
+  }, () => {
+    alert("Position impossible. Active la localisation dans Safari/Réglages.");
+  }, {enableHighAccuracy:true, timeout:12000, maximumAge:5000});
+}
+
+function sameMapShowControls(show){
+  ["sameMapSearchBar","sameMapRefreshBtn","sameMapLocateBtn"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle("hidden", !show);
+  });
+}
+
+const oldOpenSameMapFullscreenControls = typeof openSameMapFullscreen === "function" ? openSameMapFullscreen : null;
+function openSameMapFullscreen(){
+  if(oldOpenSameMapFullscreenControls) oldOpenSameMapFullscreenControls();
+  sameMapShowControls(true);
+  setTimeout(sameMapRefresh, 500);
+}
+
+const oldCloseSameMapFullscreenControls = typeof closeSameMapFullscreen === "function" ? closeSameMapFullscreen : null;
+function closeSameMapFullscreen(){
+  sameMapShowControls(false);
+  if(oldCloseSameMapFullscreenControls) oldCloseSameMapFullscreenControls();
+}
+
+function setupSameMapSearchLocateRefresh(){
+  const input = document.getElementById("sameMapSearchInput");
+  if(input){
+    input.setAttribute("autocomplete","off");
+    input.oninput = renderSameMapSuggestions;
+    input.onfocus = renderSameMapSuggestions;
+    input.onkeydown = e => {
+      if(e.key === "Enter"){
+        e.preventDefault();
+        const first = document.querySelector("#sameMapSuggestBox .sameMapSuggestItem");
+        if(first) first.click();
+        else sameMapUseItinerary();
+      }
+    };
+  }
+
+  const itinerary = document.getElementById("sameMapItineraryBtn");
+  if(itinerary) itinerary.onclick = sameMapUseItinerary;
+
+  const refresh = document.getElementById("sameMapRefreshBtn");
+  if(refresh) refresh.onclick = sameMapRefresh;
+
+  const locate = document.getElementById("sameMapLocateBtn");
+  if(locate) locate.onclick = sameMapLocate;
+
+  document.addEventListener("click", e => {
+    const box = document.getElementById("sameMapSuggestBox");
+    if(!box || box.classList.contains("hidden")) return;
+    if(e.target.closest("#sameMapSearchBar")) return;
+    box.classList.add("hidden");
+  });
+}
+
+window.addEventListener("load", ()=>setTimeout(setupSameMapSearchLocateRefresh, 800));
+
