@@ -2792,3 +2792,170 @@ window.addEventListener("load", ()=>{
   }, 600);
 });
 
+
+
+// =========================
+// FULL MAP: LIGNES + ARRÊTS + BUS FIX
+// =========================
+function getAllVisibleStopsForFullMap(){
+  try{
+    const lineFilter = (document.getElementById("clientLineSelect") || {}).value || "all";
+    let list = (typeof stops !== "undefined" ? stops : []).filter(s =>
+      s && s.active !== false && num(s.lat) !== null && num(s.lng) !== null
+    );
+
+    if(lineFilter && lineFilter !== "all"){
+      list = list.filter(s => s.lineId === lineFilter);
+    }
+
+    // If filter returns empty, show all active stops so map is never empty
+    if(!list.length){
+      list = (typeof stops !== "undefined" ? stops : []).filter(s =>
+        s && s.active !== false && num(s.lat) !== null && num(s.lng) !== null
+      );
+    }
+
+    return list;
+  }catch(e){
+    return [];
+  }
+}
+
+function getAllVisibleLinesForFullMap(){
+  try{
+    const lineFilter = (document.getElementById("clientLineSelect") || {}).value || "all";
+    let list = (typeof lines !== "undefined" ? lines : []).filter(l => l && l.active !== false);
+    if(lineFilter && lineFilter !== "all"){
+      list = list.filter(l => l.id === lineFilter);
+    }
+    if(!list.length){
+      list = (typeof lines !== "undefined" ? lines : []).filter(l => l && l.active !== false);
+    }
+    return list;
+  }catch(e){
+    return [];
+  }
+}
+
+function cleanDrawMap(){
+  if(!cleanMapObj) return;
+  cleanClearLayers();
+
+  const pts = [];
+  const fullStops = getAllVisibleStopsForFullMap();
+  const fullLines = getAllVisibleLinesForFullMap();
+
+  try{
+    // draw lines first
+    fullLines.forEach(line => {
+      const lineStops = fullStops
+        .filter(s => s.lineId === line.id)
+        .sort((a,b)=>Number(a.order || 9999) - Number(b.order || 9999));
+
+      if(lineStops.length > 1){
+        const latlngs = lineStops.map(s => [num(s.lat), num(s.lng)]);
+        const poly = L.polyline(latlngs, {
+          color: line.color || "#2563eb",
+          weight: 6,
+          opacity: .82
+        }).addTo(cleanMapObj).bindPopup(line.name || "Ligne");
+        cleanMapLayers.push(poly);
+        latlngs.forEach(p => pts.push(p));
+      }
+    });
+
+    // draw stops
+    fullStops.forEach(s => {
+      const line = fullLines.find(l => l.id === s.lineId);
+      const color = (line && line.color) || "#2563eb";
+      const m = L.circleMarker([num(s.lat), num(s.lng)], {
+        radius: 7,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: color,
+        fillOpacity: .95
+      }).addTo(cleanMapObj).bindPopup(`<b>${s.name || "Arrêt"}</b><br>${getLineName(s.lineId)}`);
+      cleanMapLayers.push(m);
+      pts.push([num(s.lat), num(s.lng)]);
+    });
+
+    // draw online buses
+    (typeof vehicles !== "undefined" ? vehicles : []).forEach(v => {
+      const online = v && (v.status === "online" || v.online === true);
+      if(!online || num(v.lat) === null || num(v.lng) === null) return;
+
+      const icon = L.divIcon({
+        className:"cleanBusIcon",
+        html:"<div>🚌</div>",
+        iconSize:[42,42],
+        iconAnchor:[21,21]
+      });
+
+      const m = L.marker([num(v.lat), num(v.lng)], {icon})
+        .addTo(cleanMapObj)
+        .bindPopup(`<b>${v.name || "Bus"}</b><br>${getLineName(v.lineId)}`);
+      cleanMapLayers.push(m);
+      pts.push([num(v.lat), num(v.lng)]);
+    });
+
+    if(pts.length){
+      cleanMapObj.fitBounds(L.latLngBounds(pts), {padding:[55,55], maxZoom:14});
+    }else{
+      cleanMapObj.setView([36.75, 5.05], 11);
+    }
+
+    setTimeout(()=>{ try{ cleanMapObj.invalidateSize(true); }catch(e){} }, 200);
+
+  }catch(e){
+    console.warn("cleanDrawMap fixed", e);
+  }
+}
+
+function cleanLocate(){
+  if(!navigator.geolocation){
+    alert("GPS non disponible sur ce téléphone.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    if(!cleanMapObj) return;
+
+    cleanMapObj.setView([lat,lng], 16);
+
+    const icon = L.divIcon({
+      className:"cleanMeIcon",
+      html:"<div>➤</div>",
+      iconSize:[44,44],
+      iconAnchor:[22,22]
+    });
+
+    const m = L.marker([lat,lng], {icon}).addTo(cleanMapObj).bindPopup("Ma position");
+    cleanMapLayers.push(m);
+  }, err => {
+    alert("Position impossible. Active la localisation dans Safari/Réglages.");
+  }, {
+    enableHighAccuracy:true,
+    timeout:12000,
+    maximumAge:5000
+  });
+}
+
+
+
+window.addEventListener("load", ()=>{
+  setTimeout(()=>{
+    const r = document.getElementById("cleanRefreshBtn");
+    if(r) r.onclick = () => {
+      try{
+        if(cleanMapObj){
+          cleanMapObj.invalidateSize(true);
+          cleanDrawMap();
+        }
+      }catch(e){ console.warn(e); }
+    };
+  }, 800);
+});
+

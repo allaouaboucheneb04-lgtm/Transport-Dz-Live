@@ -446,3 +446,23 @@ input, select, textarea, button{
   overflow:hidden!important;
   box-shadow:0 8px 22px rgba(15,23,42,.22)!important;
 }
+
+/* FULL MAP LINES/STOPS FIX */
+.cleanRefreshBtn{
+  right:18px!important;
+  bottom:calc(env(safe-area-inset-bottom) + 235px)!important;
+  z-index:1001!important;
+  color:#2563eb!important;
+  transform:none!important;
+}
+.cleanBusIcon div{
+  animation:cleanBusPulse 1.8s infinite;
+}
+@keyframes cleanBusPulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.08)}
+  100%{transform:scale(1)}
+}
+.cleanMap .leaflet-control-attribution{
+  font-size:11px!important;
+}
