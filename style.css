@@ -98,3 +98,10 @@
 .suggestBtn{width:100%;min-height:44px;margin:5px 0;border:1px solid #dbe4f0;border-radius:14px;background:#fff;color:#0f172a;font-weight:900;text-align:left;padding:10px 12px}
 .suggestBtn small{display:block;color:#64748b;font-weight:800;margin-top:3px}
 .suggestEmpty{color:#94a3b8;font-weight:800;padding:8px}
+
+.clearFieldBtn{float:right;width:auto;min-height:32px;border-radius:999px;padding:5px 10px;margin-top:-6px;background:#f1f5f9;color:#334155;font-size:13px;font-weight:950}
+.recentTripsBox{margin:10px 0 14px}
+.recentTitle{font-weight:950;color:#0f172a;margin-bottom:8px}
+.recentTripBtn,.favBtn{width:100%;margin:5px 0;min-height:42px;border-radius:14px;border:1px solid #dbe4f0;background:#fff;color:#0f172a;text-align:left;padding:9px 12px;font-weight:900}
+.favRow{display:grid;grid-template-columns:1fr;gap:6px}
+.suggestBtn span{display:block;font-size:16px}

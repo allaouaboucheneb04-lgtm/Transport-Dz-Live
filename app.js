@@ -2375,31 +2375,142 @@ function renderRouteSuggestionBox(){
       $(btn.dataset.fill).value = btn.dataset.value;
       renderInputSuggestions("fromInput","fromSuggestions");
       renderInputSuggestions("toInput","toSuggestions");
-      renderRouteSuggestionBox();
+      renderRouteSuggestionBoxPro();
     };
   });
 }
-function setupRouteSuggestions(){
+
+// =========================
+// SUGGESTIONS PRO + RÉCENTS
+// =========================
+function uniqueSuggestions(items){
+  const seen = new Set();
+  const out = [];
+  items.forEach(x => {
+    const key = normalizeSuggestText((x.stop.name || "") + "|" + (x.stop.lineId || ""));
+    if(seen.has(key)) return;
+    seen.add(key);
+    out.push(x);
+  });
+  return out;
+}
+function buildStopSuggestionsPro(query, limit=6){
+  return uniqueSuggestions(buildStopSuggestions(query, 20)).slice(0, limit);
+}
+function fillSuggestion(targetId, value){
+  const input = $(targetId);
+  if(!input) return;
+  input.value = value || "";
+  if(targetId === "fromInput" && $("toInput")) $("toInput").focus();
+  if($("routeSuggestionBox")){
+    $("routeSuggestionBox").classList.add("hidden");
+    $("routeSuggestionBox").innerHTML = "";
+  }
+  renderInputSuggestions("fromInput","fromSuggestions");
+  renderInputSuggestions("toInput","toSuggestions");
+}
+function recentTrips(){
+  try{return JSON.parse(localStorage.getItem("transportRecentTrips") || "[]");}
+  catch(e){return [];}
+}
+function saveRecentTrip(from,to){
+  if(!from || !to) return;
+  let arr = recentTrips().filter(x => !(x.from === from && x.to === to));
+  arr.unshift({from,to,ts:Date.now()});
+  arr = arr.slice(0,5);
+  localStorage.setItem("transportRecentTrips", JSON.stringify(arr));
+  renderRecentTrips();
+}
+function renderRecentTrips(){
+  const box = $("recentTripsBox");
+  if(!box) return;
+  const arr = recentTrips();
+  if(!arr.length){
+    box.innerHTML = `
+      <div class="favRow">
+        <button type="button" class="favBtn" data-tofav="Université">🎓 Université</button>
+        <button type="button" class="favBtn" data-tofav="Gare routière">🚌 Gare</button>
+        <button type="button" class="favBtn" data-tofav="Sidi Aïch">📍 Sidi Aïch</button>
+      </div>`;
+  }else{
+    box.innerHTML = '<div class="recentTitle">Derniers trajets</div>' + arr.map(x=>`
+      <button type="button" class="recentTripBtn" data-from="${x.from}" data-to="${x.to}">
+        🕘 ${x.from} → ${x.to}
+      </button>
+    `).join("");
+  }
+  box.querySelectorAll("[data-from]").forEach(b=>{
+    b.onclick=()=>{
+      $("fromInput").value=b.dataset.from;
+      $("toInput").value=b.dataset.to;
+      renderRouteSuggestionBoxPro();
+    };
+  });
+  box.querySelectorAll("[data-tofav]").forEach(b=>{
+    b.onclick=()=>{
+      $("toInput").value=b.dataset.tofav;
+      renderRouteSuggestionBoxPro();
+      $("toInput").focus();
+    };
+  });
+}
+function renderRouteSuggestionBoxPro(){
+  const box = $("routeSuggestionBox");
+  if(!box) return;
+  const fromQ = val("fromInput");
+  const toQ = val("toInput");
+  const from = buildStopSuggestionsPro(fromQ, 5);
+  const to = buildStopSuggestionsPro(toQ, 5);
+
+  if(!fromQ && !toQ){
+    box.classList.add("hidden");
+    box.innerHTML = "";
+    return;
+  }
+
+  function block(title, items, targetId){
+    return `
+      <div class="suggestGroup">
+        <div class="suggestTitle">${title}</div>
+        ${items.length ? items.map(x => `
+          <button type="button" class="suggestBtn" data-fill="${targetId}" data-value="${(x.stop.name || "").replaceAll('"','&quot;')}">
+            <span>📍 ${x.stop.name || "Arrêt"}</span>
+            <small>${getLineName(x.stop.lineId)}</small>
+          </button>
+        `).join("") : '<div class="suggestEmpty">Aucune suggestion proche</div>'}
+      </div>
+    `;
+  }
+
+  box.innerHTML = block("Départ proposé", from, "fromInput") + block("Destination proposée", to, "toInput");
+  box.classList.remove("hidden");
+
+  box.querySelectorAll("[data-fill]").forEach(btn=>{
+    btn.onclick=()=>fillSuggestion(btn.dataset.fill, btn.dataset.value);
+  });
+}
+
+function setupRouteSuggestions(){renderRecentTrips();
   ["fromInput","toInput"].forEach(id=>{
     const input=$(id);
     if(!input) return;
     input.addEventListener("input", ()=>{
       renderInputSuggestions("fromInput","fromSuggestions");
       renderInputSuggestions("toInput","toSuggestions");
-      renderRouteSuggestionBox();
+      renderRouteSuggestionBoxPro();
     });
     input.addEventListener("focus", ()=>{
       renderInputSuggestions("fromInput","fromSuggestions");
       renderInputSuggestions("toInput","toSuggestions");
-      renderRouteSuggestionBox();
+      renderRouteSuggestionBoxPro();
     });
   });
 }
 
-function setupEvents(){setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
+function setupEvents(){if($('clearFromBtn'))$('clearFromBtn').onclick=()=>{if($('fromInput'))$('fromInput').value='';renderRouteSuggestionBoxPro();};if($('clearToBtn'))$('clearToBtn').onclick=()=>{if($('toInput'))$('toInput').value='';renderRouteSuggestionBoxPro();};setupRouteSuggestions();if($('etaRefreshBtn')) $('etaRefreshBtn').onclick=renderEta;if($('etaStopSelect')) $('etaStopSelect').onchange=renderEta;setupAuthGateEvents();$("openLoginBtn").onclick=()=>{showAuthGate(true);showAuthTab("login");};$("closeLoginBtn").onclick=()=>$("loginModal").classList.add("hidden");$("loginBtn").onclick=async()=>{try{setText("authStatus","Connexion...");const cred=await auth.signInWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));currentUser=cred.user;await loadRole();$("loginModal").classList.add("hidden")}catch(e){authError(e)}};$("signupBtn").onclick=async()=>{try{const cred=await auth.createUserWithEmailAndPassword(val("emailInput").trim(),val("passwordInput"));await createUserProfileAfterSignup(cred.user,val("signupRoleSelect")||"client");currentUser=cred.user;await loadRole()}catch(e){authError(e)}};$("logoutBtn").onclick=async()=>{await goOffline().catch(()=>{});await auth.signOut();guestMode=false;showAuthGate(true);currentUser=null;currentRole="guest";setAuthUi()};document.querySelectorAll(".navBtn").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.page).classList.add("active");setTimeout(()=>map&&map.invalidateSize(),250)});document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".adminPanel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.panel).classList.add("active")});
 if($("adminStopsLineFilter")) $("adminStopsLineFilter").onchange=renderLists;
 if($("adminStopsSearch")) $("adminStopsSearch").oninput=renderLists;
-if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;if($("clearRouteBtn")) $("clearRouteBtn").onclick=resetRouteSearchView;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
+if($("loadExampleImportBtn")) $("loadExampleImportBtn").onclick=loadExampleImport;if($("importLinesBtn")) $("importLinesBtn").onclick=importAlgeriaLines;if($("showOsmStopsToggle")) $("showOsmStopsToggle").onchange=renderAll;if($("importOsmStopsBtn")) $("importOsmStopsBtn").onclick=importOsmStopsToFirebase;if($("showBejaiaGeojsonToggle")) $("showBejaiaGeojsonToggle").onchange=renderAll;if($("autoImportBejaiaBtn")) $("autoImportBejaiaBtn").onclick=importBejaiaAutoLinesAndStops;if($("deleteAllLinesStopsBtn")) $("deleteAllLinesStopsBtn").onclick=deleteAllLinesAndStops;if($("importBejaiaStopsBtn")) $("importBejaiaStopsBtn").onclick=importBejaiaStopsToFirebase;if($("createBejaiaLinesBtn")) $("createBejaiaLinesBtn").onclick=createFirebaseLinesFromBejaiaGeojson;$("addLineBtn").onclick=saveLine;$("addStopBtn").onclick=saveStop;$("addVehicleBtn").onclick=saveVehicle;$("addDriverBtn").onclick=saveDriver;$("goOnlineBtn").onclick=goOnline;$("goOfflineBtn").onclick=goOffline;$("driverVehicleSelect").onchange=renderDriverWorkStatus;if($("clearRouteBtn")) $("clearRouteBtn").onclick=resetRouteSearchView;$("clientGpsBtn").onclick=clientGps;$("clientLineSelect").onchange=renderAll;$("clientCity").onchange=renderAll;if($("startWalkingTrackBtn")) $("startWalkingTrackBtn").onclick=startWalkingTrack;if($("stopWalkingTrackBtn")) $("stopWalkingTrackBtn").onclick=stopWalkingTrack;$("searchRouteBtn").onclick=()=>{saveRecentTrip(val("fromInput"),val("toInput"));return searchRouteMultiLines().catch(e=>{console.error(e);setText("routeResult","Erreur trajet multi-lignes: "+(e.message||e));});};$("useMyLocationStopBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();$("stopLat").value=lat.toFixed(6);$("stopLng").value=lng.toFixed(6)}catch(e){alert("GPS impossible.")}};$("pickStopOnMapBtn").onclick=openStopPicker;$("pickerCloseBtn").onclick=()=>$("stopPickerModal").classList.add("hidden");$("pickerUseGpsBtn").onclick=async()=>{try{const[lat,lng]=await getPosition();initStopPicker();stopPickerMap.setView([lat,lng],16);setPicked(lat,lng)}catch(e){alert("GPS impossible.")}};$("pickerConfirmBtn").onclick=()=>{if(pickedLat==null)return alert("Choisis une position.");$("stopLat").value=pickedLat.toFixed(6);$("stopLng").value=pickedLng.toFixed(6);$("stopPickerModal").classList.add("hidden")}}
 function init(){setFirebaseStatus(true);initMap();setupEvents();auth.onAuthStateChanged(async user=>{currentUser=user;await loadRole();refreshAuthGate();if(user)openRoleHome();bindRealtime()});setInterval(renderAll,30000)}
 window.addEventListener("load",init);
 })();
