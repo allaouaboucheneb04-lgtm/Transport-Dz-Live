@@ -556,3 +556,36 @@
 .gmRoutePanelContent{
   pointer-events:auto!important;
 }
+
+
+/* FIX UI OVERLAP */
+body{
+  padding-bottom:120px!important;
+}
+
+.bottomNav,
+.bottom-bar,
+nav.bottom{
+  z-index:9999!important;
+}
+
+.clientPanel,
+.routePanel,
+.gmRoutePanel,
+.sheet,
+.bottomSheet{
+  margin-bottom:110px!important;
+}
+
+.clearBtn,
+#clearFromBtn,
+#clearToBtn{
+  z-index:20!important;
+  position:relative!important;
+}
+
+input,select{
+  position:relative;
+  z-index:1;
+}
+
