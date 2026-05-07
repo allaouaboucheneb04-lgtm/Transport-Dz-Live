@@ -3343,3 +3343,192 @@ window.addEventListener("load", ()=>{
   setTimeout(renderAllWithFallback, 2500);
 });
 
+
+
+// =========================
+// FORCE LIGNES/ARRÊTS EN PLEIN ÉCRAN
+// =========================
+function forceFullMapDataReady(){
+  try{
+    if(typeof applyTransitFallbackIfEmpty === "function") applyTransitFallbackIfEmpty();
+
+    if(typeof lines === "undefined") window.lines = [];
+    if(typeof stops === "undefined") window.stops = [];
+
+    if(!lines.length && typeof FALLBACK_LINES !== "undefined"){
+      lines = [...FALLBACK_LINES];
+    }
+    if(!stops.length && typeof FALLBACK_STOPS !== "undefined"){
+      stops = [...FALLBACK_STOPS];
+    }
+
+    // Corrige les données sans active
+    lines = (lines || []).map(l => ({active:true, ...l}));
+    stops = (stops || []).map(s => ({active:true, ...s}));
+
+  }catch(e){
+    console.warn("forceFullMapDataReady", e);
+  }
+}
+
+function fullMapLineLatLngs(line){
+  // 1) geometry/path if exists
+  const keys = ["routeGeometry","geometry","path","points","latlngs","coords","coordinates","route"];
+  for(const k of keys){
+    let raw = line && line[k];
+    if(!raw) continue;
+    try{
+      if(typeof raw === "string") raw = JSON.parse(raw);
+    }catch(e){ continue; }
+
+    if(Array.isArray(raw) && raw.length){
+      if(Array.isArray(raw[0])){
+        return raw.map(p=>{
+          const a = Number(p[0]), b = Number(p[1]);
+          // If [lng,lat]
+          if(Math.abs(a) <= 10 && Math.abs(b) > 20) return [b,a];
+          return [a,b];
+        }).filter(p=>Number.isFinite(p[0]) && Number.isFinite(p[1]));
+      }
+      if(typeof raw[0] === "object"){
+        return raw.map(p=>[num(p.lat), num(p.lng)]).filter(p=>p[0]!==null && p[1]!==null);
+      }
+    }
+    if(raw.type === "LineString" && Array.isArray(raw.coordinates)){
+      return raw.coordinates.map(p=>[Number(p[1]), Number(p[0])]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+    }
+  }
+
+  // 2) stops fallback
+  const ls = (stops || [])
+    .filter(s => s && s.active !== false && s.lineId === line.id && num(s.lat)!==null && num(s.lng)!==null)
+    .sort((a,b)=>{
+      const ao = Number(a.order ?? a.stopOrder ?? a.sequence ?? 9999);
+      const bo = Number(b.order ?? b.stopOrder ?? b.sequence ?? 9999);
+      if(ao !== bo) return ao - bo;
+      return String(a.name||"").localeCompare(String(b.name||""));
+    });
+
+  return ls.map(s=>[num(s.lat), num(s.lng)]);
+}
+
+function cleanDrawMap(){
+  if(!cleanMapObj) return;
+
+  forceFullMapDataReady();
+  cleanClearLayers();
+
+  const pts = [];
+  const selectedLine = (document.getElementById("clientLineSelect") || {}).value || "all";
+
+  const visibleLines = (lines || [])
+    .filter(l => l && l.active !== false)
+    .filter(l => selectedLine === "all" || l.id === selectedLine);
+
+  // Draw lines
+  visibleLines.forEach(line=>{
+    const latlngs = fullMapLineLatLngs(line);
+    if(latlngs.length >= 2){
+      const poly = L.polyline(latlngs, {
+        color: line.color || "#2563eb",
+        weight: 7,
+        opacity: 0.9,
+        lineCap: "round",
+        lineJoin: "round"
+      }).addTo(cleanMapObj).bindPopup(line.name || "Ligne");
+      cleanMapLayers.push(poly);
+      latlngs.forEach(p=>pts.push(p));
+    }
+  });
+
+  const lineIds = new Set(visibleLines.map(l=>l.id));
+
+  // Draw stops
+  (stops || [])
+    .filter(s => s && s.active !== false && num(s.lat)!==null && num(s.lng)!==null)
+    .filter(s => selectedLine === "all" ? (!s.lineId || lineIds.has(s.lineId)) : s.lineId === selectedLine)
+    .forEach(s=>{
+      const line = (lines || []).find(l=>l.id === s.lineId);
+      const color = (line && line.color) || "#2563eb";
+      const marker = L.circleMarker([num(s.lat), num(s.lng)], {
+        radius: 7,
+        color: "#fff",
+        weight: 2,
+        fillColor: color,
+        fillOpacity: 0.95
+      }).addTo(cleanMapObj).bindPopup(`<b>${s.name || "Arrêt"}</b><br>${getLineName(s.lineId)}`);
+      cleanMapLayers.push(marker);
+      pts.push([num(s.lat), num(s.lng)]);
+    });
+
+  // Draw buses
+  (vehicles || []).forEach(v=>{
+    const online = v && (v.status === "online" || v.online === true);
+    if(!online || num(v.lat)===null || num(v.lng)===null) return;
+    if(selectedLine !== "all" && v.lineId !== selectedLine) return;
+
+    const icon = L.divIcon({
+      className:"cleanBusIcon",
+      html:"<div>🚌</div>",
+      iconSize:[42,42],
+      iconAnchor:[21,21]
+    });
+    const m = L.marker([num(v.lat), num(v.lng)], {icon}).addTo(cleanMapObj)
+      .bindPopup(`<b>${v.name || "Bus"}</b><br>${getLineName(v.lineId)}`);
+    cleanMapLayers.push(m);
+    pts.push([num(v.lat), num(v.lng)]);
+  });
+
+  if(pts.length){
+    cleanMapObj.fitBounds(L.latLngBounds(pts), {padding:[55,55], maxZoom:14});
+  }else{
+    cleanMapObj.setView([36.75, 5.05], 12);
+  }
+
+  updateCleanMapStatusForce();
+  setTimeout(()=>{ try{ cleanMapObj.invalidateSize(true); }catch(e){} }, 250);
+}
+
+function updateCleanMapStatusForce(){
+  const el = document.getElementById("cleanMapStatus");
+  if(!el) return;
+  forceFullMapDataReady();
+  const l = (lines || []).filter(x=>x.active!==false).length;
+  const s = (stops || []).filter(x=>x.active!==false).length;
+  el.textContent = `${l} lignes · ${s} arrêts`;
+}
+
+const oldOpenCleanFullMapForce = typeof openCleanFullMap === "function" ? openCleanFullMap : null;
+function openCleanFullMap(){
+  forceFullMapDataReady();
+  const overlay = document.getElementById("cleanMapOverlay");
+  if(!overlay) return;
+  overlay.classList.remove("hidden");
+
+  setTimeout(()=>{
+    try{
+      cleanDestroyMapIfBroken();
+      cleanInitMapIOS ? cleanInitMapIOS() : cleanInitMap();
+      setTimeout(()=>{
+        forceFullMapDataReady();
+        cleanMapObj.invalidateSize(true);
+        cleanDrawMap();
+        setTimeout(()=>{
+          forceFullMapDataReady();
+          cleanMapObj.invalidateSize(true);
+          cleanDrawMap();
+        }, 800);
+      }, 350);
+    }catch(e){
+      console.warn("open fullscreen force", e);
+    }
+  }, 250);
+}
+
+window.addEventListener("load", ()=>{
+  setTimeout(()=>{
+    forceFullMapDataReady();
+    updateCleanMapStatusForce();
+  }, 1500);
+});
+

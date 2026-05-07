@@ -551,3 +551,20 @@ input, select, textarea, button{
   font-weight:950;
   margin:0 0 8px;
 }
+
+.cleanMapStatus{
+  display:inline-flex;
+  padding:7px 10px;
+  border-radius:999px;
+  background:#eff6ff;
+  color:#1d4ed8;
+  font-size:13px;
+  font-weight:950;
+  margin:0 0 10px;
+}
+.cleanMap .leaflet-overlay-pane svg{
+  z-index:450!important;
+}
+.cleanMap .leaflet-marker-pane{
+  z-index:600!important;
+}
