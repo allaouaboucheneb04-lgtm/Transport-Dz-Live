@@ -424,3 +424,65 @@
   color:#1e3a8a;
   font-weight:800;
 }
+
+/* ===== Draggable Google Maps bottom sheet ===== */
+.gmClosePanelBtn{
+  position:absolute;
+  top:12px;
+  right:14px;
+  width:40px;
+  height:40px;
+  min-height:40px;
+  border-radius:50%;
+  border:0;
+  background:#f1f5f9;
+  color:#0f172a;
+  font-size:28px;
+  font-weight:900;
+  z-index:5;
+  padding:0;
+}
+.sheetX{top:10px;right:12px}
+#gmDragHandle,
+.sheetHandle{
+  width:54px!important;
+  height:6px!important;
+  border-radius:999px!important;
+  background:#cbd5e1!important;
+  margin:0 auto 12px!important;
+  cursor:grab;
+}
+#gmDragHandle:active{cursor:grabbing}
+.gmRoutePanel{
+  transition:height .22s ease, transform .22s ease, bottom .22s ease;
+  touch-action:none;
+}
+.gmRoutePanel.dragging{
+  transition:none!important;
+}
+.gmRoutePanel.gmSheetMini{
+  height:92px!important;
+  overflow:hidden!important;
+}
+.gmRoutePanel.gmSheetMid{
+  height:46vh!important;
+  overflow:auto!important;
+}
+.gmRoutePanel.gmSheetFull{
+  height:82vh!important;
+  overflow:auto!important;
+}
+.gmRoutePanel.gmSheetMini .gmPanelActions,
+.gmRoutePanel.gmSheetMini .gmSuggestBox,
+.gmRoutePanel.gmSheetMini .gmAltRoutes,
+.gmRoutePanel.gmSheetMini .gmRouteResult,
+.gmRoutePanel.gmSheetMini label,
+.gmRoutePanel.gmSheetMini input{
+  display:none!important;
+}
+.gmRoutePanel.gmSheetMini .gmPanelTitle:after{
+  content:" — glisse vers le haut";
+  font-size:14px;
+  color:#64748b;
+}
+.clientRouteSheet.hidden{display:none!important}

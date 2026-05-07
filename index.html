@@ -31,8 +31,8 @@
   <button id="gmFitBtn" type="button" title="Voir tout">⌖</button>
 </div>
 
-<div id="clientRouteSheet" class="clientRouteSheet collapsed">
-  <div class="sheetHandle"></div>
+<div id="clientRouteSheet" class="clientRouteSheet collapsed"><button id="sheetCloseBtn" class="gmClosePanelBtn sheetX" type="button">×</button>
+  <div id="gmDragHandle" class="sheetHandle"></div>
   <div class="sheetTitle">Transport Live DZ</div>
   <div class="sheetSubtitle">Bus en direct, trajet, ETA et arrêts proches.</div>
   <button id="sheetExpandBtn" type="button" class="sheetBtn">Chercher un trajet</button>
@@ -320,9 +320,9 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=client-map-pro-1"></script>
+<script src="app.js?v=drag-sheet-1"></script>
 
-<div id="gmRoutePanel" class="gmRoutePanel hidden">
+<div id="gmRoutePanel" class="gmRoutePanel hidden"><button id="gmClosePanelBtn" class="gmClosePanelBtn" type="button">×</button>
   <div class="sheetHandle"></div>
   <div class="gmPanelTitle">Itinéraire</div>
 <div class="gmPanelTopBar">
