@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<button id="sameMapCloseBtn" class="sameMapCloseBtn hidden" type="button">×</button>
 
 <div id="cleanMapOverlay" class="cleanMapOverlay hidden">
   <div id="cleanMap" class="cleanMap"></div>
@@ -80,7 +81,7 @@
 <section id="clientPage" class="page active">
   <div class="hero">
     <div><div class="kicker">Client</div><h2>Voir les bus en direct</h2><p>Les clients voient seulement les bus en ligne, avec GPS récent, proches de leur ligne.</p></div>
-    <button id="cleanFullMapBtn" type="button" class="secondary fullMapBtn">🗺️ Mode carte plein écran</button>
+    <button id="sameMapFullscreenBtn" type="button" class="secondary fullMapBtn">🗺️ Mode carte plein écran</button>
       <button id="clientGpsBtn" class="primary small" type="button">📍 Ma position</button>
   </div>
   <div class="card">
@@ -314,6 +315,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=page-crash-fix-1"></script>
+<script src="app.js?v=same-map-fullscreen-1"></script>
 </body>
 </html>

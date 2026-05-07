@@ -557,3 +557,69 @@ body{padding-bottom:120px!important}
 .bottomNav{z-index:9999!important}
 #map{min-height:420px!important;height:420px!important;display:block!important}
 button,input,select{pointer-events:auto!important}
+
+/* Hide old separate fullscreen map overlay */
+#cleanMapOverlay{display:none!important}
+
+/* SAME MAP FULLSCREEN MODE */
+.fullMapBtn,
+#sameMapFullscreenBtn{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-height:58px!important;
+  border-radius:22px!important;
+  margin:12px 0!important;
+  background:#fff!important;
+  border:1px solid #dbe4f0!important;
+  color:#1d4ed8!important;
+  font-weight:950!important;
+  font-size:17px!important;
+}
+
+.sameMapCloseBtn{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top) + 16px)!important;
+  right:18px!important;
+  z-index:1000000!important;
+  width:58px!important;
+  height:58px!important;
+  min-height:58px!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  color:#0f172a!important;
+  box-shadow:0 12px 30px rgba(15,23,42,.25)!important;
+  border:0!important;
+  font-size:34px!important;
+  font-weight:950!important;
+  padding:0!important;
+}
+.sameMapCloseBtn.hidden{display:none!important}
+
+body.sameMapFullscreen{
+  overflow:hidden!important;
+}
+body.sameMapFullscreen #map{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  z-index:999998!important;
+  border-radius:0!important;
+  margin:0!important;
+}
+body.sameMapFullscreen .bottomNav{
+  display:none!important;
+}
+body.sameMapFullscreen header,
+body.sameMapFullscreen .hero,
+body.sameMapFullscreen .card:not(:has(#map)),
+body.sameMapFullscreen #mapStatus,
+body.sameMapFullscreen .etaCard{
+  display:none!important;
+}
+body.sameMapFullscreen #map .leaflet-control-zoom{
+  margin-top:85px!important;
+}

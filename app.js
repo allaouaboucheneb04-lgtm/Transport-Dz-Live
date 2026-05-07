@@ -3373,3 +3373,52 @@ window.addEventListener("load", function(){
   setTimeout(safePageRecover, 1800);
 });
 
+
+
+// =========================
+// SAME MAP FULLSCREEN MODE
+// Uses the real existing #map, not a second map.
+// =========================
+function openSameMapFullscreen(){
+  document.body.classList.add("sameMapFullscreen");
+  const close = document.getElementById("sameMapCloseBtn");
+  if(close) close.classList.remove("hidden");
+
+  setTimeout(()=>{
+    try{
+      if(window.map && window.map.invalidateSize) {
+        window.map.invalidateSize(true);
+        if(typeof drawMap === "function") drawMap();
+      }
+    }catch(e){ console.warn("openSameMapFullscreen", e); }
+  }, 250);
+}
+
+function closeSameMapFullscreen(){
+  document.body.classList.remove("sameMapFullscreen");
+  const close = document.getElementById("sameMapCloseBtn");
+  if(close) close.classList.add("hidden");
+
+  setTimeout(()=>{
+    try{
+      if(window.map && window.map.invalidateSize) {
+        window.map.invalidateSize(true);
+        if(typeof drawMap === "function") drawMap();
+      }
+    }catch(e){}
+  }, 250);
+}
+
+function setupSameMapFullscreen(){
+  const btn = document.getElementById("sameMapFullscreenBtn");
+  if(btn){
+    btn.onclick = openSameMapFullscreen;
+    btn.style.cursor = "pointer";
+  }
+
+  const close = document.getElementById("sameMapCloseBtn");
+  if(close) close.onclick = closeSameMapFullscreen;
+}
+
+window.addEventListener("load", ()=>setTimeout(setupSameMapFullscreen, 700));
+
