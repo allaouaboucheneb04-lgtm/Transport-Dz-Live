@@ -3768,3 +3768,139 @@ document.addEventListener("click", (e)=>{
   }
 }, true);
 
+
+
+// FULLSCREEN PANEL FIX FINAL
+let sameMapSheetState = "mid";
+let sameMapDragStartY = 0;
+let sameMapDragStartH = 0;
+
+function sameMapSetSheetState(state){
+  const sheet = document.getElementById("sameMapSheet");
+  if(!sheet) return;
+  sameMapSheetState = state;
+  sheet.classList.remove("hidden","mini","mid","full");
+  sheet.classList.add(state);
+}
+function sameMapUpdateSheetStatus(){
+  const el = document.getElementById("sameMapSheetStatus");
+  if(!el) return;
+  try{
+    const l = (lines || []).filter(x=>x && x.active !== false).length;
+    const s = (stops || []).filter(x=>x && x.active !== false).length;
+    const v = (vehicles || []).filter(x=>x && (x.online===true || x.status==="online")).length;
+    el.textContent = `${l} lignes · ${s} arrêts · ${v} bus en ligne`;
+  }catch(e){ el.textContent = "Carte prête"; }
+}
+function sameMapShowFullscreenUI(show){
+  ["sameMapSearchBar","sameMapRefreshBtn","sameMapLocateBtn"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle("hidden", !show);
+  });
+  const sheet = document.getElementById("sameMapSheet");
+  if(sheet){
+    if(show) sameMapSetSheetState("mid");
+    else sheet.classList.add("hidden");
+  }
+}
+function sameMapFixMapSize(){
+  try{
+    const mapEl = document.getElementById("map");
+    if(mapEl && document.body.classList.contains("sameMapFullscreen")){
+      mapEl.style.position = "fixed";
+      mapEl.style.left = "0";
+      mapEl.style.top = "0";
+      mapEl.style.right = "0";
+      mapEl.style.bottom = "0";
+      mapEl.style.width = "100vw";
+      mapEl.style.height = "100dvh";
+      mapEl.style.minHeight = "100dvh";
+    }
+    if(window.map && window.map.invalidateSize){
+      window.map.invalidateSize(true);
+      setTimeout(()=>window.map.invalidateSize(true), 350);
+      setTimeout(()=>window.map.invalidateSize(true), 900);
+    }
+    if(typeof drawMap === "function") drawMap();
+    sameMapUpdateSheetStatus();
+  }catch(e){ console.warn("sameMapFixMapSize", e); }
+}
+function forceOpenSameMapFullscreenFinal(){
+  document.body.classList.add("sameMapFullscreen");
+  const close = document.getElementById("sameMapCloseBtn");
+  if(close) close.classList.remove("hidden");
+  sameMapShowFullscreenUI(true);
+  setTimeout(sameMapFixMapSize, 100);
+  setTimeout(sameMapFixMapSize, 500);
+  setTimeout(sameMapFixMapSize, 1200);
+}
+function forceCloseSameMapFullscreenFinal(){
+  document.body.classList.remove("sameMapFullscreen");
+  const close = document.getElementById("sameMapCloseBtn");
+  if(close) close.classList.add("hidden");
+  sameMapShowFullscreenUI(false);
+  const mapEl = document.getElementById("map");
+  if(mapEl){
+    ["position","left","top","right","bottom","width","height","minHeight"].forEach(k=>mapEl.style[k]="");
+  }
+  setTimeout(sameMapFixMapSize, 250);
+}
+function setupSameMapSheetDrag(){
+  const sheet = document.getElementById("sameMapSheet");
+  const handle = document.getElementById("sameMapSheetHandle");
+  if(!sheet || !handle) return;
+  const start = y => {
+    sameMapDragStartY = y;
+    sameMapDragStartH = sheet.getBoundingClientRect().height;
+    sheet.classList.add("dragging");
+  };
+  const move = y => {
+    if(!sheet.classList.contains("dragging")) return;
+    const dy = sameMapDragStartY - y;
+    const newH = Math.max(92, Math.min(window.innerHeight * .78, sameMapDragStartH + dy));
+    sheet.style.height = newH + "px";
+  };
+  const end = () => {
+    if(!sheet.classList.contains("dragging")) return;
+    sheet.classList.remove("dragging");
+    const h = sheet.getBoundingClientRect().height;
+    sheet.style.height = "";
+    if(h < 150) sameMapSetSheetState("mini");
+    else if(h > window.innerHeight * .55) sameMapSetSheetState("full");
+    else sameMapSetSheetState("mid");
+  };
+  handle.addEventListener("touchstart", e=>start(e.touches[0].clientY), {passive:true});
+  handle.addEventListener("touchmove", e=>move(e.touches[0].clientY), {passive:true});
+  handle.addEventListener("touchend", end);
+  handle.addEventListener("mousedown", e=>start(e.clientY));
+  window.addEventListener("mousemove", e=>move(e.clientY));
+  window.addEventListener("mouseup", end);
+  handle.onclick = () => {
+    if(sameMapSheetState === "mini") sameMapSetSheetState("mid");
+    else if(sameMapSheetState === "mid") sameMapSetSheetState("full");
+    else sameMapSetSheetState("mini");
+  };
+}
+function setupSameMapPanelFix(){
+  setupSameMapSheetDrag();
+  const btn = document.getElementById("sameMapSheetRouteBtn");
+  if(btn){
+    btn.onclick = () => {
+      const input = document.getElementById("sameMapSearchInput");
+      const value = input ? input.value : "";
+      if(value && document.getElementById("toInput")) document.getElementById("toInput").value = value;
+      forceCloseSameMapFullscreenFinal();
+      setTimeout(()=>document.getElementById("toInput")?.scrollIntoView({behavior:"smooth",block:"center"}),250);
+    };
+  }
+  const openBtn = document.getElementById("sameMapFullscreenBtn") || document.getElementById("cleanFullMapBtn");
+  if(openBtn) openBtn.onclick = (e)=>{e.preventDefault();forceOpenSameMapFullscreenFinal();};
+  const closeBtn = document.getElementById("sameMapCloseBtn");
+  if(closeBtn) closeBtn.onclick = (e)=>{e.preventDefault();forceCloseSameMapFullscreenFinal();};
+  setInterval(()=>{
+    if(document.body.classList.contains("sameMapFullscreen")) sameMapUpdateSheetStatus();
+  }, 1500);
+}
+window.addEventListener("load", ()=>setTimeout(setupSameMapPanelFix, 800));
+window.addEventListener("orientationchange", ()=>setTimeout(sameMapFixMapSize, 700));
+

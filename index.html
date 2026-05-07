@@ -18,6 +18,16 @@
 </div>
 <button id="sameMapRefreshBtn" class="sameMapFloatBtn sameMapRefreshBtn hidden" type="button">↻</button>
 <button id="sameMapLocateBtn" class="sameMapFloatBtn sameMapLocateBtn hidden" type="button">➤</button>
+
+<div id="sameMapSheet" class="sameMapSheet hidden">
+  <div id="sameMapSheetHandle" class="sameMapSheetHandle"></div>
+  <div class="sameMapSheetHeader">
+    <h2>Transport Live DZ</h2>
+    <p>Bus en direct, lignes, arrêts et itinéraire.</p>
+  </div>
+  <div id="sameMapSheetStatus" class="sameMapSheetStatus">Carte prête</div>
+  <button id="sameMapSheetRouteBtn" type="button" class="sameMapSheetRouteBtn">Chercher un trajet</button>
+</div>
 <button id="sameMapCloseBtn" class="sameMapCloseBtn hidden" type="button">×</button>
 
 <div id="cleanMapOverlay" class="cleanMapOverlay hidden">
@@ -324,6 +334,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=fullscreen-button-fix-1"></script>
+<script src="app.js?v=fullscreen-panel-fix-1"></script>
 </body>
 </html>
