@@ -741,3 +741,31 @@ body.sameMapFullscreen #map .leaflet-control-zoom{
 body.sameMapFullscreen .sameMapCloseBtn{
   top:calc(env(safe-area-inset-top) + 92px)!important;
 }
+
+/* FULLSCREEN BUTTON FIX FINAL */
+#sameMapFullscreenBtn,
+#cleanFullMapBtn,
+.fullMapBtn{
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  position:relative!important;
+  z-index:20!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+}
+body.sameMapFullscreen #map{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  z-index:999998!important;
+  border-radius:0!important;
+  margin:0!important;
+}
+.sameMapCloseBtn{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top) + 92px)!important;
+  right:18px!important;
+  z-index:1000002!important;
+}

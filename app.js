@@ -3654,3 +3654,117 @@ function setupSameMapSearchLocateRefresh(){
 
 window.addEventListener("load", ()=>setTimeout(setupSameMapSearchLocateRefresh, 800));
 
+
+
+// =========================
+// FULLSCREEN BUTTON FIX FINAL
+// =========================
+function forceOpenSameMapFullscreenFinal(){
+  try{
+    document.body.classList.add("sameMapFullscreen");
+
+    const close = document.getElementById("sameMapCloseBtn");
+    if(close) close.classList.remove("hidden");
+
+    const search = document.getElementById("sameMapSearchBar");
+    if(search) search.classList.remove("hidden");
+
+    const refresh = document.getElementById("sameMapRefreshBtn");
+    if(refresh) refresh.classList.remove("hidden");
+
+    const locate = document.getElementById("sameMapLocateBtn");
+    if(locate) locate.classList.remove("hidden");
+
+    setTimeout(()=>{
+      try{
+        if(window.map && window.map.invalidateSize){
+          window.map.invalidateSize(true);
+        }
+        if(typeof drawMap === "function") drawMap();
+      }catch(e){ console.warn(e); }
+    }, 250);
+
+    setTimeout(()=>{
+      try{
+        if(window.map && window.map.invalidateSize){
+          window.map.invalidateSize(true);
+        }
+      }catch(e){}
+    }, 800);
+
+  }catch(e){
+    alert("Erreur ouverture plein écran: " + (e.message || e));
+  }
+}
+
+function forceCloseSameMapFullscreenFinal(){
+  document.body.classList.remove("sameMapFullscreen");
+
+  const close = document.getElementById("sameMapCloseBtn");
+  if(close) close.classList.add("hidden");
+
+  const search = document.getElementById("sameMapSearchBar");
+  if(search) search.classList.add("hidden");
+
+  const refresh = document.getElementById("sameMapRefreshBtn");
+  if(refresh) refresh.classList.add("hidden");
+
+  const locate = document.getElementById("sameMapLocateBtn");
+  if(locate) locate.classList.add("hidden");
+
+  setTimeout(()=>{
+    try{
+      if(window.map && window.map.invalidateSize){
+        window.map.invalidateSize(true);
+      }
+      if(typeof drawMap === "function") drawMap();
+    }catch(e){}
+  }, 250);
+}
+
+function bindFullscreenButtonFinal(){
+  const buttons = [
+    document.getElementById("sameMapFullscreenBtn"),
+    document.getElementById("cleanFullMapBtn")
+  ].filter(Boolean);
+
+  document.querySelectorAll("button, span, a, div").forEach(el=>{
+    const txt = (el.textContent || "").trim();
+    if(txt.includes("Mode carte plein écran")) buttons.push(el);
+  });
+
+  buttons.forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      forceOpenSameMapFullscreenFinal();
+      return false;
+    };
+    btn.style.pointerEvents = "auto";
+    btn.style.cursor = "pointer";
+  });
+
+  const close = document.getElementById("sameMapCloseBtn");
+  if(close){
+    close.onclick = (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      forceCloseSameMapFullscreenFinal();
+      return false;
+    };
+  }
+}
+
+window.addEventListener("load", ()=>{
+  setTimeout(bindFullscreenButtonFinal, 300);
+  setTimeout(bindFullscreenButtonFinal, 1200);
+});
+document.addEventListener("click", (e)=>{
+  const el = e.target.closest("#sameMapFullscreenBtn, #cleanFullMapBtn");
+  if(el){
+    e.preventDefault();
+    e.stopPropagation();
+    forceOpenSameMapFullscreenFinal();
+  }
+}, true);
+
