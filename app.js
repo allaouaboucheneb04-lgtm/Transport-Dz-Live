@@ -735,6 +735,11 @@ function renderWaitingBusesList(){
 }
 
 
+
+function renderAuth(){
+  if (typeof renderRoleBadge === 'function') renderRoleBadge();
+}
+
 function renderRoleBadge(){
   const b=$("roleBadge");
   if(!b) return;
