@@ -3082,3 +3082,151 @@ function setupCleanSearchFix(){
 
 window.addEventListener("load", () => setTimeout(setupCleanSearchFix, 700));
 
+
+
+// =========================
+// FULL MAP DRAW REAL LINES FIX
+// =========================
+function extractLineLatLngsFullMap(line){
+  const candidates = [
+    line.routeGeometry,
+    line.geometry,
+    line.path,
+    line.points,
+    line.latlngs,
+    line.coords,
+    line.coordinates,
+    line.route
+  ];
+
+  for(const raw of candidates){
+    if(!raw) continue;
+    let v = raw;
+    try{
+      if(typeof v === "string") v = JSON.parse(v);
+    }catch(e){ continue; }
+
+    if(Array.isArray(v) && v.length){
+      // [{lat,lng}]
+      if(typeof v[0] === "object" && !Array.isArray(v[0]) && num(v[0].lat)!==null && num(v[0].lng)!==null){
+        return v.map(p => [num(p.lat), num(p.lng)]).filter(p=>p[0]!==null&&p[1]!==null);
+      }
+      // [[lat,lng]]
+      if(Array.isArray(v[0]) && v[0].length >= 2){
+        // GeoJSON sometimes [lng,lat]. Detect by Algeria ranges.
+        return v.map(p => {
+          const a = Number(p[0]), b = Number(p[1]);
+          if(Math.abs(a) <= 10 && Math.abs(b) > 20) return [b,a]; // lng,lat
+          return [a,b]; // lat,lng
+        }).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+      }
+    }
+
+    // GeoJSON LineString
+    if(v.type === "LineString" && Array.isArray(v.coordinates)){
+      return v.coordinates.map(p => [Number(p[1]), Number(p[0])]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+    }
+  }
+
+  return [];
+}
+
+function getStopsForLineFullMap(lineId){
+  const arr = (typeof stops !== "undefined" ? stops : [])
+    .filter(s => s && s.active !== false && s.lineId === lineId && num(s.lat)!==null && num(s.lng)!==null)
+    .sort((a,b)=>Number(a.order || a.stopOrder || 9999) - Number(b.order || b.stopOrder || 9999));
+  return arr.map(s => [num(s.lat), num(s.lng)]);
+}
+
+function cleanDrawMap(){
+  if(!cleanMapObj) return;
+  cleanClearLayers();
+
+  const pts = [];
+  const lineFilter = (document.getElementById("clientLineSelect") || {}).value || "all";
+  const allLines = (typeof lines !== "undefined" ? lines : []).filter(l => l && l.active !== false);
+  const visibleLines = (lineFilter && lineFilter !== "all") ? allLines.filter(l => l.id === lineFilter) : allLines;
+
+  try{
+    // 1) draw every line using real geometry first, stops fallback second
+    visibleLines.forEach(line => {
+      let latlngs = extractLineLatLngsFullMap(line);
+      if(!latlngs || latlngs.length < 2) latlngs = getStopsForLineFullMap(line.id);
+
+      if(latlngs && latlngs.length >= 2){
+        const poly = L.polyline(latlngs, {
+          color: line.color || "#2563eb",
+          weight: 7,
+          opacity: .9,
+          lineCap: "round",
+          lineJoin: "round"
+        }).addTo(cleanMapObj).bindPopup(line.name || "Ligne");
+        cleanMapLayers.push(poly);
+        latlngs.forEach(p => pts.push(p));
+      }
+    });
+
+    // 2) draw stops on top
+    const visibleLineIds = new Set(visibleLines.map(l => l.id));
+    let visibleStops = (typeof stops !== "undefined" ? stops : [])
+      .filter(s => s && s.active !== false && num(s.lat)!==null && num(s.lng)!==null);
+
+    if(lineFilter && lineFilter !== "all") visibleStops = visibleStops.filter(s => s.lineId === lineFilter);
+    else if(visibleLineIds.size) visibleStops = visibleStops.filter(s => !s.lineId || visibleLineIds.has(s.lineId));
+
+    visibleStops.forEach(s => {
+      const line = allLines.find(l => l.id === s.lineId);
+      const color = (line && line.color) || "#2563eb";
+      const m = L.circleMarker([num(s.lat), num(s.lng)], {
+        radius: 6,
+        color: "#fff",
+        weight: 2,
+        fillColor: color,
+        fillOpacity: .95
+      }).addTo(cleanMapObj).bindPopup(`<b>${s.name || "Arrêt"}</b><br>${getLineName(s.lineId)}`);
+      cleanMapLayers.push(m);
+      pts.push([num(s.lat), num(s.lng)]);
+    });
+
+    // 3) draw buses
+    (typeof vehicles !== "undefined" ? vehicles : []).forEach(v => {
+      const online = v && (v.status === "online" || v.online === true);
+      if(!online || num(v.lat)===null || num(v.lng)===null) return;
+      if(lineFilter && lineFilter !== "all" && v.lineId !== lineFilter) return;
+
+      const icon = L.divIcon({
+        className:"cleanBusIcon",
+        html:"<div>🚌</div>",
+        iconSize:[42,42],
+        iconAnchor:[21,21]
+      });
+      const m = L.marker([num(v.lat), num(v.lng)], {icon}).addTo(cleanMapObj)
+        .bindPopup(`<b>${v.name || "Bus"}</b><br>${getLineName(v.lineId)}`);
+      cleanMapLayers.push(m);
+      pts.push([num(v.lat), num(v.lng)]);
+    });
+
+    if(pts.length){
+      cleanMapObj.fitBounds(L.latLngBounds(pts), {padding:[55,55], maxZoom:13});
+    }else{
+      cleanMapObj.setView([36.75, 5.05], 11);
+    }
+
+    setTimeout(()=>{ try{ cleanMapObj.invalidateSize(true); }catch(e){} }, 150);
+
+  }catch(e){
+    console.warn("cleanDrawMap lines fix", e);
+  }
+}
+
+
+
+function updateCleanMapStatus(){
+  const el = document.getElementById("cleanMapStatus");
+  if(!el) return;
+  const l = (typeof lines !== "undefined" ? lines.filter(x=>x.active!==false).length : 0);
+  const s = (typeof stops !== "undefined" ? stops.filter(x=>x.active!==false).length : 0);
+  el.textContent = `${l} lignes · ${s} arrêts`;
+}
+window.addEventListener("load",()=>setInterval(updateCleanMapStatus,1500));
+

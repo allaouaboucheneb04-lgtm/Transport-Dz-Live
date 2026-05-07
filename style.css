@@ -529,3 +529,14 @@ input, select, textarea, button{
   font-weight:850;
   color:#64748b;
 }
+
+.cleanMapStatus{
+  display:inline-flex;
+  padding:7px 10px;
+  border-radius:999px;
+  background:#eff6ff;
+  color:#1d4ed8;
+  font-size:13px;
+  font-weight:950;
+  margin:0 0 10px;
+}
