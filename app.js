@@ -1,3 +1,28 @@
+
+function toggleRoutePanelMinimize(){
+  const p=document.getElementById("gmRoutePanel");
+  if(!p) return;
+  p.classList.toggle("minimized");
+}
+function renderFakeAlternativeRoutes(bestText){
+  const box=document.getElementById("gmAltRoutes");
+  if(!box) return;
+  const variants=[
+    {t:"⚡ Plus rapide",s:"moins de temps"},
+    {t:"🚶 Moins de marche",s:"plus confortable"},
+    {t:"🚌 Direct",s:"moins de correspondances"},
+    {t:"📍 Bus proche",s:"bus arrive bientôt"},
+    {t:"💸 Économique",s:"trajet standard"}
+  ];
+  box.innerHTML=variants.map((v,i)=>`
+    <div class="gmAltRoute ${i===0?'active':''}">
+      <div class="gmAltTitle">${v.t}</div>
+      <div class="gmAltSub">${v.s}</div>
+      <div class="gmAltDesc">${bestText||'Trajet disponible'}</div>
+    </div>
+  `).join("");
+}
+
 (function(){
 const $=id=>document.getElementById(id);
 let currentUser=null,currentRole="guest",lines=[],stops=[],vehicles=[],drivers=[],driverRequests=[],walkingTracks=[],unsub=[],map=null,stopPickerMap=null,stopPickerMarker=null,pickedLat=null,pickedLng=null,clientMarker=null,driverWatchId=null,lastGpsWrite=0;let editingLineId=null,editingStopId=null,editingVehicleId=null,editingDriverId=null;let routeCache={};let osmStopsLayer=null,osmStopsGeojson=null;let bejaiaGeojson=null,bejaiaGeojsonLayer=null;let walkingTrackWatchId=null,walkingTrackPoints=[],walkingTrackStart=0;let routeLayers=[];let routeSearchLayers=[];let routeFocusActive=false;
@@ -2719,11 +2744,11 @@ async function gmSearchRoute(){
       $("fromInput").value = list[0].name || "";
     }
   }
-  setText("gmRouteResult","Calcul du trajet...");
+  setText("gmRouteResult","Calcul du trajet..."); renderFakeAlternativeRoutes("Recherche en cours...");
   try{
     if(typeof searchRouteMultiLines === "function"){
       await searchRouteMultiLines();
-      $("gmRouteResult").innerHTML = $("routeResult") ? $("routeResult").innerHTML : "Trajet calculé.";
+      $("gmRouteResult").innerHTML = $("routeResult") ? $("routeResult").innerHTML : "Trajet calculé."; renderFakeAlternativeRoutes(document.getElementById("gmRouteResult")?.textContent || "Trajet trouvé");
     }else if($("searchRouteBtn")){
       $("searchRouteBtn").click();
       $("gmRouteResult").textContent = "Trajet envoyé au moteur.";

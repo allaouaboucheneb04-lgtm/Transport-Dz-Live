@@ -371,3 +371,56 @@
   width:auto;
   padding:0 18px;
 }
+
+.gmRoutePanel.minimized{
+  height:72px!important;
+  overflow:hidden!important;
+}
+.gmPanelTopBar{
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:4px;
+}
+.gmMiniBtn{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  border:0;
+  background:#eff6ff;
+  color:#2563eb;
+  font-size:28px;
+  font-weight:900;
+}
+.gmAltRoutes{
+  display:flex;
+  gap:10px;
+  overflow:auto;
+  padding:8px 0 10px;
+}
+.gmAltRoute{
+  min-width:180px;
+  background:#fff;
+  border:1px solid #dbe4f0;
+  border-radius:18px;
+  padding:12px;
+  box-shadow:0 6px 18px rgba(15,23,42,.08);
+}
+.gmAltRoute.active{
+  border:2px solid #2563eb;
+  background:#eff6ff;
+}
+.gmAltTitle{
+  font-weight:900;
+  color:#0f172a;
+}
+.gmAltSub{
+  color:#64748b;
+  font-size:13px;
+  margin-top:2px;
+}
+.gmAltDesc{
+  margin-top:8px;
+  font-size:12px;
+  color:#1e3a8a;
+  font-weight:800;
+}
