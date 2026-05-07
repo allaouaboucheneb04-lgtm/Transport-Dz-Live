@@ -521,3 +521,38 @@
 .gmAltRoutes{
   -webkit-overflow-scrolling:touch!important;
 }
+
+/* ===== SELECT ROUTE OPTIONS FIX ===== */
+.gmAltRoute{
+  appearance:none;
+  -webkit-appearance:none;
+  border:1px solid #dbe4f0;
+  text-align:left;
+  color:#0f172a;
+  cursor:pointer;
+  flex:0 0 190px;
+  pointer-events:auto!important;
+}
+.gmAltRoute.active{
+  border:3px solid #2563eb!important;
+  background:#eff6ff!important;
+}
+.gmAltRoute.active:before{
+  content:"✓ ";
+  color:#16a34a;
+  font-weight:950;
+}
+.gmStartTripBtn{
+  width:100%;
+  margin:10px 0;
+  min-height:52px;
+  border-radius:18px;
+  font-weight:950;
+}
+.gmAltRoutes{
+  pointer-events:auto!important;
+  touch-action:pan-x!important;
+}
+.gmRoutePanelContent{
+  pointer-events:auto!important;
+}
