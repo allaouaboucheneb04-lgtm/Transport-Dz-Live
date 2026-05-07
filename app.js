@@ -3532,3 +3532,239 @@ window.addEventListener("load", ()=>{
   }, 1500);
 });
 
+
+
+// =========================
+// UNIFIED MAP ENGINE V1
+// Une seule logique pour carte normale + plein écran
+// =========================
+let UME_layers = [];
+let UME_cleanLayers = [];
+
+function UME_num(x){
+  if(typeof num === "function") return num(x);
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
+}
+
+function UME_getLineName(id){
+  if(typeof getLineName === "function") return getLineName(id);
+  const l = (window.lines || lines || []).find(x => x.id === id);
+  return l ? (l.name || "Ligne") : "Ligne inconnue";
+}
+
+function UME_makeSureData(){
+  try{
+    if(typeof applyTransitFallbackIfEmpty === "function") applyTransitFallbackIfEmpty();
+
+    if(typeof lines === "undefined") window.lines = [];
+    if(typeof stops === "undefined") window.stops = [];
+    if(typeof vehicles === "undefined") window.vehicles = [];
+
+    if((!lines || !lines.length) && typeof FALLBACK_LINES !== "undefined") lines = [...FALLBACK_LINES];
+    if((!stops || !stops.length) && typeof FALLBACK_STOPS !== "undefined") stops = [...FALLBACK_STOPS];
+
+    lines = (lines || []).map(l => ({active:true, ...l}));
+    stops = (stops || []).map(s => ({active:true, ...s}));
+    vehicles = vehicles || [];
+  }catch(e){
+    console.warn("UME_makeSureData", e);
+  }
+}
+
+function UME_selectedLineId(){
+  const el = document.getElementById("clientLineSelect");
+  return el ? (el.value || "all") : "all";
+}
+
+function UME_visibleLines(){
+  UME_makeSureData();
+  const selected = UME_selectedLineId();
+  let list = (lines || []).filter(l => l && l.active !== false);
+  if(selected && selected !== "all") list = list.filter(l => l.id === selected);
+  return list;
+}
+
+function UME_visibleStops(){
+  UME_makeSureData();
+  const selected = UME_selectedLineId();
+  let list = (stops || []).filter(s => s && s.active !== false && UME_num(s.lat)!==null && UME_num(s.lng)!==null);
+  if(selected && selected !== "all") list = list.filter(s => s.lineId === selected);
+  return list;
+}
+
+function UME_extractGeometry(line){
+  const keys = ["routeGeometry","geometry","path","points","latlngs","coords","coordinates","route"];
+  for(const k of keys){
+    let raw = line && line[k];
+    if(!raw) continue;
+    try{ if(typeof raw === "string") raw = JSON.parse(raw); }catch(e){ continue; }
+
+    if(Array.isArray(raw) && raw.length){
+      if(Array.isArray(raw[0])){
+        return raw.map(p=>{
+          const a = Number(p[0]), b = Number(p[1]);
+          if(Math.abs(a) <= 10 && Math.abs(b) > 20) return [b,a]; // [lng,lat]
+          return [a,b]; // [lat,lng]
+        }).filter(p=>Number.isFinite(p[0]) && Number.isFinite(p[1]));
+      }
+      if(typeof raw[0] === "object"){
+        return raw.map(p=>[UME_num(p.lat), UME_num(p.lng)]).filter(p=>p[0]!==null && p[1]!==null);
+      }
+    }
+    if(raw && raw.type === "LineString" && Array.isArray(raw.coordinates)){
+      return raw.coordinates.map(p=>[Number(p[1]), Number(p[0])]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
+    }
+  }
+  return [];
+}
+
+function UME_lineLatLngs(line){
+  let latlngs = UME_extractGeometry(line);
+  if(latlngs && latlngs.length >= 2) return latlngs;
+
+  const arr = UME_visibleStops()
+    .filter(s => s.lineId === line.id)
+    .sort((a,b)=>{
+      const ao = Number(a.order ?? a.stopOrder ?? a.sequence ?? 9999);
+      const bo = Number(b.order ?? b.stopOrder ?? b.sequence ?? 9999);
+      if(ao !== bo) return ao - bo;
+      return String(a.name||"").localeCompare(String(b.name||""));
+    });
+
+  return arr.map(s=>[UME_num(s.lat), UME_num(s.lng)]).filter(p=>p[0]!==null && p[1]!==null);
+}
+
+function UME_clear(mapObj, arr){
+  try{
+    arr.forEach(l => { try{ mapObj.removeLayer(l); }catch(e){} });
+    arr.length = 0;
+  }catch(e){}
+}
+
+function UME_busIcon(){
+  return L.divIcon({
+    className:"umeBusIcon",
+    html:"<div>🚌</div>",
+    iconSize:[42,42],
+    iconAnchor:[21,21]
+  });
+}
+
+function UME_drawToMap(mapObj, layerArray, opts={}){
+  if(!mapObj || typeof L === "undefined") return;
+  UME_makeSureData();
+  UME_clear(mapObj, layerArray);
+
+  const pts = [];
+  const selected = UME_selectedLineId();
+  const visibleLines = UME_visibleLines();
+  const visibleStops = UME_visibleStops();
+  const lineIds = new Set(visibleLines.map(l=>l.id));
+
+  // 1 lignes
+  visibleLines.forEach(line=>{
+    const latlngs = UME_lineLatLngs(line);
+    if(latlngs.length >= 2){
+      const poly = L.polyline(latlngs, {
+        color: line.color || "#2563eb",
+        weight: opts.weight || 6,
+        opacity: .88,
+        lineCap:"round",
+        lineJoin:"round"
+      }).addTo(mapObj).bindPopup(line.name || "Ligne");
+      layerArray.push(poly);
+      latlngs.forEach(p=>pts.push(p));
+    }
+  });
+
+  // 2 arrêts
+  visibleStops
+    .filter(s => selected !== "all" || !s.lineId || lineIds.has(s.lineId))
+    .forEach(s=>{
+      const line = (lines || []).find(l=>l.id === s.lineId);
+      const color = (line && line.color) || "#2563eb";
+      const m = L.circleMarker([UME_num(s.lat), UME_num(s.lng)], {
+        radius: opts.stopRadius || 6,
+        color:"#fff",
+        weight:2,
+        fillColor:color,
+        fillOpacity:.95
+      }).addTo(mapObj).bindPopup(`<b>${s.name || "Arrêt"}</b><br>${UME_getLineName(s.lineId)}`);
+      layerArray.push(m);
+      pts.push([UME_num(s.lat), UME_num(s.lng)]);
+    });
+
+  // 3 bus
+  (vehicles || []).forEach(v=>{
+    const online = v && (v.status === "online" || v.online === true);
+    if(!online || UME_num(v.lat)===null || UME_num(v.lng)===null) return;
+    if(selected !== "all" && v.lineId !== selected) return;
+    const m = L.marker([UME_num(v.lat), UME_num(v.lng)], {icon:UME_busIcon()})
+      .addTo(mapObj)
+      .bindPopup(`<b>${v.name || "Bus"}</b><br>${UME_getLineName(v.lineId)}`);
+    layerArray.push(m);
+    pts.push([UME_num(v.lat), UME_num(v.lng)]);
+  });
+
+  if(opts.fit !== false){
+    if(pts.length){
+      try{ mapObj.fitBounds(L.latLngBounds(pts), {padding:opts.padding || [45,45], maxZoom:opts.maxZoom || 14}); }catch(e){}
+    }else{
+      mapObj.setView([36.75, 5.05], 12);
+    }
+  }
+
+  UME_updateStatus();
+  setTimeout(()=>{ try{ mapObj.invalidateSize(true); }catch(e){} }, 200);
+}
+
+function UME_updateStatus(){
+  const l = UME_visibleLines().length;
+  const s = UME_visibleStops().length;
+  const ids = ["cleanMapStatus","mapStatus","firebaseStatusMini"];
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = `${l} lignes · ${s} arrêts`;
+  });
+}
+
+// Override drawMap normal with unified engine but keep old map init
+const UME_oldDrawMap = typeof drawMap === "function" ? drawMap : null;
+function drawMap(){
+  try{
+    if(typeof map !== "undefined" && map){
+      UME_drawToMap(map, UME_layers, {fit:false, weight:5, stopRadius:5});
+    }else if(UME_oldDrawMap){
+      UME_oldDrawMap();
+    }
+  }catch(e){
+    console.warn("UME drawMap", e);
+    if(UME_oldDrawMap) try{ UME_oldDrawMap(); }catch(_){}
+  }
+}
+
+// Override full screen draw with same engine
+function cleanDrawMap(){
+  try{
+    if(cleanMapObj){
+      UME_drawToMap(cleanMapObj, UME_cleanLayers, {fit:true, weight:7, stopRadius:7, padding:[55,55], maxZoom:14});
+    }
+  }catch(e){
+    console.warn("UME cleanDrawMap", e);
+  }
+}
+
+function UME_refreshAllMaps(){
+  UME_makeSureData();
+  try{ drawMap(); }catch(e){}
+  try{ if(cleanMapObj) cleanDrawMap(); }catch(e){}
+  UME_updateStatus();
+}
+
+window.addEventListener("load", ()=>{
+  setTimeout(UME_refreshAllMaps, 1200);
+  setTimeout(UME_refreshAllMaps, 2500);
+  setInterval(UME_refreshAllMaps, 10000);
+});
+
