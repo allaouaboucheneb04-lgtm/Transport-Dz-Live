@@ -28,6 +28,32 @@
   <div id="sameMapSheetStatus" class="sameMapSheetStatus">Carte prête</div>
   <button id="sameMapSheetRouteBtn" type="button" class="sameMapSheetRouteBtn">Chercher un trajet</button>
 </div>
+
+<div id="gmSearchPanel" class="gmSearchPanel hidden">
+  <div class="gmSearchTop">
+    <button id="gmBackBtn" type="button" class="gmBackBtn">‹</button>
+    <div class="gmInputs">
+      <div class="gmInputRow">
+        <span class="gmDot blue"></span>
+        <input id="gmFromInput" type="text" value="Votre position" placeholder="Votre position">
+        <button id="gmSwapBtn" type="button" class="gmMiniIcon">↕</button>
+      </div>
+      <div class="gmDivider"></div>
+      <div class="gmInputRow">
+        <span class="gmDot red"></span>
+        <input id="gmToInput" type="text" placeholder="Où voulez-vous aller ?">
+        <button id="gmClearToBtn" type="button" class="gmMiniIcon">×</button>
+      </div>
+    </div>
+  </div>
+  <div id="gmSuggestList" class="gmSuggestList"></div>
+  <button id="gmPanelGoBtn" type="button" class="gmPanelGoBtn" onclick="gmUseItinerary()">Itinéraire</button><div class="gmQuickActions">
+    <button type="button" data-gm-dest="Domicile">🏠 Domicile</button>
+    <button type="button" data-gm-dest="Travail">💼 Travail</button>
+    <button type="button" data-gm-dest="Gare routière">🚌 Gare</button>
+    <button type="button" data-gm-dest="Université">🎓 Université</button>
+  </div>
+</div>
 <button id="sameMapCloseBtn" class="sameMapCloseBtn hidden" type="button">×</button>
 
 <div id="cleanMapOverlay" class="cleanMapOverlay hidden">
@@ -334,6 +360,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=fullscreen-panel-fix-1"></script>
+<script src="app.js?v=google-maps-search-ui-1"></script>
 </body>
 </html>
