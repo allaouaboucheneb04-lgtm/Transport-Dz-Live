@@ -3906,231 +3906,65 @@ window.addEventListener("orientationchange", ()=>setTimeout(sameMapFixMapSize, 7
 
 
 
-// =========================
-// GOOGLE MAPS STYLE SEARCH UI
-// =========================
-let gmFromMode = "position"; // position or manual
-let gmActiveInput = "to";
-let gmUserPosition = null;
-
-function gmNormalize(t){
-  return String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+// SAFE GM SEARCH + FULLSCREEN REPAIR
+function normTxt(t){return String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();}
+function lineNameSafe(id){try{if(typeof getLineName==="function")return getLineName(id);let l=(lines||[]).find(x=>x.id===id);return l?(l.name||"Ligne"):"Sans ligne";}catch(e){return"Sans ligne";}}
+function openFullMapSafe(){
+  document.body.classList.add("sameMapFullscreen");
+  document.getElementById("sameMapCloseBtn")?.classList.remove("hidden");
+  document.getElementById("sameMapSheet")?.classList.remove("hidden");
+  document.getElementById("sameMapSheet")?.classList.add("mid");
+  document.getElementById("sameMapRefreshBtn")?.classList.remove("hidden");
+  document.getElementById("sameMapLocateBtn")?.classList.remove("hidden");
+  setTimeout(()=>{try{window.map?.invalidateSize(true); if(typeof drawMap==="function")drawMap();}catch(e){}},250);
+  setTimeout(()=>{try{window.map?.invalidateSize(true);}catch(e){}},900);
 }
-function gmGetLineName(lineId){
-  try{
-    if(typeof getLineName === "function") return getLineName(lineId);
-    const l = (lines || []).find(x=>x.id===lineId);
-    return l ? (l.name || "Ligne") : "Sans ligne";
-  }catch(e){return "Sans ligne";}
+function closeFullMapSafe(){
+  document.body.classList.remove("sameMapFullscreen");
+  document.getElementById("sameMapCloseBtn")?.classList.add("hidden");
+  document.getElementById("gmSafePanel")?.classList.add("hidden");
+  setTimeout(()=>{try{window.map?.invalidateSize(true); if(typeof drawMap==="function")drawMap();}catch(e){}},250);
 }
-function gmShowPanel(show){
-  const panel = document.getElementById("gmSearchPanel");
-  if(panel) panel.classList.toggle("hidden", !show);
+function openGmSafe(){
+  document.getElementById("gmSafePanel")?.classList.remove("hidden");
+  setTimeout(()=>document.getElementById("gmSafeTo")?.focus(),150);
 }
-function gmOpenSearchPanel(){
-  gmShowPanel(true);
-  setTimeout(()=>{
-    const to = document.getElementById("gmToInput");
-    if(to) to.focus();
-  }, 150);
+function closeGmSafe(){document.getElementById("gmSafePanel")?.classList.add("hidden");}
+function suggestStops(q){
+  q=normTxt(q);
+  let arr=(stops||[]).filter(s=>s&&s.active!==false&&Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lng)));
+  if(!q)return arr.slice(0,8);
+  return arr.map(s=>{
+    let name=normTxt(s.name), line=normTxt(lineNameSafe(s.lineId)), score=0;
+    if(name===q)score=1000; else if(name.startsWith(q))score=850; else if(name.includes(q))score=650; else if((name+" "+line).includes(q))score=450;
+    return {s,score};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,8).map(x=>x.s);
 }
-function gmCloseSearchPanel(){
-  gmShowPanel(false);
-  const list = document.getElementById("gmSuggestList");
-  if(list) list.innerHTML = "";
+function renderGmSug(){
+  let input=document.getElementById("gmSafeTo"), box=document.getElementById("gmSafeSuggestions"); if(!input||!box)return;
+  box.innerHTML=suggestStops(input.value).map(s=>`<button type="button" class="gmSug" data-id="${s.id}"><span>📍</span><b>${s.name||"Arrêt"}</b><small>${lineNameSafe(s.lineId)}</small></button>`).join("");
+  box.querySelectorAll(".gmSug").forEach(b=>b.onclick=()=>{let s=(stops||[]).find(x=>x.id===b.dataset.id); if(!s)return; input.value=s.name||""; try{window.map?.setView([Number(s.lat),Number(s.lng)],16)}catch(e){};});
 }
-function gmGetStopsSuggestions(q, limit=8){
-  const query = gmNormalize(q);
-  const arr = (stops || []).filter(s=>s && s.active!==false && Number.isFinite(Number(s.lat)) && Number.isFinite(Number(s.lng)));
-  if(!query){
-    return arr.slice(0, limit).map(s=>({stop:s, score:1}));
-  }
-  const scored = arr.map(s=>{
-    const name = gmNormalize(s.name);
-    const line = gmNormalize(gmGetLineName(s.lineId));
-    const all = name + " " + line;
-    let score = 0;
-    if(name === query) score = 1000;
-    else if(name.startsWith(query)) score = 850;
-    else if(name.includes(query)) score = 650;
-    else if(all.includes(query)) score = 450;
-    else query.split(/\s+/).forEach(w=>{
-      if(name.includes(w)) score += 130;
-      else if(all.includes(w)) score += 70;
-    });
-    return {stop:s, score};
-  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
-
-  const seen = new Set();
-  return scored.filter(x=>{
-    const key = gmNormalize((x.stop.name||"")+"|"+(x.stop.lineId||""));
-    if(seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0, limit);
+function goGmSafe(){
+  let from=document.getElementById("gmSafeFrom")?.value||"Votre position";
+  let to=document.getElementById("gmSafeTo")?.value||"";
+  if(!to){document.getElementById("gmSafeTo")?.focus();return;}
+  let f=document.getElementById("fromInput"), t=document.getElementById("toInput");
+  if(f)f.value=from; if(t)t.value=to;
+  closeGmSafe(); closeFullMapSafe();
+  setTimeout(()=>t?.scrollIntoView({behavior:"smooth",block:"center"}),250);
 }
-function gmRenderSuggestions(){
-  const from = document.getElementById("gmFromInput");
-  const to = document.getElementById("gmToInput");
-  const list = document.getElementById("gmSuggestList");
-  if(!list) return;
-  const input = gmActiveInput === "from" ? from : to;
-  const q = input ? input.value : "";
-  const suggestions = gmGetStopsSuggestions(q, 8);
-
-  if(gmActiveInput === "from" && gmNormalize(q).includes("votre position")){
-    list.innerHTML = `
-      <button class="gmSuggestItem" type="button" data-gm-position="1">
-        <span class="gmClock">🔵</span>
-        <span><b>Votre position</b><small>Utiliser ma localisation actuelle</small></span>
-      </button>
-    `;
-  }else{
-    list.innerHTML = suggestions.map(x=>{
-      const s = x.stop;
-      return `
-        <button class="gmSuggestItem" type="button" data-stop-id="${s.id}">
-          <span class="gmClock">📍</span>
-          <span><b>${s.name || "Arrêt"}</b><small>${gmGetLineName(s.lineId)}</small></span>
-        </button>
-      `;
-    }).join("");
-  }
-
-  list.querySelectorAll(".gmSuggestItem").forEach(btn=>{
-    btn.onclick = ()=>{
-      if(btn.dataset.gmPosition){
-        gmFromMode = "position";
-        if(from) from.value = "Votre position";
-        gmActiveInput = "to";
-        if(to) to.focus();
-        gmRenderSuggestions();
-        return;
-      }
-      const s = (stops || []).find(x=>x.id === btn.dataset.stopId);
-      if(!s) return;
-      if(gmActiveInput === "from"){
-        gmFromMode = "manual";
-        if(from) from.value = s.name || "";
-      }else{
-        if(to) to.value = s.name || "";
-        gmZoomToStop(s);
-      }
-      gmRenderSuggestions();
-    };
+function bindSafeAll(){
+  document.querySelectorAll("#sameMapFullscreenBtn,#cleanFullMapBtn,.fullMapBtn").forEach(btn=>{
+    if((btn.textContent||"").includes("Mode carte plein écran"))btn.onclick=e=>{e.preventDefault();openFullMapSafe();};
   });
+  let close=document.getElementById("sameMapCloseBtn"); if(close)close.onclick=e=>{e.preventDefault();closeFullMapSafe();};
+  let sheet=document.getElementById("sameMapSheetRouteBtn"); if(sheet)sheet.onclick=openGmSafe;
+  document.querySelectorAll("button").forEach(b=>{if((b.textContent||"").trim()==="Itinéraire"&&!b.closest("#gmSafePanel"))b.onclick=e=>{e.preventDefault();openGmSafe();};});
+  let to=document.getElementById("gmSafeTo"); if(to){to.oninput=renderGmSug;to.onfocus=renderGmSug;to.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();goGmSafe();}};}
+  let back=document.getElementById("gmSafeBack"); if(back)back.onclick=closeGmSafe;
+  let clear=document.getElementById("gmSafeClear"); if(clear)clear.onclick=()=>{let t=document.getElementById("gmSafeTo"); if(t){t.value="";t.focus();renderGmSug();}};
+  let go=document.getElementById("gmSafeGo"); if(go)go.onclick=goGmSafe;
 }
-function gmZoomToStop(s){
-  try{
-    const lat = Number(s.lat), lng = Number(s.lng);
-    if(!Number.isFinite(lat)||!Number.isFinite(lng)||!window.map) return;
-    window.map.setView([lat,lng], 16);
-    if(typeof L !== "undefined"){
-      const marker = L.circleMarker([lat,lng], {
-        radius:13,color:"#1d4ed8",weight:4,fillColor:"#60a5fa",fillOpacity:.75
-      }).addTo(window.map).bindPopup(`<b>${s.name||"Arrêt"}</b><br>${gmGetLineName(s.lineId)}`).openPopup();
-      setTimeout(()=>{try{window.map.removeLayer(marker)}catch(e){}},6000);
-    }
-  }catch(e){}
-}
-function gmUseItinerary(){
-  const from = document.getElementById("gmFromInput");
-  const to = document.getElementById("gmToInput");
-  const fromVal = from ? from.value : "Votre position";
-  const toVal = to ? to.value : "";
-  if(!toVal){
-    if(to) to.focus();
-    return;
-  }
-  const normalFrom = document.getElementById("fromInput");
-  const normalTo = document.getElementById("toInput");
-  if(normalFrom) normalFrom.value = fromVal || "Votre position";
-  if(normalTo) normalTo.value = toVal;
-  gmCloseSearchPanel();
-  if(typeof forceCloseSameMapFullscreenFinal === "function") forceCloseSameMapFullscreenFinal();
-  setTimeout(()=>{
-    try{
-      normalTo?.scrollIntoView({behavior:"smooth", block:"center"});
-      if(typeof searchBestRouteMultiLines === "function") searchBestRouteMultiLines();
-      else document.querySelector("#routeSearchBtn, #searchRouteBtn")?.click();
-    }catch(e){}
-  }, 300);
-}
-function gmLocateDefault(){
-  if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos=>{
-    gmUserPosition = [pos.coords.latitude, pos.coords.longitude];
-    try{
-      if(window.map) window.map.setView(gmUserPosition, 15);
-    }catch(e){}
-  }, ()=>{}, {enableHighAccuracy:true, timeout:10000, maximumAge:10000});
-}
-function gmSetupSearchUI(){
-  const panel = document.getElementById("gmSearchPanel");
-  const back = document.getElementById("gmBackBtn");
-  const from = document.getElementById("gmFromInput");
-  const to = document.getElementById("gmToInput");
-  const clear = document.getElementById("gmClearToBtn");
-  const swap = document.getElementById("gmSwapBtn");
-
-  if(back) back.onclick = gmCloseSearchPanel;
-  if(clear) clear.onclick = ()=>{ if(to){to.value="";to.focus();gmRenderSuggestions();} };
-  if(swap) swap.onclick = ()=>{
-    const a = from.value, b = to.value;
-    from.value = b || "Votre position";
-    to.value = a === "Votre position" ? "" : a;
-    gmActiveInput = "to";
-    gmRenderSuggestions();
-  };
-  if(from){
-    from.onfocus = ()=>{gmActiveInput="from";gmRenderSuggestions();};
-    from.oninput = ()=>{gmActiveInput="from";gmFromMode="manual";gmRenderSuggestions();};
-  }
-  if(to){
-    to.onfocus = ()=>{gmActiveInput="to";gmRenderSuggestions();};
-    to.oninput = ()=>{gmActiveInput="to";gmRenderSuggestions();};
-    to.onkeydown = e=>{ if(e.key==="Enter"){ e.preventDefault(); gmUseItinerary(); } };
-  }
-
-  document.querySelectorAll("[data-gm-dest]").forEach(btn=>{
-    btn.onclick = ()=>{
-      if(to) to.value = btn.dataset.gmDest || "";
-      gmActiveInput = "to";
-      gmRenderSuggestions();
-    };
-  });
-
-  const oldRouteBtn = document.getElementById("sameMapSheetRouteBtn");
-  if(oldRouteBtn) oldRouteBtn.onclick = gmOpenSearchPanel;
-
-  const topItinerary = document.getElementById("sameMapItineraryBtn") || document.getElementById("gmSearchPanelItineraryBtn");
-  const sameTopBtn = document.querySelector(".sameMapSearchBar button");
-  if(sameTopBtn) sameTopBtn.onclick = gmOpenSearchPanel;
-
-  const itineraryBtn = document.getElementById("gmToInput");
-  const gmPanel = document.getElementById("gmSearchPanel");
-
-  // existing blue "Itinéraire" in old search bar opens Google style panel
-  document.querySelectorAll("button").forEach(b=>{
-    if((b.textContent||"").trim()==="Itinéraire" && !b.closest("#gmSearchPanel")){
-      b.onclick = gmOpenSearchPanel;
-    }
-  });
-
-  // submit with a floating click on panel's blue route button if added later
-  panel?.addEventListener("keydown", e=>{
-    if(e.key==="Enter") gmUseItinerary();
-  });
-
-  gmLocateDefault();
-}
-window.addEventListener("load", ()=>setTimeout(gmSetupSearchUI, 900));
-
-// override old search opening in fullscreen
-const oldForceOpenSameMapFullscreenForGM = typeof forceOpenSameMapFullscreenFinal === "function" ? forceOpenSameMapFullscreenFinal : null;
-function forceOpenSameMapFullscreenFinal(){
-  if(oldForceOpenSameMapFullscreenForGM) oldForceOpenSameMapFullscreenForGM();
-  gmShowPanel(false);
-  setTimeout(gmSetupSearchUI, 200);
-}
+window.addEventListener("load",()=>{setTimeout(bindSafeAll,500);setTimeout(bindSafeAll,1600);});
 
