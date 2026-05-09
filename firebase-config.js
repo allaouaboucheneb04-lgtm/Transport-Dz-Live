@@ -1,9 +1,13 @@
-window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBU6OYKH1GNa6ijTJ_7v87jmoTpHkDQoaQ",
-  authDomain: "etoile-taxi.firebaseapp.com",
-  projectId: "etoile-taxi",
-  storageBucket: "etoile-taxi.firebasestorage.app",
-  messagingSenderId: "685451587801",
-  appId: "1:685451587801:web:b6a787fac14a3a30250ec8",
-  measurementId: "G-FLRMDHE1N0"
+const firebaseConfig = {
+  apiKey: "AIzaSyAPfRxnxmu2IRQIUF-U4qpIlVG95MCSABA",
+  authDomain: "transport-dz-live-5d1fb.firebaseapp.com",
+  projectId: "transport-dz-live-5d1fb",
+  storageBucket: "transport-dz-live-5d1fb.firebasestorage.app",
+  messagingSenderId: "512618434438",
+  appId: "1:512618434438:web:0cadfb3ba155cce34ae607",
+  measurementId: "G-1496GEGBV7"
 };
+
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+window.auth = firebase.auth();
+window.db = firebase.firestore();
