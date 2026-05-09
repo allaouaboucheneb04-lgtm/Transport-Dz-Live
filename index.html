@@ -10,6 +10,35 @@
 </head>
 <body>
 
+<div id="clientMapTop" class="clientMapTop">
+  <div class="gmSearchCard">
+    <div class="gmSearchRow">
+      <span class="gmIcon">🔎</span>
+      <input id="gmQuickSearch" type="text" placeholder="Où voulez-vous aller ?">
+      <button id="gmOpenRouteBtn" type="button">Itinéraire</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="gmEtaMini" class="gmEtaMini">
+  <b>⏱️ ETA</b>
+  <span id="gmEtaText">Choisis un arrêt</span>
+</div>
+
+<div id="clientMapActions" class="clientMapActions">
+  <button id="gmLocateBtn" type="button" title="Ma position">➤</button>
+  <button id="gmFitBtn" type="button" title="Voir tout">⌖</button>
+</div>
+
+<div id="clientRouteSheet" class="clientRouteSheet collapsed"><button id="sheetCloseBtn" class="gmClosePanelBtn sheetX" type="button">×</button>
+  <div id="gmDragHandle" class="sheetHandle"></div>
+  <div class="sheetTitle">Transport Live DZ</div>
+  <div class="sheetSubtitle">Bus en direct, trajet, ETA et arrêts proches.</div>
+  <button id="sheetExpandBtn" type="button" class="sheetBtn">Chercher un trajet</button>
+</div>
+
+
 <div id="authGate" class="authGate hidden">
   <div class="authHero">
     <div class="brandMini">Firebase + GPS Live</div>
@@ -57,14 +86,15 @@
 <section id="clientPage" class="page active">
   <div class="hero">
     <div><div class="kicker">Client</div><h2>Voir les bus en direct</h2><p>Les clients voient seulement les bus en ligne, avec GPS récent, proches de leur ligne.</p></div>
-    <button id="clientGpsBtn" class="primary small" type="button">📍 Ma position</button>
+    <button id="gmModeToggle" type="button" class="secondary">Mode carte plein écran</button>
+      <button id="clientGpsBtn" class="primary small" type="button">📍 Ma position</button>
   </div>
   <div class="card">
     <label>Ville</label><select id="clientCity"><option value="Bejaia">Béjaïa</option><option value="Montreal">Montréal test</option></select>
     <label>Ligne</label><select id="clientLineSelect"><option value="all">Toutes les lignes</option></select>
     <label>Départ</label><button id="clearFromBtn" type="button" class="clearFieldBtn">Effacer</button><input id="fromInput" list="fromSuggestions" placeholder="Ex: Gare routière">
     <label>Destination</label><button id="clearToBtn" type="button" class="clearFieldBtn">Effacer</button><input id="toInput" list="toSuggestions" placeholder="Ex: Université">
-    <datalist id="fromSuggestions"></datalist><datalist id="toSuggestions"></datalist><div id="routeSuggestionBox" class="suggestionBox hidden"></div><div id="recentTripsBox" class="recentTripsBox"></div>
+    <datalist id="fromSuggestions"></datalist><datalist id="toSuggestions"></datalist><div id="routeSuggestionBox" class="suggestionBox hidden"></div><div id="googleSuggestBox" class="googleSuggestBox hidden"></div><div id="recentTripsBox" class="recentTripsBox"></div>
       <button id="searchRouteBtn" class="primary" type="button">Chercher trajet</button>
     <div class="routeNote">L’app propose la meilleur trajet multi-lignes : moins de marche, moins de temps, moins de correspondances.</div><div class="routeOnlyNote">Mode trajet : la carte affiche seulement le chemin à suivre.</div><button id="clearRouteBtn" type="button" class="secondary smallBtn">Afficher toutes les lignes</button><div id="routeResult" class="result">Prêt. Écris un arrêt de départ et un arrêt de destination.</div>
   </div>
@@ -290,6 +320,32 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=safe-restore-v2"></script>
+<script src="app.js?v=strong-overlap-fix-1"></script>
+
+<div id="gmRoutePanel" class="gmRoutePanel hidden"><button id="gmClosePanelBtn" class="gmClosePanelBtn" type="button">×</button><div class="gmRoutePanelContent">
+  <div class="sheetHandle"></div>
+  <div class="gmPanelTitle">Itinéraire</div>
+<div class="gmPanelTopBar">
+  <button type="button" class="gmMiniBtn" onclick="toggleRoutePanelMinimize()">—</button>
+</div>
+<div id="gmAltRoutes" class="gmAltRoutes"></div>
+
+
+  <label>Départ</label>
+  <input id="gmFromInput" type="text" placeholder="Votre position ou arrêt de départ">
+
+  <label>Destination</label>
+  <input id="gmToInput" type="text" placeholder="Où allez-vous ?">
+
+  <div id="gmSuggestBox" class="gmSuggestBox hidden"></div>
+
+  <div class="gmPanelActions">
+    <button id="gmUseMyPosBtn" type="button" class="secondary">📍 Ma position</button>
+    <button id="gmSearchRouteBtn" type="button" class="primary">Chercher</button>
+  </div>
+
+  <button id="gmStartTripBtn" class="primary gmStartTripBtn" type="button">Démarrer trajet</button><div id="gmRouteResult" class="gmRouteResult">Écris un départ et une destination.</div>
+</div>
+
 </body>
 </html>
