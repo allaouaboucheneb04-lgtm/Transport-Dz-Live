@@ -1,0 +1,7 @@
+Version corrigée propre:
+- Suppression des images coupées de l'affiche
+- Nouveau logo propre et lisible
+- Voitures en illustrations propres
+- Header mobile corrigé
+- Design noir/or premium sans effet brouillon
+- Réservation, Firebase, EmailJS et autocomplete conservés

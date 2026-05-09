@@ -1,0 +1,7 @@
+Design site refait comme l'affiche:
+- Logo Étoile Taxi Montréal noir/or
+- Hero noir/or avec voitures
+- Section véhicules Toyota Sienna et Hyundai Kona
+- Formulaire de réservation conservé et fonctionnel
+- EmailJS + Firebase conservés
+- Autocomplete d'adresse conservé

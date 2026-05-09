@@ -1,0 +1,16 @@
+Ajoute ceci dans le template EmailJS:
+
+{{retour_depart}}
+{{retour_arrivee}}
+{{retour_heure}}
+{{retour_numero_vol}}
+{{retour_notes}}
+
+Exemple HTML:
+
+<h3>Retour</h3>
+<p><b>Départ retour :</b> {{retour_depart}}</p>
+<p><b>Destination retour :</b> {{retour_arrivee}}</p>
+<p><b>Date/heure retour :</b> {{retour_heure}}</p>
+<p><b>Vol retour :</b> {{retour_numero_vol}}</p>
+<p><b>Notes retour :</b> {{retour_notes}}</p>

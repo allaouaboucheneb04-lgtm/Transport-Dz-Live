@@ -1,0 +1,74 @@
+HTML EmailJS avec condition retour:
+
+<div style="font-family:Arial,sans-serif;background:#f5f7fb;padding:20px;">
+  <div style="max-width:650px;margin:auto;background:#ffffff;border-radius:20px;padding:30px;border:1px solid #e5e7eb;">
+
+    <h1 style="margin-top:0;color:#111827;">🚕 Nouvelle réservation Taxi Étoile</h1>
+
+    <p style="font-size:16px;color:#4b5563;">
+      Une nouvelle réservation a été reçue depuis le site web.
+    </p>
+
+    <hr style="margin:25px 0;">
+
+    <h2 style="color:#111827;">Client</h2>
+    <p><b>Nom :</b> {{name}}</p>
+    <p><b>Téléphone :</b> {{phone}}</p>
+    <p><b>Email :</b> {{email}}</p>
+
+    <div style="background:#fffaf0;border:1px solid #facc15;border-radius:18px;padding:22px;margin-top:25px;">
+      <h2 style="margin-top:0;color:#111827;">🚖 Trajet aller</h2>
+
+      <p><b>Départ :</b> {{pickup}}</p>
+      <p><b>Destination :</b> {{destination}}</p>
+      <p><b>Date :</b> {{date}}</p>
+      <p><b>Heure :</b> {{time}}</p>
+      <p><b>Passagers :</b> {{passengers}}</p>
+      <p><b>Type de trajet :</b> {{trip_type}}</p>
+
+      {{#flight_number}}
+      <p><b>Numéro de vol :</b> {{flight_number}}</p>
+      {{/flight_number}}
+
+      <p><b>Véhicule :</b> {{vehicle}}</p>
+      <p><b>Valises :</b> {{luggage}}</p>
+
+      {{#message}}
+      <p><b>Notes :</b><br>{{message}}</p>
+      {{/message}}
+    </div>
+
+    {{#is_round_trip}}
+    <div style="background:#f9fafb;border:1px solid #d1d5db;border-radius:18px;padding:22px;margin-top:25px;">
+      <h2 style="margin-top:0;color:#111827;">🔄 Trajet retour</h2>
+
+      <p><b>Départ retour :</b> {{retour_depart}}</p>
+      <p><b>Destination retour :</b> {{retour_arrivee}}</p>
+
+      {{#retour_date}}
+      <p><b>Date retour :</b> {{retour_date}}</p>
+      {{/retour_date}}
+
+      {{#retour_heure}}
+      <p><b>Heure retour :</b> {{retour_heure}}</p>
+      {{/retour_heure}}
+
+      {{#retour_numero_vol}}
+      <p><b>Vol retour :</b> {{retour_numero_vol}}</p>
+      {{/retour_numero_vol}}
+
+      {{#retour_notes}}
+      <p><b>Notes retour :</b><br>{{retour_notes}}</p>
+      {{/retour_notes}}
+    </div>
+    {{/is_round_trip}}
+
+    <div style="margin-top:28px;background:#111827;color:white;border-radius:18px;padding:18px;text-align:center;">
+      <p style="margin:0;font-size:18px;">✅ Réservation confirmée</p>
+    </div>
+
+    <p style="margin-top:25px;font-size:13px;color:#6b7280;text-align:center;">
+      Taxi Étoile Montréal — Réservation reçue depuis le site web.
+    </p>
+  </div>
+</div>

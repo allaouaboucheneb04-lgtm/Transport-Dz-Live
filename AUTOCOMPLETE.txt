@@ -1,0 +1,5 @@
+Aide à la saisie d'adresse ajoutée:
+- OpenStreetMap / Nominatim
+- Suggestions automatiques
+- Départ, arrivée, retour départ et retour arrivée
+- Gratuit

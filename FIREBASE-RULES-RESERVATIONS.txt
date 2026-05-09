@@ -1,0 +1,15 @@
+Si le site affiche: Missing or insufficient permissions
+
+Mets ces règles dans Firebase > Firestore Database > Rules pour autoriser les clients à créer une réservation:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /reservations/{id} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+  }
+}
+
+Après publication des règles, teste une réservation.

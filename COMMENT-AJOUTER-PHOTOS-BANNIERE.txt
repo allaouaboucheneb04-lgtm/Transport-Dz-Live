@@ -1,0 +1,22 @@
+Bannière automatique:
+
+Pour ajouter une photo:
+1. Mets la photo dans le dossier:
+   images/banner/
+
+2. Renomme-la avec le prochain numéro:
+   banner1.jpg
+   banner2.jpg
+   banner3.jpg
+   banner4.jpg
+   etc.
+
+Formats acceptés:
+.jpg
+.jpeg
+.png
+.webp
+
+Tu n'as plus besoin de modifier index.html.
+Le site détecte automatiquement jusqu'à banner30.
+Défilement: 5 secondes.

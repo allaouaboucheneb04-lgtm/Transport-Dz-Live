@@ -1,0 +1,3 @@
+Correction:
+Quand on clique sur le bouton 'Réserver',
+le formulaire ne se cache plus sous le header fixe.

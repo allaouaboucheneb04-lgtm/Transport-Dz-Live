@@ -1,0 +1,5 @@
+Bannière ajoutée:
+- Carrousel automatique dans le hero
+- Change toutes les 3 secondes
+- Photos: Toyota Sienna 2023, Hyundai Kona Electric 2022, réservation à l'avance
+- Points de navigation cliquables

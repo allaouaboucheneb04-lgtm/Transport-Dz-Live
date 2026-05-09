@@ -1,0 +1,5 @@
+Correction mobile:
+- Labels qui chevauchaient les champs corrigés
+- Champs retour mieux espacés
+- Date/heure retour pleine largeur
+- Compatibilité iPhone Safari améliorée

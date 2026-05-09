@@ -1,0 +1,11 @@
+Correction faite:
+- Pages admin/chauffeur restaurées depuis la version fonctionnelle.
+- Nouveau site client conservé.
+- admin-main.js séparé du main.js client pour éviter de casser les réservations.
+- Firebase configuré sur etoile-taxi.
+
+Important:
+Si connexion admin/chauffeur ne marche pas:
+1) Firebase Console > Authentication > Users: recrée ton email admin/chauffeur.
+2) Firestore Rules: colle firebase.rules.txt.
+3) Si ton ancien compte était dans taxi-reservation-e8bab, il faut recréer le même user dans etoile-taxi.

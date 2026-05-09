@@ -1,0 +1,7 @@
+Dans EmailJS utilise maintenant:
+
+<p><b>Date retour :</b> {{retour_date}}</p>
+<p><b>Heure retour :</b> {{retour_heure}}</p>
+
+Validation ajoutée:
+- impossible d'envoyer un retour inférieur au trajet aller.

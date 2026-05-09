@@ -1,0 +1,7 @@
+Formulaire modifié:
+- Suppression du menu 'Type de trajet' en haut
+- Ajout d'une case à cocher en bas: 'Je veux réserver un retour'
+- Les options retour s'affichent seulement quand la case est cochée
+- Les adresses retour se remplissent automatiquement:
+  départ retour = destination aller
+  arrivée retour = départ aller

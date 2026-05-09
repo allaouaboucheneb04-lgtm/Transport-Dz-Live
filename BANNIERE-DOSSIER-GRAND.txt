@@ -1,0 +1,6 @@
+Bannière corrigée:
+- Toutes les photos sont dans /images/banner/
+- Le carrousel lit les images de ce dossier
+- Bannière agrandie pour un meilleur affichage
+- Défilement automatique chaque 5 secondes
+- Pour ajouter une photo: mettre l'image dans /images/banner/ et ajouter un slide dans index.html

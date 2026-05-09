@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Taxi Etoile - Espace Chauffeur</title>
+<meta content="Service de taxi à Montreal et transferts vers Montréal et l’aéroport. Réservation rapide 24/7 avec Taxi Etoile." name="description"/>
+<meta content="taxi Montreal, taxi sorel, taxi tracy, taxi aéroport montréal depuis sorel, transport Montreal" name="keywords"/>
+<meta content="noindex,nofollow,noarchive" name="robots"/>
+<link href="manifest-driver.json" rel="manifest"/>
+<meta content="#FFCA28" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="Taxi Etoile Chauffeur" name="apple-mobile-web-app-title"/>
+<link href="icons/apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="style.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
+<style>
+body{
+background:linear-gradient(135deg,#0f172a,#111827)!important;
+color:white!important;
+font-family:Arial,sans-serif!important;
+}
+button,.btn{
+background:#facc15!important;
+color:black!important;
+border:none!important;
+border-radius:14px!important;
+font-weight:bold!important;
+}
+.card,.box,.container{
+border-radius:22px!important;
+}
+h1,h2,h3{
+color:#facc15!important;
+}
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body class="driver-pro-app">
+<header class="hero driver-hero">
+<div class="logo">
+<img alt="Logo Taxi Etoile" src="logo-taxi-live.png"/>
+<h1>Taxi Etoile</h1>
+</div>
+<nav class="menu">
+<a href="index.html">Réservation</a>
+<a class="active" href="chauffeurs.html">Espace chauffeur</a>
+<a href="acces-admin-taxi-live.html">Admin</a>
+</nav>
+<div class="hero-cta">
+<a class="hero-btn primary" href="tel:"><i class="fa fa-headset"></i> Dispatch</a>
+<a class="hero-btn secondary" href="index.html#reservationForm"><i class="fa fa-calendar-check"></i> Réserver</a>
+</div>
+<p>Interface chauffeur optimisée pour accepter, suivre et terminer les courses rapidement.</p>
+</header>
+<div class="dashboard-wrapper">
+<section class="dashboard-card" id="driverLoginCard">
+<h2>Connexion chauffeur</h2>
+<p class="small-muted">Connecte-toi avec ton compte chauffeur autorisé.</p>
+<div class="input-group"><i class="fa fa-envelope"></i><input id="driverUser" placeholder="Email chauffeur" type="email"/></div>
+<div class="input-group"><i class="fa fa-lock"></i><input id="driverPass" placeholder="Mot de passe" type="password"/></div>
+<button id="driverLoginBtn">Se connecter</button>
+<p class="error-message hidden" id="driverLoginError"></p>
+</section>
+<section class="dashboard-card hidden" id="driverDashboardCard">
+<div class="dashboard-topbar driver-shell-topbar">
+<div>
+<h2>Centre chauffeur</h2>
+<p class="small-muted" id="driverBadge"></p>
+<p class="small-muted" id="driverSyncStatus">Système prêt</p>
+</div>
+<div class="admin-topbar-actions">
+<button class="secondary-btn" id="driverAvailabilityBtn">Passer hors ligne</button>
+<button class="secondary-btn" id="enableDriverNotificationsBtn">Activer notifications</button>
+<button class="secondary-btn" id="driverLogoutBtn">Déconnexion</button>
+</div>
+</div>
+<section class="driver-operations-grid">
+<div class="ops-card driver-profile-card">
+<div class="ops-card-header">
+<div><h3>Mon profil chauffeur</h3><p class="small-muted">Infos de travail et état actuel.</p></div>
+<span class="badge status-assigned" id="driverAvailabilityBadge">Actif</span>
+</div>
+<div class="driver-profile-grid">
+<div><strong>Nom</strong><span id="driverProfileName">—</span></div>
+<div><strong>Téléphone</strong><span id="driverProfilePhone">—</span></div>
+<div><strong>Véhicule</strong><span id="driverProfileCar">—</span></div>
+<div><strong>UID</strong><span id="driverProfileUid">—</span></div>
+</div>
+<p class="small-muted">Quand tu passes hors ligne, l’admin voit que tu n’es pas disponible pour les nouvelles assignations.</p>
+</div>
+<div class="ops-card driver-next-card">
+<div class="ops-card-header">
+<div><h3>Prochaine course</h3><p class="small-muted">La course la plus proche à traiter.</p></div>
+<span class="badge driver">Priorité</span>
+</div>
+<div class="next-trip-box" id="driverNextTripBox"><p class="small-muted">Aucune course assignée.</p></div>
+</div>
+</section>
+<div class="stats-grid driver-stats-grid">
+<div class="stat-box"><span>Mes courses</span><strong id="driverStatTotal">0</strong></div>
+<div class="stat-box"><span>Assignées</span><strong id="driverStatAssigned">0</strong></div>
+<div class="stat-box"><span>En cours</span><strong id="driverStatInProgress">0</strong></div>
+<div class="stat-box"><span>Terminées</span><strong id="driverStatDone">0</strong></div>
+<div class="stat-box"><span>Aujourd'hui</span><strong id="driverStatToday">0</strong></div>
+<div class="stat-box"><span>Urgentes</span><strong id="driverStatUrgent">0</strong></div>
+</div>
+<div class="filter-toolbar card-like filter-card driver-filter-card">
+<div class="dispatch-toolbar driver-dispatch-toolbar">
+<div class="quick-filters">
+<button class="quick-filter driver-quick-filter active" data-driver-quick="all">Toutes</button>
+<button class="quick-filter driver-quick-filter" data-driver-quick="today">Aujourd'hui</button>
+<button class="quick-filter driver-quick-filter" data-driver-quick="active">En cours</button>
+<button class="quick-filter driver-quick-filter" data-driver-quick="urgent">Urgentes</button>
+<button class="quick-filter driver-quick-filter" data-driver-quick="done">Terminées</button>
+</div>
+<div class="filter-grid driver-filter-grid">
+<input id="driverSearchReservation" placeholder="Rechercher nom, téléphone, adresse…" type="search"/>
+<select id="driverStatusFilter">
+<option value="all">Tous statuts</option>
+<option value="assigned">Assignée</option>
+<option value="accepted">Acceptée</option>
+<option value="on_the_way">En route</option>
+<option value="completed">Terminée</option>
+<option value="cancelled">Annulée</option>
+</select>
+<select id="driverDateFilter">
+<option value="all">Toutes dates</option>
+<option value="today">Aujourd'hui</option>
+<option value="tomorrow">Demain</option>
+<option value="upcoming">À venir</option>
+<option value="past">Passées</option>
+</select>
+</div>
+</div>
+</div>
+<div class="reservation-list" id="driverReservationsList"></div>
+<p class="small-muted" id="driverEmptyState">Aucune course assignée.</p>
+</section>
+</div>
+<button class="install-btn" id="installBtn" style="display:none;">📲 Ajouter à l'écran d'accueil</button>
+<div id="iosBanner" style="display:none; position:fixed; bottom:10px; left:10px; right:10px; background:#FFCA28; color:#333; padding:12px; border-radius:12px; text-align:center; z-index:9999; font-weight:700; box-shadow:0 6px 20px rgba(0,0,0,0.15);">
+  Sur iPhone : appuie sur <strong>Partager</strong> puis <strong>Ajouter à l'écran d'accueil</strong>.
+  <button id="closeIosBanner" style="margin-left:8px; background:#333; color:#fff; border:none; border-radius:8px; padding:6px 10px;">Fermer</button>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="admin-main.js"></script>
+<script src="hamburger-menu.js"></script>
+  <script src="mail.js"></script>
+</body>
+</html>

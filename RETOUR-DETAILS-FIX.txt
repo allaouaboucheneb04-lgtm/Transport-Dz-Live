@@ -1,0 +1,4 @@
+Correction:
+- Quand on coche "Je veux réserver un retour", les détails du retour s'affichent.
+- Départ retour, arrivée retour, date/heure retour, numéro de vol retour et notes retour.
+- Les champs se cachent quand on décoche.

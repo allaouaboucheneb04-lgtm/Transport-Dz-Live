@@ -1,0 +1,10 @@
+Champs retour ajoutés:
+- Adresse de départ du retour: retourDepart / {{return_pickup}} / {{retour_depart}}
+- Adresse d'arrivée du retour: retourArrivee / {{return_destination}} / {{retour_arrivee}}
+- Date et heure retour: heureRetour / {{return_date}} {{return_time}}
+- Numéro de vol retour: retourNumeroVol / {{return_flight_number}} / {{retour_numero_vol}}
+- Notes retour: notesRetour / {{return_notes}} / {{retour_notes}}
+
+Le code remplit automatiquement:
+Départ retour = destination aller
+Arrivée retour = départ aller

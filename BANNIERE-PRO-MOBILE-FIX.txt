@@ -1,0 +1,5 @@
+Correction bannière:
+- hauteur réduite
+- images propres en cover
+- bloc blanc corrigé
+- défilement 5 secondes conservé

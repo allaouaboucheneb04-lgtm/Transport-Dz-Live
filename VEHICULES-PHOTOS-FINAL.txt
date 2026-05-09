@@ -1,0 +1,4 @@
+Photos véhicules séparées ajoutées:
+- Toyota Sienna 2023: images/toyota-sienna-2023-bonjour.jpg
+- Hyundai Kona Electric 2022: images/hyundai-kona-2022-bonjour.jpg
+Chaque carte véhicule utilise maintenant sa propre photo propre.

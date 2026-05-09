@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>Paramètres du site</title>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<meta content="noindex,nofollow,noarchive" name="robots"/>
+<link href="manifest-admin.json" rel="manifest"/>
+<meta content="#FFCA28" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="Taxi Etoile Admin" name="apple-mobile-web-app-title"/>
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="telephone=no" name="format-detection"/>
+<meta content="yes" name="apple-touch-fullscreen"/>
+<link href="icons/apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="style.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
+<style>
+body{
+background:linear-gradient(135deg,#0f172a,#111827)!important;
+color:white!important;
+font-family:Arial,sans-serif!important;
+}
+button,.btn{
+background:#facc15!important;
+color:black!important;
+border:none!important;
+border-radius:14px!important;
+font-weight:bold!important;
+}
+.card,.box,.container{
+border-radius:22px!important;
+}
+h1,h2,h3{
+color:#facc15!important;
+}
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body class="admin-pro-app">
+<header class="hero admin-hero">
+<div class="logo">
+<img alt="Logo Taxi Etoile" src="logo-taxi-live.png"/>
+<h1>Taxi Etoile Dispatch Center</h1>
+</div>
+<nav class="menu">
+<a href="index.html">Réservation</a>
+<a class="active" href="acces-admin-taxi-live.html">Accès Admin</a>
+<a href="chauffeurs.html">Espace chauffeur</a>
+</nav>
+<p>Paramètres du site : téléphone, bouton appeler, réservations et textes visibles.</p>
+</header>
+<div class="dashboard-wrapper">
+<section class="dashboard-card" id="siteSettingsLoginCard">
+<h2>Connexion admin sécurisée</h2>
+<p class="small-muted">Connecte-toi avec ton compte administrateur autorisé.</p>
+<div class="input-group"><i class="fa fa-envelope"></i><input id="siteSettingsAdminUser" placeholder="Email admin" type="email"/></div>
+<div class="input-group"><i class="fa fa-lock"></i><input id="siteSettingsAdminPass" placeholder="Mot de passe" type="password"/></div>
+<button id="siteSettingsLoginBtn">Se connecter</button>
+<p class="error-message hidden" id="siteSettingsLoginError"></p>
+</section>
+<section class="dashboard-card hidden" id="siteSettingsDashboardCard">
+<div class="dashboard-topbar admin-shell-topbar">
+<button class="admin-menu-toggle" id="adminMenuToggle" type="button"><i class="fa fa-bars"></i><span>Menu</span></button>
+<div>
+<h2>Paramètres du site</h2>
+<p class="small-muted">Gère ce que le client voit sur le site.</p>
+</div>
+<div class="admin-topbar-actions">
+<button class="secondary-btn" id="siteSettingsLogoutBtn">Déconnexion</button>
+</div>
+</div>
+<div class="admin-shell">
+<aside class="admin-sidebar">
+<div class="admin-brand-card">
+<div class="admin-brand-top">
+<img alt="Taxi Etoile" src="logo-taxi-live.png"/>
+<div>
+<strong>Taxi Etoile Admin</strong>
+<span>Paramètres du site</span>
+</div>
+</div>
+<div class="admin-brand-kpis">
+<span><i class="fa fa-mobile-screen"></i> Site client</span>
+<span><i class="fa fa-bolt"></i> Temps réel</span>
+</div>
+</div>
+<a class="admin-nav-link" href="acces-admin-taxi-live.html"><i class="fa fa-chart-line"></i><span>Dashboard</span></a>
+<a class="admin-nav-link" href="admin-reservations.html"><i class="fa fa-taxi"></i><span>Réservations</span></a>
+<a class="admin-nav-link" href="admin-planning.html"><i class="fa fa-calendar-days"></i><span>Planning</span></a>
+<a class="admin-nav-link" href="admin-clients.html"><i class="fa fa-address-book"></i><span>Clients</span></a>
+<a class="admin-nav-link" href="admin-chauffeurs.html"><i class="fa fa-id-badge"></i><span>Chauffeurs</span></a>
+<a class="admin-nav-link" href="admin-outils.html"><i class="fa fa-screwdriver-wrench"></i><span>Outils</span></a>
+<a class="admin-nav-link active" href="admin-site-settings.html"><i class="fa fa-sliders"></i><span>Paramètres du site</span></a>
+</aside>
+<main class="admin-main settings-main">
+<section class="ops-card">
+<div class="ops-card-header"><div><h3>Contrôle du site client</h3><p class="small-muted">Active/masque le bouton appeler, change le numéro et les messages du site.</p></div></div>
+<form class="settings-grid" id="siteSettingsForm">
+<label class="settings-field"><span>Nom du service</span><input id="siteServiceName" placeholder="Taxi Etoile" type="text"/></label>
+<label class="settings-field"><span>Téléphone cliquable</span><input id="sitePhone" placeholder="" type="text"/></label>
+<label class="settings-field"><span>Téléphone affiché</span><input id="siteDisplayPhone" placeholder="" type="text"/></label>
+<label class="settings-field"><span>Email de contact</span><input id="siteSupportEmail" placeholder="etoiletaximontreal@gmail.com" type="email"/></label>
+<label class="settings-field full"><span>Message d'accueil</span><input id="siteHeroTagline" placeholder="Votre taxi local à Montreal, Montréal et aéroport 24/7" type="text"/></label>
+<label class="settings-field"><span>Texte bouton réserver</span><input id="siteReserveButtonLabel" placeholder="Réserver" type="text"/></label>
+<label class="settings-field"><span>Texte bouton appeler</span><input id="siteCallButtonLabel" placeholder="Appeler" type="text"/></label>
+<label class="settings-field full"><span>Message si réservations fermées</span><textarea id="siteDisabledMessage" placeholder="Les réservations en ligne sont fermées pour le moment. Appelez-nous directement." rows="3"></textarea></label>
+<label class="settings-toggle"><input checked="" id="siteShowCallButton" type="checkbox"/> <span>Afficher le bouton appeler sur le site</span></label>
+<label class="settings-toggle"><input checked="" id="siteReservationsEnabled" type="checkbox"/> <span>Activer les réservations en ligne</span></label>
+<div class="settings-actions full">
+<button type="submit">Enregistrer</button>
+<button class="secondary-btn" id="siteSettingsResetBtn" type="button">Réinitialiser</button>
+</div>
+<p class="hidden" id="siteSettingsMsg"></p>
+</form>
+</section>
+<section class="ops-card">
+<div class="ops-card-header"><div><h3>Aperçu rapide</h3><p class="small-muted">Voici comment le haut du site client va s’afficher.</p></div></div>
+<div class="site-preview-card">
+<div class="site-preview-top">
+<strong id="sitePreviewName">Taxi Etoile</strong>
+<p id="sitePreviewTagline">Votre taxi local à Montreal, Montréal et aéroport 24/7</p>
+</div>
+<div class="site-preview-actions">
+<button class="hero-btn primary" type="button"><span id="sitePreviewReserve">Réserver</span></button>
+<a class="hero-btn secondary" href="#" id="sitePreviewCall"><i class="fa fa-phone"></i> Appeler</a>
+</div>
+<p class="small-muted">Téléphone affiché : <span id="sitePreviewPhone"></span></p>
+</div>
+</section>
+</main>
+</div>
+</section>
+</div>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="firebase-config.js"></script>
+<script src="admin-main.js"></script>
+  <script src="mail.js"></script>
+</body>
+</html>

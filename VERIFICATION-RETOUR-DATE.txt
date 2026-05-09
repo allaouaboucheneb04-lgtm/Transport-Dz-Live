@@ -1,0 +1,14 @@
+Vérification faite:
+- Le formulaire contient bien: id="heureRetour"
+- Le code lisait bien: val("heureRetour")
+- Mais EmailJS ne recevait PAS la variable {{retour_heure}}
+
+Correction ajoutée dans main.js:
+retour_heure: retour.datetime || ""
+retour_date: retour.date
+retour_time: retour.time
+
+Dans EmailJS tu peux utiliser:
+{{retour_heure}}
+ou séparément:
+{{retour_date}} {{retour_time}}

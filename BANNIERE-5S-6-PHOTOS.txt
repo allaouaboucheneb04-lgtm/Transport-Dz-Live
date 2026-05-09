@@ -1,0 +1,4 @@
+Bannière mise à jour:
+- 6 photos séparées ajoutées
+- Changement automatique chaque 5 secondes
+- Dots mis à jour pour 6 slides

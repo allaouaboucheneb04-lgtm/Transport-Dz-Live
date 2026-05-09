@@ -1,0 +1,14 @@
+Si le site affiche encore une erreur de réservation, vérifie Firestore Rules.
+Pour tester seulement, tu peux mettre temporairement:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /reservations/{id} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+  }
+}
+
+Après test, sécurise les règles.

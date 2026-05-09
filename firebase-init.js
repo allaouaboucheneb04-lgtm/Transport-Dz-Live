@@ -1,4 +1,5 @@
-window.FIREBASE_CONFIG = {
+// Optional module Firebase config. The app uses firebase-config.js + Firebase compat scripts.
+export const firebaseConfig = {
   apiKey: "AIzaSyBU6OYKH1GNa6ijTJ_7v87jmoTpHkDQoaQ",
   authDomain: "etoile-taxi.firebaseapp.com",
   projectId: "etoile-taxi",
