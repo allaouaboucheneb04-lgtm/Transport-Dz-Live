@@ -106,505 +106,213 @@
 .favRow{display:grid;grid-template-columns:1fr;gap:6px}
 .suggestBtn span{display:block;font-size:16px}
 
-/* Google Maps style suggestions */
-.googleSuggestBox{
-  margin:10px 0 14px;
+
+/* SAFE RESTORE V2 */
+html, body{
+  overflow-x:hidden;
+}
+body{
+  padding-bottom:110px!important;
+}
+#map{
+  min-height:420px!important;
+  height:420px!important;
+  border-radius:24px!important;
+  overflow:hidden!important;
+  display:block!important;
+}
+.bottomNav{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  z-index:1000!important;
+  background:rgba(255,255,255,.96)!important;
+  backdrop-filter:blur(18px)!important;
+  padding-bottom:calc(env(safe-area-inset-bottom) + 8px)!important;
+}
+.page, main, .container{
+  padding-bottom:120px!important;
+}
+button, input, select{
+  pointer-events:auto!important;
+}
+.clearFieldBtn{
+  float:none!important;
+  position:static!important;
+  display:inline-flex!important;
+  width:auto!important;
+  min-height:34px!important;
+  padding:6px 12px!important;
+  margin:6px 0 8px auto!important;
+}
+
+/* =========================
+   CLEAN FULLSCREEN MAP - SAFE
+========================= */
+.cleanMapOverlay{
+  position:fixed;
+  inset:0;
+  z-index:999999;
   background:#fff;
-  border:1px solid #dbe4f0;
-  border-radius:22px;
-  box-shadow:0 18px 45px rgba(15,23,42,.14);
-  overflow:hidden;
 }
-.googleSuggestBox.hidden{display:none!important}
-.gSuggestHeader{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:12px 14px;
-  background:#f8fafc;
-  color:#475569;
-  font-weight:950;
-  border-bottom:1px solid #e2e8f0;
+.cleanMapOverlay.hidden{
+  display:none!important;
 }
-.gSuggestHeader button{
-  width:34px;
-  min-height:34px;
-  border-radius:50%;
-  background:#e2e8f0;
-  color:#0f172a;
-  font-weight:950;
-  padding:0;
+.cleanMap{
+  position:absolute;
+  inset:0;
+  width:100vw;
+  height:100dvh;
+  background:#e5e7eb;
 }
-.gSuggestItem{
-  width:100%;
-  display:flex;
-  align-items:center;
-  gap:12px;
+.cleanMapSearch{
+  position:absolute;
+  top:calc(env(safe-area-inset-top) + 12px);
+  left:14px;
+  right:14px;
+  z-index:20;
   min-height:64px;
-  border:0;
-  border-bottom:1px solid #edf2f7;
+  border-radius:28px;
   background:#fff;
-  text-align:left;
-  padding:10px 14px;
+  box-shadow:0 12px 36px rgba(15,23,42,.25);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px 8px 16px;
+}
+.cleanMapSearch span{
+  font-size:24px;
+}
+.cleanMapSearch input{
+  flex:1;
+  border:0!important;
+  outline:0!important;
+  min-height:48px!important;
+  box-shadow:none!important;
+  font-size:16px!important;
+}
+.cleanMapSearch button{
+  width:auto!important;
+  min-height:46px!important;
+  border-radius:20px!important;
+  padding:0 16px!important;
+  background:#2563eb!important;
+  color:#fff!important;
+  font-weight:950!important;
+}
+.cleanFloatingBtn{
+  position:absolute;
+  z-index:25;
+  width:56px!important;
+  height:56px!important;
+  min-height:56px!important;
+  border-radius:50%!important;
+  border:0!important;
+  background:#fff!important;
+  color:#0f172a!important;
+  box-shadow:0 12px 30px rgba(15,23,42,.25)!important;
+  font-weight:950!important;
+  font-size:28px!important;
+  padding:0!important;
+}
+.cleanCloseBtn{
+  top:calc(env(safe-area-inset-top) + 88px);
+  right:14px;
+}
+.cleanLocateBtn{
+  right:14px;
+  bottom:calc(env(safe-area-inset-bottom) + 165px);
+  color:#2563eb!important;
+  transform:rotate(-45deg);
+}
+.cleanBottomSheet{
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:calc(env(safe-area-inset-bottom) + 86px);
+  z-index:22;
+  background:#fff;
+  border-radius:28px;
+  padding:12px 18px 18px;
+  box-shadow:0 -12px 36px rgba(15,23,42,.22);
+}
+.cleanHandle{
+  width:54px;
+  height:6px;
+  border-radius:999px;
+  background:#cbd5e1;
+  margin:0 auto 12px;
+}
+.cleanBottomSheet h2{
+  margin:0 0 6px;
+  font-size:24px;
   color:#0f172a;
 }
-.gSuggestItem:active{background:#eff6ff}
-.gPin{
-  width:38px;
-  height:38px;
+.cleanBottomSheet p{
+  margin:0 0 12px;
+  color:#64748b;
+  font-weight:850;
+}
+.cleanBottomSheet button{
+  width:auto!important;
+  min-height:48px!important;
+  border-radius:18px!important;
+  padding:0 18px!important;
+  background:#2563eb!important;
+  color:#fff!important;
+  font-weight:950!important;
+}
+.cleanBusIcon{
+  background:transparent!important;
+  border:0!important;
+}
+.cleanBusIcon div{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#fff;
+  border:3px solid #2563eb;
+  box-shadow:0 8px 22px rgba(15,23,42,.25);
   display:flex;
   align-items:center;
   justify-content:center;
-  border-radius:50%;
-  background:#eff6ff;
-  font-size:20px;
+  font-size:24px;
 }
-.gText{display:flex;flex-direction:column;gap:3px;line-height:1.2}
-.gText b{font-size:17px;font-weight:950;color:#0f172a}
-.gText small{font-size:13px;font-weight:850;color:#64748b}
-#routeSuggestionBox{display:none!important}
-
-/* =========================
-   CLIENT FULL MAP GOOGLE STYLE
-========================= */
-.clientMapTop,.clientMapActions,.clientRouteSheet{display:none}
-.clientFullMap{background:#fff;overflow:hidden}
-.clientFullMap header,
-.clientFullMap .hero,
-.clientFullMap #clientPage > .card:not(:has(#map)),
-.clientFullMap #clientPage > .etaCard,
-.clientFullMap #clientPage > .listCard,
-.clientFullMap #clientPage h3,
-.clientFullMap #clientPage .card:has(#routeResult),
-.clientFullMap #clientPage .card:has(#fromInput),
-.clientFullMap #clientPage .card:has(#etaStopSelect){
-  display:none!important;
-}
-.clientFullMap #clientPage{
-  padding:0!important;
-  margin:0!important;
-}
-.clientFullMap #map{
-  position:fixed!important;
-  inset:0!important;
-  width:100vw!important;
-  height:100vh!important;
-  z-index:10!important;
-  border-radius:0!important;
-  margin:0!important;
-}
-.clientFullMap .bottomNav{
-  z-index:60!important;
-  background:rgba(255,255,255,.92)!important;
-  backdrop-filter:blur(18px)!important;
-}
-.clientFullMap .clientMapTop{
-  display:block;
-  position:fixed;
-  top:calc(env(safe-area-inset-top) + 12px);
-  left:12px;
-  right:12px;
-  z-index:70;
-}
-.gmSearchCard{
-  background:#fff;
-  border-radius:24px;
-  box-shadow:0 12px 34px rgba(15,23,42,.22);
-  padding:10px;
-  border:1px solid rgba(226,232,240,.9);
-}
-.gmSearchRow{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.gmIcon{font-size:20px}
-#gmQuickSearch{
-  flex:1;
+.cleanMeIcon{
+  background:transparent!important;
   border:0!important;
-  min-height:46px!important;
-  box-shadow:none!important;
-  font-size:16px!important;
-  padding:0 6px!important;
 }
-#gmOpenRouteBtn{
-  width:auto;
-  min-height:42px;
-  border-radius:18px;
-  padding:0 14px;
-  font-weight:950;
+.cleanMeIcon div{
+  width:44px;
+  height:44px;
+  border-radius:50%;
   background:#2563eb;
   color:#fff;
-}
-.clientFullMap .clientMapActions{
+  border:3px solid #fff;
+  box-shadow:0 8px 22px rgba(15,23,42,.25);
   display:flex;
-  flex-direction:column;
-  gap:12px;
-  position:fixed;
-  right:14px;
-  bottom:145px;
-  z-index:70;
-}
-.clientMapActions button{
-  width:54px;
-  height:54px;
-  min-height:54px;
-  border-radius:50%;
-  background:#fff;
-  color:#1d4ed8;
-  box-shadow:0 10px 26px rgba(15,23,42,.22);
-  border:1px solid #dbe4f0;
-  font-size:26px;
-  font-weight:950;
-  padding:0;
-}
-#gmLocateBtn{
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
   transform:rotate(-45deg);
 }
-.clientFullMap .clientRouteSheet{
-  display:block;
-  position:fixed;
-  left:12px;
-  right:12px;
-  bottom:calc(env(safe-area-inset-bottom) + 82px);
-  z-index:70;
-  background:#fff;
-  border-radius:26px;
-  box-shadow:0 -10px 36px rgba(15,23,42,.20);
-  border:1px solid #dbe4f0;
-  padding:12px 16px 16px;
-}
-.sheetHandle{
-  width:46px;
-  height:5px;
-  border-radius:999px;
-  background:#cbd5e1;
-  margin:0 auto 10px;
-}
-.sheetTitle{font-size:20px;font-weight:950;color:#0f172a}
-.sheetSubtitle{font-size:14px;color:#64748b;font-weight:800;margin:4px 0 12px}
-.sheetBtn{
-  min-height:48px;
-  border-radius:18px;
-  background:#2563eb;
-  color:#fff;
-  font-weight:950;
-}
-#gmModeToggle{
-  margin-bottom:12px;
-}
-
-/* =========================
-   CLIENT MAP PRO EXTRAS
-========================= */
-.gmRoutePanel{
-  position:fixed;
-  left:12px;
-  right:12px;
-  bottom:calc(env(safe-area-inset-bottom) + 82px);
-  z-index:90;
-  background:#fff;
-  border:1px solid #dbe4f0;
-  border-radius:28px;
-  padding:12px 16px 16px;
-  box-shadow:0 -12px 42px rgba(15,23,42,.25);
-  max-height:58vh;
-  overflow:auto;
-}
-.gmRoutePanel.hidden{display:none!important}
-.gmPanelTitle{font-size:24px;font-weight:950;color:#0f172a;margin-bottom:10px}
-.gmRoutePanel label{font-weight:950;color:#334155;margin-top:8px;display:block}
-.gmRoutePanel input{
-  width:100%;
-  min-height:50px;
-  border:1px solid #dbe4f0;
-  border-radius:18px;
-  padding:0 14px;
-  font-size:16px;
-  margin:6px 0 8px;
-}
-.gmPanelActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
-.gmRouteResult{margin-top:10px;padding:12px;border-radius:16px;background:#eff6ff;color:#1e3a8a;font-weight:900}
-.gmSuggestBox{
-  background:#fff;
-  border:1px solid #dbe4f0;
-  border-radius:18px;
-  box-shadow:0 12px 32px rgba(15,23,42,.14);
-  overflow:hidden;
-  margin:6px 0 10px;
-}
-.gmSuggestBox.hidden{display:none!important}
-.gmSuggestItem{
-  width:100%;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  border:0;
-  border-bottom:1px solid #edf2f7;
-  background:#fff;
-  text-align:left;
-  min-height:60px;
-  padding:10px 12px;
-}
-.gmEtaMini{
-  display:none;
-}
-.clientFullMap .gmEtaMini{
-  display:flex;
-  position:fixed;
-  left:14px;
-  bottom:245px;
-  z-index:70;
-  background:#fff;
-  border:1px solid #dbe4f0;
-  border-radius:18px;
-  padding:10px 12px;
-  flex-direction:column;
-  box-shadow:0 10px 26px rgba(15,23,42,.18);
-  color:#0f172a;
-}
-.gmEtaMini span{font-size:13px;color:#64748b;font-weight:850}
-.clientFullMap .clientRouteSheet{
-  padding-bottom:18px;
-}
-.clientFullMap .sheetBtn{
-  width:auto;
-  padding:0 18px;
-}
-
-.gmRoutePanel.minimized{
-  height:72px!important;
-  overflow:hidden!important;
-}
-.gmPanelTopBar{
-  display:flex;
-  justify-content:flex-end;
-  margin-bottom:4px;
-}
-.gmMiniBtn{
-  width:42px;
-  height:42px;
-  border-radius:14px;
-  border:0;
-  background:#eff6ff;
-  color:#2563eb;
-  font-size:28px;
-  font-weight:900;
-}
-.gmAltRoutes{
-  display:flex;
-  gap:10px;
-  overflow:auto;
-  padding:8px 0 10px;
-}
-.gmAltRoute{
-  min-width:180px;
-  background:#fff;
-  border:1px solid #dbe4f0;
-  border-radius:18px;
-  padding:12px;
-  box-shadow:0 6px 18px rgba(15,23,42,.08);
-}
-.gmAltRoute.active{
-  border:2px solid #2563eb;
-  background:#eff6ff;
-}
-.gmAltTitle{
-  font-weight:900;
-  color:#0f172a;
-}
-.gmAltSub{
-  color:#64748b;
-  font-size:13px;
-  margin-top:2px;
-}
-.gmAltDesc{
-  margin-top:8px;
-  font-size:12px;
-  color:#1e3a8a;
-  font-weight:800;
-}
-
-/* ===== Draggable Google Maps bottom sheet ===== */
-.gmClosePanelBtn{
-  position:absolute;
-  top:12px;
-  right:14px;
-  width:40px;
-  height:40px;
-  min-height:40px;
-  border-radius:50%;
-  border:0;
-  background:#f1f5f9;
-  color:#0f172a;
-  font-size:28px;
-  font-weight:900;
-  z-index:5;
-  padding:0;
-}
-.sheetX{top:10px;right:12px}
-#gmDragHandle,
-.sheetHandle{
-  width:54px!important;
-  height:6px!important;
-  border-radius:999px!important;
-  background:#cbd5e1!important;
-  margin:0 auto 12px!important;
-  cursor:grab;
-}
-#gmDragHandle:active{cursor:grabbing}
-.gmRoutePanel{
-  transition:height .22s ease, transform .22s ease, bottom .22s ease;
-  touch-action:none;
-}
-.gmRoutePanel.dragging{
-  transition:none!important;
-}
-.gmRoutePanel.gmSheetMini{
-  height:92px!important;
-  overflow:hidden!important;
-}
-.gmRoutePanel.gmSheetMid{
-  height:46vh!important;
-  overflow:auto!important;
-}
-.gmRoutePanel.gmSheetFull{
-  height:82vh!important;
-  overflow:auto!important;
-}
-.gmRoutePanel.gmSheetMini .gmPanelActions,
-.gmRoutePanel.gmSheetMini .gmSuggestBox,
-.gmRoutePanel.gmSheetMini .gmAltRoutes,
-.gmRoutePanel.gmSheetMini .gmRouteResult,
-.gmRoutePanel.gmSheetMini label,
-.gmRoutePanel.gmSheetMini input{
-  display:none!important;
-}
-.gmRoutePanel.gmSheetMini .gmPanelTitle:after{
-  content:" — glisse vers le haut";
-  font-size:14px;
-  color:#64748b;
-}
-.clientRouteSheet.hidden{display:none!important}
-
-/* ===== FIX SCROLL DANS LE PANNEAU ITINÉRAIRE iPHONE ===== */
-.gmRoutePanel{
-  overflow:hidden!important;
-  display:flex!important;
-  flex-direction:column!important;
-  touch-action:auto!important;
-}
-.gmRoutePanelContent{
-  flex:1;
-  overflow-y:auto!important;
-  overflow-x:hidden!important;
-  -webkit-overflow-scrolling:touch!important;
-  overscroll-behavior:contain;
-  padding-bottom:120px;
-}
-.gmRoutePanel.gmSheetMini .gmRoutePanelContent{
-  overflow:hidden!important;
-}
-.gmRoutePanel.gmSheetMid{
-  height:55vh!important;
-}
-.gmRoutePanel.gmSheetFull{
-  height:82vh!important;
-}
-#gmDragHandle,.sheetHandle{
-  flex:0 0 auto!important;
-  touch-action:none!important;
-}
-.gmClosePanelBtn{
-  flex:0 0 auto!important;
-}
-.gmAltRoutes{
-  -webkit-overflow-scrolling:touch!important;
-}
-
-/* ===== SELECT ROUTE OPTIONS FIX ===== */
-.gmAltRoute{
-  appearance:none;
-  -webkit-appearance:none;
-  border:1px solid #dbe4f0;
-  text-align:left;
-  color:#0f172a;
-  cursor:pointer;
-  flex:0 0 190px;
-  pointer-events:auto!important;
-}
-.gmAltRoute.active{
-  border:3px solid #2563eb!important;
-  background:#eff6ff!important;
-}
-.gmAltRoute.active:before{
-  content:"✓ ";
-  color:#16a34a;
-  font-weight:950;
-}
-.gmStartTripBtn{
-  width:100%;
-  margin:10px 0;
-  min-height:52px;
-  border-radius:18px;
-  font-weight:950;
-}
-.gmAltRoutes{
-  pointer-events:auto!important;
-  touch-action:pan-x!important;
-}
-.gmRoutePanelContent{
-  pointer-events:auto!important;
-}
-
-
-/* FIX UI OVERLAP */
-body{
-  padding-bottom:120px!important;
-}
-
-.bottomNav,
-.bottom-bar,
-nav.bottom{
-  z-index:9999!important;
-}
-
-.clientPanel,
-.routePanel,
-.gmRoutePanel,
-.sheet,
-.bottomSheet{
-  margin-bottom:110px!important;
-}
-
-.clearBtn,
-#clearFromBtn,
-#clearToBtn{
-  z-index:20!important;
-  position:relative!important;
-}
-
-input,select{
-  position:relative;
-  z-index:1;
-}
-
 
 
 /* =========================
-   STRONG MOBILE OVERLAP FIX
+   CLIENT UI CLEAN FIX
 ========================= */
 :root{
-  --safe-bottom-space: 150px;
+  --bottom-nav-h: 118px;
 }
 
 html, body{
-  min-height:100%;
   overflow-x:hidden!important;
+  min-height:100%!important;
 }
 
 body{
-  padding-bottom:var(--safe-bottom-space)!important;
+  padding-bottom:calc(var(--bottom-nav-h) + env(safe-area-inset-bottom))!important;
 }
 
 main,
@@ -614,86 +322,498 @@ main,
 #clientPage,
 #driverPage,
 #adminPage{
-  padding-bottom:var(--safe-bottom-space)!important;
+  padding-bottom:calc(var(--bottom-nav-h) + 30px)!important;
 }
 
-/* fixed bottom nav must not cover content */
 .bottomNav,
 .bottom-nav,
-.navBottom,
 #bottomNav{
   position:fixed!important;
   left:0!important;
   right:0!important;
   bottom:0!important;
-  z-index:99999!important;
+  z-index:9999!important;
   min-height:92px!important;
   padding-bottom:calc(env(safe-area-inset-bottom) + 10px)!important;
   background:rgba(255,255,255,.96)!important;
   backdrop-filter:blur(18px)!important;
+  border-top:1px solid rgba(226,232,240,.9)!important;
 }
 
-/* remove floating clear buttons that overlap fields */
+#clientPage .card:last-child,
+#clientPage > *:last-child{
+  margin-bottom:calc(var(--bottom-nav-h) + 30px)!important;
+}
+
+.fullMapBtn,
+#cleanFullMapBtn{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-height:58px!important;
+  border-radius:22px!important;
+  margin:12px 0!important;
+  background:#fff!important;
+  border:1px solid #dbe4f0!important;
+  color:#1d4ed8!important;
+  font-weight:950!important;
+  font-size:17px!important;
+}
+
 #clearFromBtn,
 #clearToBtn,
 .clearFieldBtn{
   float:none!important;
-  position:static!important;
+  position:relative!important;
   display:inline-flex!important;
   align-items:center!important;
   justify-content:center!important;
   width:auto!important;
-  min-height:36px!important;
+  min-height:34px!important;
   padding:6px 12px!important;
-  margin:6px 0 8px auto!important;
+  margin:6px 0 8px 0!important;
   border-radius:999px!important;
+  background:#f1f5f9!important;
+  color:#334155!important;
   font-size:13px!important;
-  line-height:1!important;
+  font-weight:950!important;
   z-index:1!important;
 }
 
-/* fields always visible */
-input,
-select,
-textarea{
-  position:relative!important;
-  z-index:1!important;
-  max-width:100%!important;
+input, select, textarea, button{
+  pointer-events:auto!important;
 }
 
-/* cards must not be hidden under nav */
-.card,
-.panel,
-.client-card,
-.route-card{
-  margin-bottom:18px!important;
+#map{
+  min-height:420px!important;
+  height:420px!important;
+  display:block!important;
 }
 
-/* last content on each page gets extra breathing room */
-.page > *:last-child,
-#clientPage > *:last-child,
-#driverPage > *:last-child,
-#adminPage > *:last-child{
-  margin-bottom:var(--safe-bottom-space)!important;
+.cleanMapOverlay{
+  z-index:999999!important;
 }
 
-/* map mode panels should stay above bottom nav */
-.gmRoutePanel,
-.clientRouteSheet{
-  bottom:calc(env(safe-area-inset-bottom) + 108px)!important;
-  z-index:99998!important;
-}
 
-.clientFullMap .bottomNav{
-  z-index:99999!important;
-}
-
-/* better header badges */
-header .status,
-.status,
-.roleBadge{
-  max-width:170px!important;
+/* FULLSCREEN MAP LEAFLET IOS FIX */
+.cleanMapOverlay{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  z-index:999999!important;
+  background:#eef6ff!important;
   overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
 }
+.cleanMapOverlay.hidden{display:none!important}
+.cleanMap{
+  position:absolute!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  background:#e0f2fe!important;
+  z-index:1!important;
+}
+#cleanMap.leaflet-container{
+  width:100vw!important;
+  height:100dvh!important;
+}
+.cleanMapSearch{
+  top:calc(env(safe-area-inset-top) + 18px)!important;
+  left:18px!important;
+  right:18px!important;
+  z-index:1000!important;
+}
+.cleanCloseBtn{
+  top:calc(env(safe-area-inset-top) + 92px)!important;
+  right:18px!important;
+  z-index:1001!important;
+}
+.cleanLocateBtn{
+  right:18px!important;
+  bottom:calc(env(safe-area-inset-bottom) + 165px)!important;
+  z-index:1001!important;
+}
+.cleanBottomSheet{z-index:1000!important}
+.cleanMap .leaflet-top.leaflet-left{
+  top:100px!important;
+  left:14px!important;
+}
+.cleanMap .leaflet-control-zoom{
+  border-radius:14px!important;
+  overflow:hidden!important;
+  box-shadow:0 8px 22px rgba(15,23,42,.22)!important;
+}
+
+/* FULL MAP LINES/STOPS FIX */
+.cleanRefreshBtn{
+  right:18px!important;
+  bottom:calc(env(safe-area-inset-bottom) + 235px)!important;
+  z-index:1001!important;
+  color:#2563eb!important;
+  transform:none!important;
+}
+.cleanBusIcon div{
+  animation:cleanBusPulse 1.8s infinite;
+}
+@keyframes cleanBusPulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.08)}
+  100%{transform:scale(1)}
+}
+.cleanMap .leaflet-control-attribution{
+  font-size:11px!important;
+}
+
+/* FULLSCREEN SEARCH SUGGESTIONS FIX */
+.cleanMapSearch{
+  overflow:visible!important;
+}
+.cleanSearchSuggestBox{
+  position:absolute;
+  left:0;
+  right:0;
+  top:74px;
+  background:#fff;
+  border:1px solid #dbe4f0;
+  border-radius:22px;
+  box-shadow:0 18px 45px rgba(15,23,42,.22);
+  overflow:hidden;
+  z-index:1005;
+}
+.cleanSearchSuggestBox.hidden{
+  display:none!important;
+}
+.cleanSuggestItem{
+  width:100%!important;
+  min-height:62px!important;
+  border:0!important;
+  border-bottom:1px solid #edf2f7!important;
+  background:#fff!important;
+  color:#0f172a!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  padding:10px 14px!important;
+  text-align:left!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.cleanSuggestItem:active{
+  background:#eff6ff!important;
+}
+.cleanSuggestPin{
+  width:38px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:#eff6ff;
+  font-size:20px;
+}
+.cleanSuggestText{
+  display:flex;
+  flex-direction:column;
+  line-height:1.2;
+}
+.cleanSuggestText b{
+  font-size:16px;
+  font-weight:950;
+}
+.cleanSuggestText small{
+  margin-top:4px;
+  font-size:13px;
+  font-weight:850;
+  color:#64748b;
+}
+
+.cleanMapStatus{
+  display:inline-flex;
+  padding:7px 10px;
+  border-radius:999px;
+  background:#eff6ff;
+  color:#1d4ed8;
+  font-size:13px;
+  font-weight:950;
+  margin:0 0 10px;
+}
+
+.fallbackWarning{
+  display:inline-flex;
+  padding:7px 10px;
+  border-radius:999px;
+  background:#fef3c7;
+  color:#92400e;
+  font-size:12px;
+  font-weight:950;
+  margin:0 0 8px;
+}
+
+/* PAGE CRASH FIX UI */
+body{padding-bottom:120px!important}
+.bottomNav{z-index:9999!important}
+#map{min-height:420px!important;height:420px!important;display:block!important}
+button,input,select{pointer-events:auto!important}
+
+/* Hide old separate fullscreen map overlay */
+#cleanMapOverlay{display:none!important}
+
+/* SAME MAP FULLSCREEN MODE */
+.fullMapBtn,
+#sameMapFullscreenBtn{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-height:58px!important;
+  border-radius:22px!important;
+  margin:12px 0!important;
+  background:#fff!important;
+  border:1px solid #dbe4f0!important;
+  color:#1d4ed8!important;
+  font-weight:950!important;
+  font-size:17px!important;
+}
+
+.sameMapCloseBtn{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top) + 16px)!important;
+  right:18px!important;
+  z-index:1000000!important;
+  width:58px!important;
+  height:58px!important;
+  min-height:58px!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  color:#0f172a!important;
+  box-shadow:0 12px 30px rgba(15,23,42,.25)!important;
+  border:0!important;
+  font-size:34px!important;
+  font-weight:950!important;
+  padding:0!important;
+}
+.sameMapCloseBtn.hidden{display:none!important}
+
+body.sameMapFullscreen{
+  overflow:hidden!important;
+}
+body.sameMapFullscreen #map{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  z-index:999998!important;
+  border-radius:0!important;
+  margin:0!important;
+}
+body.sameMapFullscreen .bottomNav{
+  display:none!important;
+}
+body.sameMapFullscreen header,
+body.sameMapFullscreen .hero,
+body.sameMapFullscreen .card:not(:has(#map)),
+body.sameMapFullscreen #mapStatus,
+body.sameMapFullscreen .etaCard{
+  display:none!important;
+}
+body.sameMapFullscreen #map .leaflet-control-zoom{
+  margin-top:85px!important;
+}
+
+/* FULLSCREEN SEARCH + LOCATE + REFRESH UI */
+.sameMapSearchBar{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top) + 18px)!important;
+  left:18px!important;
+  right:18px!important;
+  z-index:1000000!important;
+  min-height:64px!important;
+  border-radius:28px!important;
+  background:#fff!important;
+  box-shadow:0 12px 36px rgba(15,23,42,.25)!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  padding:8px 10px 8px 16px!important;
+}
+.sameMapSearchBar.hidden{display:none!important}
+.sameMapSearchBar span{font-size:24px}
+.sameMapSearchBar input{
+  flex:1!important;
+  border:0!important;
+  box-shadow:none!important;
+  outline:0!important;
+  min-height:46px!important;
+  font-size:16px!important;
+  padding:0 6px!important;
+}
+.sameMapSearchBar button{
+  width:auto!important;
+  min-height:46px!important;
+  border-radius:20px!important;
+  padding:0 16px!important;
+  background:#2563eb!important;
+  color:#fff!important;
+  font-weight:950!important;
+}
+.sameMapSuggestBox{
+  position:absolute!important;
+  top:74px!important;
+  left:0!important;
+  right:0!important;
+  background:#fff!important;
+  border:1px solid #dbe4f0!important;
+  border-radius:22px!important;
+  box-shadow:0 18px 45px rgba(15,23,42,.22)!important;
+  overflow:hidden!important;
+  z-index:1000001!important;
+}
+.sameMapSuggestBox.hidden{display:none!important}
+.sameMapSuggestItem{
+  width:100%!important;
+  min-height:62px!important;
+  border:0!important;
+  border-bottom:1px solid #edf2f7!important;
+  background:#fff!important;
+  color:#0f172a!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  padding:10px 14px!important;
+  text-align:left!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.sameMapSuggestItem:active{background:#eff6ff!important}
+.sameMapPin{
+  width:38px!important;
+  height:38px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:50%!important;
+  background:#eff6ff!important;
+  font-size:20px!important;
+}
+.sameMapSuggestText{display:flex;flex-direction:column;line-height:1.2}
+.sameMapSuggestText b{font-size:16px;font-weight:950}
+.sameMapSuggestText small{margin-top:4px;font-size:13px;font-weight:850;color:#64748b}
+
+.sameMapFloatBtn{
+  position:fixed!important;
+  right:18px!important;
+  z-index:1000000!important;
+  width:58px!important;
+  height:58px!important;
+  min-height:58px!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  color:#2563eb!important;
+  box-shadow:0 12px 30px rgba(15,23,42,.25)!important;
+  border:0!important;
+  font-size:30px!important;
+  font-weight:950!important;
+  padding:0!important;
+}
+.sameMapFloatBtn.hidden{display:none!important}
+.sameMapRefreshBtn{bottom:calc(env(safe-area-inset-bottom) + 150px)!important}
+.sameMapLocateBtn{
+  bottom:calc(env(safe-area-inset-bottom) + 82px)!important;
+  transform:rotate(-45deg)!important;
+}
+.sameMapMeIcon{background:transparent!important;border:0!important}
+.sameMapMeIcon div{
+  width:46px;height:46px;border-radius:50%;
+  background:#2563eb;color:#fff;border:3px solid #fff;
+  box-shadow:0 8px 22px rgba(15,23,42,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;transform:rotate(-45deg);
+}
+
+/* leave room for search bar in fullscreen */
+body.sameMapFullscreen #map .leaflet-control-zoom{
+  margin-top:92px!important;
+}
+body.sameMapFullscreen .sameMapCloseBtn{
+  top:calc(env(safe-area-inset-top) + 92px)!important;
+}
+
+/* FULLSCREEN BUTTON FIX FINAL */
+#sameMapFullscreenBtn,
+#cleanFullMapBtn,
+.fullMapBtn{
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  position:relative!important;
+  z-index:20!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+}
+body.sameMapFullscreen #map{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  z-index:999998!important;
+  border-radius:0!important;
+  margin:0!important;
+}
+.sameMapCloseBtn{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top) + 92px)!important;
+  right:18px!important;
+  z-index:1000002!important;
+}
+
+/* FULLSCREEN PANEL FIX FINAL */
+body.sameMapFullscreen{overflow:hidden!important;height:100dvh!important;background:#fff!important}
+body.sameMapFullscreen #map{
+  position:fixed!important;left:0!important;top:0!important;right:0!important;bottom:0!important;
+  width:100vw!important;height:100dvh!important;min-height:100dvh!important;
+  z-index:999998!important;border-radius:0!important;margin:0!important;background:#e0f2fe!important;
+}
+body.sameMapFullscreen #map.leaflet-container{width:100vw!important;height:100dvh!important}
+body.sameMapFullscreen .bottomNav{display:none!important}
+body.sameMapFullscreen header,
+body.sameMapFullscreen .hero,
+body.sameMapFullscreen .card:not(:has(#map)),
+body.sameMapFullscreen #mapStatus,
+body.sameMapFullscreen .etaCard{display:none!important}
+.sameMapSheet{
+  position:fixed!important;left:14px!important;right:14px!important;
+  bottom:calc(env(safe-area-inset-bottom) + 14px)!important;
+  z-index:1000001!important;background:#fff!important;border:1px solid #dbe4f0!important;
+  border-radius:28px!important;box-shadow:0 -12px 36px rgba(15,23,42,.22)!important;
+  padding:10px 16px 16px!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important;
+  transition:height .22s ease!important;
+}
+.sameMapSheet.hidden{display:none!important}
+.sameMapSheet.dragging{transition:none!important}
+.sameMapSheet.mini{height:92px!important;overflow:hidden!important}
+.sameMapSheet.mid{height:245px!important}
+.sameMapSheet.full{height:68vh!important}
+.sameMapSheetHandle{width:54px!important;height:6px!important;border-radius:999px!important;background:#cbd5e1!important;margin:0 auto 12px!important}
+.sameMapSheetHeader h2{margin:0!important;font-size:24px!important;color:#0f172a!important;font-weight:950!important}
+.sameMapSheetHeader p{margin:4px 0 10px!important;color:#64748b!important;font-weight:850!important}
+.sameMapSheetStatus{display:inline-flex!important;padding:7px 10px!important;border-radius:999px!important;background:#eff6ff!important;color:#1d4ed8!important;font-size:13px!important;font-weight:950!important;margin:0 0 12px!important}
+.sameMapSheetRouteBtn{width:auto!important;min-height:48px!important;border-radius:18px!important;padding:0 18px!important;background:#2563eb!important;color:#fff!important;font-weight:950!important}
+.sameMapSheet.mini .sameMapSheetStatus,.sameMapSheet.mini .sameMapSheetRouteBtn{display:none!important}
+body.sameMapFullscreen .sameMapRefreshBtn{bottom:calc(env(safe-area-inset-bottom) + 300px)!important}
+body.sameMapFullscreen .sameMapLocateBtn{bottom:calc(env(safe-area-inset-bottom) + 230px)!important}
+body.sameMapFullscreen .sameMapSearchBar{top:calc(env(safe-area-inset-top) + 18px)!important}
+body.sameMapFullscreen .sameMapCloseBtn{top:calc(env(safe-area-inset-top) + 92px)!important;z-index:1000003!important}
+.sameMapSuggestBox{z-index:1000005!important;max-height:50vh!important;overflow:auto!important}
+
+.gmSafePanel{position:fixed!important;top:calc(env(safe-area-inset-top) + 10px)!important;left:12px!important;right:12px!important;z-index:1000010!important;background:#fff!important;border-radius:26px!important;box-shadow:0 12px 38px rgba(15,23,42,.25)!important;padding:10px 12px 12px!important;max-height:70vh!important;overflow:auto!important}
+.gmSafePanel.hidden{display:none!important}.gmSafeHeader{display:flex!important;gap:8px!important}.gmSafeHeader>button{width:42px!important;height:42px!important;min-height:42px!important;border-radius:50%!important;border:0!important;background:#f1f5f9!important;color:#0f172a!important;font-size:34px!important;padding:0!important}
+.gmSafeFields{flex:1!important}.gmSafeField{display:flex!important;align-items:center!important;gap:10px!important;min-height:48px!important}.gmSafeField input{flex:1!important;border:0!important;box-shadow:none!important;outline:0!important;min-height:44px!important;font-size:17px!important;padding:0!important}.gmLine{height:1px!important;background:#e5e7eb!important;margin-left:20px!important}
+.blueDot,.redDot{width:10px!important;height:10px!important;border-radius:50%!important;display:inline-block!important;flex:0 0 10px!important}.blueDot{background:#3b82f6!important}.redDot{background:#ef4444!important}
+#gmSafeClear{width:34px!important;height:34px!important;min-height:34px!important;border-radius:50%!important;border:0!important;background:#f8fafc!important;color:#334155!important;font-size:20px!important;padding:0!important}
+.gmSug{width:100%!important;min-height:62px!important;border:0!important;border-bottom:1px solid #eef2f7!important;background:#fff!important;color:#0f172a!important;display:grid!important;grid-template-columns:42px 1fr!important;column-gap:12px!important;text-align:left!important;border-radius:0!important;padding:10px 4px!important;box-shadow:none!important}.gmSug span{grid-row:1/3;width:42px;height:42px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center}.gmSug b{font-size:17px!important;font-weight:850!important}.gmSug small{font-size:14px!important;color:#64748b!important;font-weight:650!important}
+#gmSafeGo{width:100%!important;min-height:46px!important;border-radius:18px!important;background:#2563eb!important;color:#fff!important;font-weight:950!important;margin-top:10px!important}
+#sameMapFullscreenBtn,.fullMapBtn{pointer-events:auto!important;cursor:pointer!important;z-index:20!important}
