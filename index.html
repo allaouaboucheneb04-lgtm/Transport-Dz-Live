@@ -3,373 +3,675 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Transport Live DZ</title>
+<title>Transport DZ — Bus en direct</title>
+<meta name="description" content="Suivez vos bus en temps réel en Algérie">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="sameMapSearchBar" class="sameMapSearchBar hidden">
-  <span>🔎</span>
-  <input id="sameMapSearchInput" type="text" placeholder="Rechercher un arrêt...">
-  <button id="sameMapItineraryBtn" type="button">Itinéraire</button>
-  <div id="sameMapSuggestBox" class="sameMapSuggestBox hidden"></div>
-</div>
-<button id="sameMapRefreshBtn" class="sameMapFloatBtn sameMapRefreshBtn hidden" type="button">↻</button>
-<button id="sameMapLocateBtn" class="sameMapFloatBtn sameMapLocateBtn hidden" type="button">➤</button>
+<!-- ═══════════════════════════════════════════
+     TOAST NOTIFICATIONS (remplace alert())
+═══════════════════════════════════════════ -->
+<div id="toastContainer" class="toastContainer"></div>
 
-<div id="sameMapSheet" class="sameMapSheet hidden">
-  <div id="sameMapSheetHandle" class="sameMapSheetHandle"></div>
-  <div class="sameMapSheetHeader">
-    <h2>Transport Live DZ</h2>
-    <p>Bus en direct, lignes, arrêts et itinéraire.</p>
-  </div>
-  <div id="sameMapSheetStatus" class="sameMapSheetStatus">Carte prête</div>
-  <button id="sameMapSheetRouteBtn" type="button" class="sameMapSheetRouteBtn">Chercher un trajet</button>
-</div>
-<button id="sameMapCloseBtn" class="sameMapCloseBtn hidden" type="button">×</button>
-
-<div id="cleanMapOverlay" class="cleanMapOverlay hidden">
-  <div id="cleanMap" class="cleanMap"></div>
-
-  <div class="cleanMapSearch">
-    <span>🔎</span>
-    <input id="cleanSearchInput" type="text" placeholder="Où voulez-vous aller ?">
-    <button id="cleanItineraryBtn" type="button">Itinéraire</button>
-    <div id="cleanSearchSuggestBox" class="cleanSearchSuggestBox hidden"></div>
-  </div>
-
-  <button id="cleanCloseMapBtn" class="cleanFloatingBtn cleanCloseBtn" type="button">×</button>
-  <button id="cleanLocateBtn" class="cleanFloatingBtn cleanLocateBtn" type="button">➤</button>
-  <button id="cleanRefreshBtn" class="cleanFloatingBtn cleanRefreshBtn" type="button">↻</button>
-
-  <div id="cleanBottomSheet" class="cleanBottomSheet">
-    <div class="cleanHandle"></div>
-    <h2>Transport Live DZ</h2>
-    <p>Bus en direct, trajet, ETA et arrêts proches.</p><div id="fallbackWarning" class="fallbackWarning">Si Firestore est vide, l’app utilise des données démo.</div><div id="cleanMapStatus" class="cleanMapStatus">Lignes et arrêts chargés sur la carte.</div>
-    <button id="cleanOpenRouteBtn" type="button">Chercher un trajet</button>
-  </div>
-</div>
-
-
+<!-- ═══════════════════════════════════════════
+     AUTH GATE
+═══════════════════════════════════════════ -->
 <div id="authGate" class="authGate hidden">
-  <div class="authHero">
-    <div class="brandMini">Firebase + GPS Live</div>
-    <h1>Transport Live DZ</h1>
-    <p>Connecte-toi ou crée ton compte pour utiliser l’espace client, chauffeur ou admin.</p>
-
+  <div class="authCard">
+    <div class="authLogo">
+      <div class="authBusIcon">🚌</div>
+      <h1>Transport DZ</h1>
+      <p>Bus en direct · Itinéraires · GPS temps réel</p>
+    </div>
     <div class="authTabs">
       <button id="authTabLogin" class="authTab active" type="button">Connexion</button>
       <button id="authTabSignup" class="authTab" type="button">Inscription</button>
     </div>
-
     <div id="authLoginBox" class="authBox">
-      <label>Email</label>
-      <input id="gateEmailLogin" type="email" placeholder="email@example.com">
-      <label>Mot de passe</label>
-      <input id="gatePasswordLogin" type="password" placeholder="••••••••">
-      <button id="gateLoginBtn" class="primary" type="button">Se connecter</button>
+      <input id="gateEmailLogin" type="email" placeholder="Adresse email" autocomplete="email">
+      <input id="gatePasswordLogin" type="password" placeholder="Mot de passe" autocomplete="current-password">
+      <button id="gateLoginBtn" class="btn-primary" type="button">Se connecter</button>
     </div>
-
     <div id="authSignupBox" class="authBox hidden">
-      <label>Type de compte</label>
-      <select id="gateSignupRole">
-        <option value="client">Client</option>
-        <option value="driver">Chauffeur</option>
+      <select id="gateSignupRole" class="authSelect">
+        <option value="client">👤 Client — accès gratuit</option>
+        <option value="driver">🚌 Chauffeur — validation requise</option>
       </select>
-      <label>Email</label>
-      <input id="gateEmailSignup" type="email" placeholder="email@example.com">
-      <label>Mot de passe</label>
-      <input id="gatePasswordSignup" type="password" placeholder="minimum 6 caractères">
-      <button id="gateSignupBtn" class="primary" type="button">Créer mon compte</button>
-      <p class="authHint">Client : accès direct. Chauffeur : validation admin obligatoire.</p>
+      <input id="gateEmailSignup" type="email" placeholder="Adresse email" autocomplete="email">
+      <input id="gatePasswordSignup" type="password" placeholder="Mot de passe (min. 6 caractères)" autocomplete="new-password">
+      <button id="gateSignupBtn" class="btn-primary" type="button">Créer mon compte</button>
+      <p class="authHint">Les comptes chauffeur nécessitent une validation par l'admin.</p>
     </div>
-
-    <button id="continueGuestBtn" class="secondary" type="button">Continuer comme client sans compte</button>
+    <button id="continueGuestBtn" class="btn-ghost" type="button">Continuer sans compte →</button>
     <div id="gateAuthStatus" class="authStatus"></div>
   </div>
 </div>
 
-<header class="topbar">
-  <div><div class="kicker">Firebase + GPS Live</div><h1>Transport Live DZ</h1></div>
-  <div class="badges"><span id="firebaseStatus" class="badge blue">Firebase...</span><span id="roleBadge" class="roleBadge">Invité</span><button id="openLoginBtn" class="badge light" type="button">Connexion</button></div>
+<!-- ═══════════════════════════════════════════
+     FULLSCREEN MAP OVERLAY
+═══════════════════════════════════════════ -->
+<div id="mapOverlay" class="mapOverlay hidden">
+  <!-- Search bar -->
+  <div class="mapSearchBar">
+    <span class="mapSearchIcon">🔍</span>
+    <input id="mapSearchInput" type="text" placeholder="Rechercher un arrêt ou une destination..." autocomplete="off">
+    <button id="mapSearchClearBtn" class="mapSearchClear hidden" type="button">✕</button>
+  </div>
+  <div id="mapSearchSuggestions" class="mapSearchSuggestions hidden"></div>
+
+  <!-- Floating buttons -->
+  <button id="mapLocateBtn" class="mapFab mapFabLocate" type="button" title="Ma position">📍</button>
+  <button id="mapRefreshBtn" class="mapFab mapFabRefresh" type="button" title="Rafraîchir">↻</button>
+  <button id="mapCloseBtn" class="mapFab mapFabClose" type="button" title="Fermer">✕</button>
+
+  <!-- Bottom sheet itinerary panel -->
+  <div id="mapItineraryPanel" class="mapItineraryPanel hidden">
+    <div class="mapItineraryHandle"></div>
+    <div class="mapItineraryContent">
+      <div class="mapItineraryRow">
+        <span class="mapDot mapDotBlue"></span>
+        <input id="mapFromInput" type="text" placeholder="Votre position ou arrêt de départ" autocomplete="off">
+      </div>
+      <div class="mapItinerarySep"></div>
+      <div class="mapItineraryRow">
+        <span class="mapDot mapDotRed"></span>
+        <input id="mapToInput" type="text" placeholder="Destination" autocomplete="off">
+      </div>
+      <div id="mapItinerarySuggestions" class="mapSearchSuggestions hidden"></div>
+      <button id="mapGoBtn" class="btn-primary" type="button">🗺️ Calculer l'itinéraire</button>
+      <div id="mapRouteResult" class="mapRouteResult hidden"></div>
+    </div>
+  </div>
+
+  <!-- Bottom info sheet (default) -->
+  <div id="mapInfoSheet" class="mapInfoSheet">
+    <div class="mapInfoHandle"></div>
+    <div class="mapInfoBody">
+      <h2>Transport DZ</h2>
+      <div id="mapStatus" class="mapStatus">Chargement...</div>
+      <div class="mapInfoBtns">
+        <button id="mapItineraryBtn" class="btn-primary" type="button">🔍 Chercher un trajet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- The actual map -->
+  <div id="fullMap"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════ -->
+<header class="appHeader">
+  <div class="appHeaderLeft">
+    <span class="appLogo">🚌</span>
+    <div>
+      <div class="appName">Transport DZ</div>
+      <div id="appCityLabel" class="appCity">Béjaïa</div>
+    </div>
+  </div>
+  <div class="appHeaderRight">
+    <span id="firebaseStatus" class="statusDot statusDot--loading"></span>
+    <button id="openLoginBtn" class="headerLoginBtn" type="button">
+      <span id="userAvatarLabel">Connexion</span>
+    </button>
+  </div>
 </header>
 
-<main>
-<section id="clientPage" class="page active">
-  <div class="hero">
-    <div><div class="kicker">Client</div><h2>Voir les bus en direct</h2><p>Les clients voient seulement les bus en ligne, avec GPS récent, proches de leur ligne.</p></div>
-    <button id="sameMapFullscreenBtn" type="button" class="secondary fullMapBtn">🗺️ Mode carte plein écran</button>
-      <button id="clientGpsBtn" class="primary small" type="button">📍 Ma position</button>
-  </div>
-  <div class="card">
-    <label>Ville</label><select id="clientCity"><option value="Bejaia">Béjaïa</option><option value="Montreal">Montréal test</option></select>
-    <label>Ligne</label><select id="clientLineSelect"><option value="all">Toutes les lignes</option></select>
-    <label>Départ</label><button id="clearFromBtn" type="button" class="clearFieldBtn">Effacer</button><input id="fromInput" list="fromSuggestions" placeholder="Ex: Gare routière">
-    <label>Destination</label><button id="clearToBtn" type="button" class="clearFieldBtn">Effacer</button><input id="toInput" list="toSuggestions" placeholder="Ex: Université">
-    <datalist id="fromSuggestions"></datalist><datalist id="toSuggestions"></datalist><div id="routeSuggestionBox" class="suggestionBox hidden"></div><div id="recentTripsBox" class="recentTripsBox"></div>
-      <button id="searchRouteBtn" class="primary" type="button">Chercher trajet</button>
-    <div class="routeNote">L’app propose la meilleur trajet multi-lignes : moins de marche, moins de temps, moins de correspondances.</div><div class="routeOnlyNote">Mode trajet : la carte affiche seulement le chemin à suivre.</div><button id="clearRouteBtn" type="button" class="secondary smallBtn">Afficher toutes les lignes</button><div id="routeResult" class="result">Prêt. Écris un arrêt de départ et un arrêt de destination.</div><div id="routeStepsList"></div>
-  </div>
-  <div class="mapWrap">
-  <div class="card etaCard">
-    <h3>⏱️ ETA bus proche</h3>
-    <p class="muted">Choisis un arrêt pour voir le prochain bus en ligne.</p>
-    <label>Arrêt</label>
-    <select id="etaStopSelect"></select>
-    <button id="etaRefreshBtn" type="button" class="primary">Calculer ETA</button>
-    <div id="etaResult" class="etaResult">Sélectionne un arrêt.</div>
-  </div>
+<main class="appMain">
 
-  <div id="map"></div></div>
-  <div class="card"><h3>Arrêts</h3><div id="stopsList" class="list"></div></div>
-  <div class="card"><h3>Bus visibles aux clients</h3><div id="vehiclesList" class="list"></div></div>
-  <div class="card"><h3>🕓 Bus en attente de départ</h3><div id="waitingBusesList" class="list"></div></div>
-  <div class="card"><h3>⏱️ Prochain bus par arrêt</h3><div id="etaList" class="list"></div></div>
-</section>
+  <!-- ═══ CLIENT PAGE ═══ -->
+  <section id="clientPage" class="page active">
 
-<section id="driverPage" class="page">
-  <div class="hero">
-    <div><div class="kicker">Chauffeur</div><h2>Espace chauffeur</h2><p>Se mettre en ligne = travailler. Hors ligne = invisible aux clients.</p></div>
-  </div>
-  <div id="driverPendingCard" class="card hidden">
-    <h3>⏳ Compte en attente de validation</h3>
-    <p>Votre compte chauffeur est en attente d'approbation par l'administrateur. Vous serez averti(e) dès que votre compte sera activé.</p>
-  </div>
-
-  <div class="card statusCard">
-    <h3>Statut de travail</h3>
-    <div id="driverWorkBadge" class="workBadge offline">Hors ligne</div>
-
-    <label>Nom chauffeur</label><input id="driverNameInput" placeholder="Nom chauffeur">
-
-    <label>Véhicule</label><select id="driverVehicleSelect"></select>
-
-    <label>Sens de travail</label><select id="driverDirectionSelect"><option value="aller">Aller</option><option value="retour">Retour</option></select>
-      <label>Fréquence GPS</label>
-    <select id="driverGpsFrequency">
-      <option value="15000">15 secondes</option>
-      <option value="30000" selected>30 secondes</option>
-      <option value="60000">60 secondes</option>
-    </select>
-
-    <div class="row">
-      <button id="goOnlineBtn" class="primary" type="button">🟢 Se mettre en ligne</button>
-      <button id="goOfflineBtn" class="danger" type="button">🔴 Hors ligne</button>
+    <!-- Hero search card -->
+    <div class="heroSearch">
+      <div class="heroSearchTitle">Où voulez-vous aller ?</div>
+      <div class="heroInputGroup">
+        <div class="heroInputRow">
+          <span class="heroDot heroDotBlue"></span>
+          <input id="fromInput" type="text" placeholder="Départ — arrêt ou adresse" autocomplete="off">
+          <button id="clearFromBtn" class="inputClearBtn hidden" type="button">✕</button>
+        </div>
+        <div class="heroInputDivider"></div>
+        <div class="heroInputRow">
+          <span class="heroDot heroDotRed"></span>
+          <input id="toInput" type="text" placeholder="Destination" autocomplete="off">
+          <button id="clearToBtn" class="inputClearBtn hidden" type="button">✕</button>
+        </div>
+      </div>
+      <div id="routeSuggestionBox" class="suggestionBox hidden"></div>
+      <div id="recentTripsBox" class="recentTripsBox"></div>
+      <div class="heroActions">
+        <button id="searchRouteBtn" class="btn-primary" type="button">Chercher un trajet</button>
+        <button id="openFullMapBtn" class="btn-secondary" type="button">🗺️ Carte</button>
+        <button id="clientGpsBtn" class="btn-secondary" type="button" style="width:auto;padding:12px">📍</button>
+      </div>
     </div>
 
-    <div id="driverStatus" class="result">Hors ligne. Aucun GPS envoyé.</div>
-  </div>
-
-  <div class="card">
-    <h3>Règle automatique</h3>
-    <p>Si tu sors de ta ligne de bus, ton véhicule reste connecté mais il disparaît de la carte client.</p>
-    <div class="result">Tolérance actuelle : <b>500 mètres</b> autour des arrêts de la ligne.</div>
-  </div>
-</section>
-
-<section id="adminPage" class="page">
-  <div class="hero"><div><div class="kicker">Admin</div><h2>Gestion Firebase</h2><p>Lignes, arrêts, véhicules et chauffeurs sauvegardés dans Firestore.</p></div></div>
-  <div class="tabs">
-    <button class="tab active" type="button" data-panel="panelLines">Lignes</button>
-    <button class="tab" type="button" data-panel="panelStops">Arrêts</button>
-    <button class="tab" type="button" data-panel="panelVehicles">Véhicules</button>
-    <button class="tab" type="button" data-panel="panelDrivers">Chauffeurs</button><button class="tab" type="button" data-panel="panelWalking">Marche</button><button class="tab" type="button" data-panel="panelImport">Import</button>
-  </div>
-
-  <div id="panelLines" class="adminPanel active">
-    <div class="card"><h3>Ajouter une ligne</h3>
-      <label>Ville</label><select id="lineCity"><option value="Bejaia">Béjaïa</option><option value="Montreal">Montréal test</option></select>
-      <label>Nom ligne</label><input id="lineNameInput" placeholder="Ex: Tidjounane">
-      <label>Type</label><select id="lineType"><option value="bus">bus</option><option value="tram">tram</option><option value="metro">metro</option><option value="taxi_collectif">taxi collectif</option></select>
-      <label>Point départ ligne</label><select id="lineStartStopSelect"><option value="">Auto / aucun</option></select>
-      <label>Point arrivée ligne</label><select id="lineEndStopSelect"><option value="">Auto / aucun</option></select>
-      <label>Couleur</label><input id="lineColor" type="color" value="#2563eb">
-      <button id="addLineBtn" class="primary" type="button">Ajouter ligne</button><div id="lineStatus" class="result"></div>
+    <!-- Route result -->
+    <div id="routeResultCard" class="card hidden">
+      <div class="cardHeader">
+        <h3>Itinéraire</h3>
+        <button id="clearRouteBtn" class="btn-ghost-sm" type="button">✕ Effacer</button>
+      </div>
+      <div id="routeResult" class="routeResult"></div>
+      <div id="routeStepsList" class="routeStepsList"></div>
     </div>
-    <div class="card"><h3>Lignes enregistrées</h3><p class="hintBox">Terminus : un bus au point départ/arrivée est caché aux clients jusqu’à son redémarrage.</p><div id="linesAdminList" class="list"></div></div>
-  </div>
 
-  <div id="panelStops" class="adminPanel">
-    <div class="card"><h3>Ajouter un arrêt</h3>
-      <label>Ligne</label><select id="stopLineSelect"></select><div class="hint">Chaque arrêt est relié uniquement à cette ligne.</div>
-      <label>Sens</label><select id="stopDirection"><option value="both">Aller + Retour</option><option value="aller">Aller</option><option value="retour">Retour</option></select>
-      <label>Nom arrêt</label><input id="stopName" placeholder="Ex: Sidi Aïch">
-      <label>Latitude</label><input id="stopLat" inputmode="decimal" placeholder="36.6122">
-      <label>Longitude</label><input id="stopLng" inputmode="decimal" placeholder="4.6865">
-      <label>Ordre dans la ligne</label><input id="stopOrder" inputmode="numeric" placeholder="1, 2, 3...">
-      <div class="row"><button id="useMyLocationStopBtn" class="secondary" type="button">📍 Utiliser ma position</button><button id="pickStopOnMapBtn" class="secondary" type="button">🗺️ Choisir sur la carte</button></div>
-      <button id="addStopBtn" class="primary" type="button">Ajouter arrêt</button><div id="stopStatus" class="result"></div>
-    </div>
-    <div class="card">
-        <h3>Arrêts enregistrés</h3><p class="hintBox">Sens aller / retour : un arrêt peut être “Aller”, “Retour” ou “Aller + Retour”.</p>
-
-        <label>Filtrer par ligne</label>
-        <select id="adminStopsLineFilter">
+    <!-- Live buses near me -->
+    <div class="sectionHeader">
+      <h2>Bus en direct</h2>
+      <div class="headerFilters">
+        <select id="clientCity" class="filterSelect">
+          <option value="Bejaia">Béjaïa</option>
+          <option value="Alger">Alger</option>
+          <option value="Oran">Oran</option>
+          <option value="Constantine">Constantine</option>
+          <option value="Tizi">Tizi Ouzou</option>
+          <option value="Annaba">Annaba</option>
+        </select>
+        <select id="clientLineSelect" class="filterSelect">
           <option value="all">Toutes les lignes</option>
         </select>
-
-        <label>Recherche arrêt</label>
-        <input id="adminStopsSearch" placeholder="Ex: Sidi Aïch, 28 eme...">
-
-        <div id="adminStopsCount" class="result">0 arrêt</div>
-        <div id="stopsAdminList" class="list"></div>
-      </div>
-  </div>
-
-  <div id="panelVehicles" class="adminPanel">
-    <div class="card"><h3>Ajouter un véhicule</h3>
-      <label>Numéro véhicule</label><input id="vehicleName" placeholder="Ex: Bus 12">
-      <label>Ligne</label><select id="vehicleLineSelect"></select>
-      <label>Chauffeur</label><select id="vehicleDriverSelect"></select>
-      <button id="addVehicleBtn" class="primary" type="button">Ajouter véhicule</button><div id="vehicleStatus" class="result"></div>
-    </div>
-    <div class="card"><h3>Véhicules enregistrés</h3><div id="vehiclesAdminList" class="list"></div></div>
-  </div>
-
-  <div id="panelDrivers" class="adminPanel">
-    <div class="card"><h3>Demandes chauffeurs en attente</h3><div id="pendingDriversList" class="list"></div></div>
-    <div class="card"><h3>Ajouter un chauffeur</h3>
-      <label>Nom chauffeur</label><input id="driverNameAdmin" placeholder="Nom chauffeur">
-      <label>Téléphone</label><input id="driverPhoneAdmin" placeholder="Téléphone">
-      <label>Email / UID</label><input id="driverEmailAdmin" placeholder="Email ou UID">
-      <button id="addDriverBtn" class="primary" type="button">Ajouter chauffeur</button><div id="driverAdminStatus" class="result"></div>
-    </div>
-    <div class="card"><h3>Chauffeurs enregistrés</h3><div id="driversAdminList" class="list"></div></div>
-  </div>
-  <div id="panelWalking" class="adminPanel">
-    <div class="card">
-      <h3>Enregistrer un chemin à pied</h3>
-      <p>Marche entre deux arrêts pour enregistrer le trajet piéton.</p>
-      <label>Départ</label>
-      <select id="walkFromStopSelect"></select>
-      <label>Arrivée</label>
-      <select id="walkToStopSelect"></select>
-      <div id="walkingTrackStatus" class="result">Prêt.</div>
-      <div class="row">
-        <button id="startWalkingTrackBtn" class="primary" type="button">▶ Démarrer enregistrement</button>
-        <button id="stopWalkingTrackBtn" class="secondary" type="button">⏹ Terminer et sauvegarder</button>
       </div>
     </div>
+
+    <!-- Bus list -->
+    <div id="livebusesList" class="busList"></div>
+
+    <!-- ETA card -->
     <div class="card">
-      <h3>Chemins à pied proposés</h3>
-      <p>Valide les raccourcis utilisés par les clients.</p>
-      <div id="walkingTracksAdminList" class="list"></div>
-    </div>
-  </div>
-
-  <div id="panelImport" class="adminPanel">
-
-    <div class="card">
-      <h3>GeoJSON Béjaïa lignes + arrêts</h3>
-      <p>Fichier intégré : <b>/data/bejaia-lines-stops.geojson</b></p>
-      <div class="result">Analyse fichier : 306 éléments · Points: 297 · Lignes: 9 · Routes détectées: 54</div>
-
-      <label class="checkLine"><input id="showBejaiaGeojsonToggle" type="checkbox" checked> Afficher ce GeoJSON sur la carte</label>
-
-      <button id="autoImportBejaiaBtn" type="button" class="primary">Importer automatiquement TOUT : lignes + arrêts + couleurs</button>
-      <button id="deleteAllLinesStopsBtn" type="button" class="danger">⚠️ Supprimer toutes les lignes et tous les arrêts Firebase</button>
-      <div class="dangerNote">Attention : ce bouton supprime toutes les collections <b>lines</b> et <b>stops</b>.</div>
-      <button id="createBejaiaLinesBtn" type="button" class="secondary">Créer seulement les lignes OSM</button>
-
-      <label>Importer les arrêts dans quelle ligne Firebase?</label>
-      <select id="bejaiaImportLineSelect"></select>
-
-      <button id="importBejaiaStopsBtn" type="button" class="primary">Importer les arrêts Béjaïa dans Firebase</button>
-      <div id="bejaiaGeojsonStatus" class="result">Chargement...</div>
+      <div class="cardHeader">
+        <h3>⏱ Prochain bus</h3>
+      </div>
+      <div class="etaSelectRow">
+        <select id="etaStopSelect" class="filterSelect etaSelect"></select>
+        <button id="etaRefreshBtn" class="btn-icon" type="button">↻</button>
+      </div>
+      <div id="etaResult" class="etaResult">Sélectionne un arrêt.</div>
     </div>
 
-
-    <div class="card">
-      <h3>Arrêts OpenStreetMap GeoJSON</h3>
-      <p>Ton fichier est intégré dans <b>/data/algeria-osm-stops.geojson</b>. Points orange sur la carte.</p>
-      <label class="checkLine"><input id="showOsmStopsToggle" type="checkbox" checked> Afficher les arrêts OSM</label>
-      <label>Importer dans quelle ligne Firebase?</label>
-      <select id="osmImportLineSelect"></select>
-      <button id="importOsmStopsBtn" type="button" class="primary">Importer ces arrêts OSM dans Firebase</button>
-      <div id="osmImportStatus" class="result">Chargement GeoJSON...</div>
+    <!-- Waiting buses -->
+    <div id="waitingCard" class="card hidden">
+      <div class="cardHeader"><h3>🕐 Bus en attente de départ</h3></div>
+      <div id="waitingBusesList" class="busList"></div>
     </div>
 
+    <!-- ETA by stop -->
     <div class="card">
-      <h3>Importer lignes Algérie</h3>
-      <p>Colle un JSON avec les lignes et arrêts. L’app crée automatiquement <b>lines</b> et <b>stops</b> dans Firebase.</p>
-
-      <button id="loadExampleImportBtn" type="button" class="secondary">Charger exemple Béjaïa</button>
-
-      <label>JSON lignes + arrêts</label>
-      <textarea id="importJsonText" class="jsonBox" placeholder='{"lines":[...]}'></textarea>
-
-      <button id="importLinesBtn" type="button" class="primary">Importer dans Firebase</button>
-      <div id="importStatus" class="result">Prêt.</div>
+      <div class="cardHeader"><h3>📍 ETA par arrêt</h3></div>
+      <div id="etaList" class="etaList"></div>
     </div>
 
-    <div class="card">
-      <h3>Format attendu</h3>
-      <pre class="codeBox">{
-  "lines": [
-    {
-      "name": "Tidjounane - Takarietz",
-      "city": "Bejaia",
-      "type": "bus",
-      "color": "#2563eb",
-      "stops": [
-        {"name":"Sidi Aich", "lat":36.6122, "lng":4.6865},
-        {"name":"Takarietz", "lat":36.60, "lng":4.70}
-      ]
-    }
-  ]
-}</pre>
-    </div>
-  </div>
+    <!-- Stops list (collapsible) -->
+    <details class="card detailsCard">
+      <summary>🚏 Arrêts de la ligne</summary>
+      <div id="stopsList" class="stopsList"></div>
+    </details>
 
-</section>
+    <!-- Vehicles list -->
+    <details class="card detailsCard">
+      <summary>🚌 Tous les bus visibles</summary>
+      <div id="vehiclesList" class="vehiclesList"></div>
+    </details>
+
+  </section>
+
+  <!-- ═══ DRIVER PAGE ═══ -->
+  <section id="driverPage" class="page">
+
+    <div id="driverPendingCard" class="card card--warning hidden">
+      <div class="warningIcon">⏳</div>
+      <h3>En attente de validation</h3>
+      <p>Votre compte chauffeur est en cours d'examen. L'administrateur vous contactera dès validation.</p>
+    </div>
+
+    <!-- Status card -->
+    <div class="card driverStatusCard" id="driverMainCard">
+      <div class="driverStatusHeader">
+        <div id="driverWorkBadge" class="workBadge workBadge--offline">
+          <span class="workBadgeDot"></span>
+          Hors ligne
+        </div>
+        <div id="driverSpeedBadge" class="speedBadge hidden">0 km/h</div>
+      </div>
+
+      <div class="formGroup">
+        <label>Votre nom</label>
+        <input id="driverNameInput" type="text" placeholder="Nom et prénom" autocomplete="name">
+      </div>
+      <div class="formGroup">
+        <label>Véhicule assigné</label>
+        <select id="driverVehicleSelect"></select>
+      </div>
+      <div class="formRow">
+        <div class="formGroup">
+          <label>Sens</label>
+          <select id="driverDirectionSelect">
+            <option value="aller">➡ Aller</option>
+            <option value="retour">⬅ Retour</option>
+          </select>
+        </div>
+        <div class="formGroup">
+          <label>Fréquence GPS</label>
+          <select id="driverGpsFrequency">
+            <option value="10000">10 sec</option>
+            <option value="15000">15 sec</option>
+            <option value="30000" selected>30 sec</option>
+            <option value="60000">1 min</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="driverActions">
+        <button id="goOnlineBtn" class="btn-online" type="button">🟢 Démarrer le service</button>
+        <button id="goOfflineBtn" class="btn-offline" type="button">🔴 Terminer</button>
+      </div>
+
+      <div id="driverStatus" class="driverStatusMsg">Hors ligne.</div>
+    </div>
+
+    <!-- Next stop info -->
+    <div id="nextStopCard" class="card hidden">
+      <div class="cardHeader"><h3>📍 Prochain arrêt</h3></div>
+      <div id="nextStopInfo" class="nextStopInfo"></div>
+    </div>
+
+    <!-- Driver route info -->
+    <div class="card">
+      <div class="cardHeader"><h3>ℹ️ Règles de visibilité</h3></div>
+      <p class="cardDesc">Vous apparaissez sur la carte client uniquement si :</p>
+      <ul class="rulesList">
+        <li>✅ Statut <strong>En ligne</strong></li>
+        <li>✅ GPS envoyé dans les <strong>2 dernières minutes</strong></li>
+        <li>✅ Vous êtes à moins de <strong>500m</strong> d'un arrêt de votre ligne</li>
+      </ul>
+    </div>
+
+    <!-- Incident report -->
+    <div class="card">
+      <div class="cardHeader"><h3>⚠️ Signaler un incident</h3></div>
+      <select id="incidentType" class="filterSelect">
+        <option value="panne">🔧 Panne véhicule</option>
+        <option value="accident">🚨 Accident</option>
+        <option value="deviation">🔀 Déviation</option>
+        <option value="retard">⏰ Retard important</option>
+        <option value="autre">📝 Autre</option>
+      </select>
+      <input id="incidentNote" type="text" placeholder="Note optionnelle..." style="margin-top:8px">
+      <button id="reportIncidentBtn" class="btn-secondary" type="button" style="margin-top:8px">Envoyer le signalement</button>
+    </div>
+
+  </section>
+
+  <!-- ═══ ADMIN PAGE ═══ -->
+  <section id="adminPage" class="page">
+
+    <!-- Admin stats dashboard -->
+    <div class="adminDashboard">
+      <div class="statCard">
+        <div class="statValue" id="statDriversOnline">0</div>
+        <div class="statLabel">Chauffeurs en ligne</div>
+      </div>
+      <div class="statCard">
+        <div class="statValue" id="statLinesActive">0</div>
+        <div class="statLabel">Lignes actives</div>
+      </div>
+      <div class="statCard">
+        <div class="statValue" id="statTotalStops">0</div>
+        <div class="statLabel">Arrêts total</div>
+      </div>
+      <div class="statCard statCard--alert" id="statIncidentsCard">
+        <div class="statValue" id="statIncidents">0</div>
+        <div class="statLabel">Incidents actifs</div>
+      </div>
+    </div>
+
+    <!-- Pending drivers alert -->
+    <div id="pendingAlert" class="pendingAlert hidden">
+      <span>⚠️</span>
+      <span id="pendingAlertText">Des chauffeurs attendent validation</span>
+      <button type="button" onclick="switchAdminTab('panelDrivers')">Voir →</button>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="adminTabs">
+      <button class="adminTab active" type="button" data-panel="panelLines">Lignes</button>
+      <button class="adminTab" type="button" data-panel="panelStops">Arrêts</button>
+      <button class="adminTab" type="button" data-panel="panelVehicles">Véhicules</button>
+      <button class="adminTab" type="button" data-panel="panelDrivers">
+        Chauffeurs
+        <span id="pendingBadge" class="pendingBadge hidden">!</span>
+      </button>
+      <button class="adminTab" type="button" data-panel="panelWalking">Marche</button>
+      <button class="adminTab" type="button" data-panel="panelIncidents">Incidents</button>
+      <button class="adminTab" type="button" data-panel="panelImport">Import</button>
+    </div>
+
+    <!-- PANEL: LINES -->
+    <div id="panelLines" class="adminPanel active">
+      <div class="card">
+        <h3 id="linePanelTitle">Ajouter une ligne</h3>
+        <div class="formRow">
+          <div class="formGroup">
+            <label>Ville</label>
+            <select id="lineCity">
+              <option value="Bejaia">Béjaïa</option>
+              <option value="Alger">Alger</option>
+              <option value="Oran">Oran</option>
+              <option value="Constantine">Constantine</option>
+              <option value="Tizi">Tizi Ouzou</option>
+              <option value="Annaba">Annaba</option>
+            </select>
+          </div>
+          <div class="formGroup">
+            <label>Type</label>
+            <select id="lineType">
+              <option value="bus">🚌 Bus</option>
+              <option value="tram">🚃 Tram</option>
+              <option value="metro">🚇 Métro</option>
+              <option value="taxi_collectif">🚕 Taxi collectif</option>
+            </select>
+          </div>
+        </div>
+        <div class="formGroup">
+          <label>Nom de la ligne</label>
+          <input id="lineNameInput" type="text" placeholder="Ex: Tidjounane — Takarietz">
+        </div>
+        <div class="formRow">
+          <div class="formGroup">
+            <label>Départ</label>
+            <select id="lineStartStopSelect"><option value="">Auto</option></select>
+          </div>
+          <div class="formGroup">
+            <label>Terminus</label>
+            <select id="lineEndStopSelect"><option value="">Auto</option></select>
+          </div>
+        </div>
+        <div class="formGroup">
+          <label>Couleur sur la carte</label>
+          <input id="lineColor" type="color" value="#2563eb" class="colorInput">
+        </div>
+        <div class="formActions">
+          <button id="addLineBtn" class="btn-primary" type="button">Ajouter la ligne</button>
+          <button id="cancelLineEditBtn" class="btn-ghost hidden" type="button">Annuler</button>
+        </div>
+        <div id="lineStatus" class="formStatus"></div>
+      </div>
+      <div class="card">
+        <div class="cardHeader">
+          <h3>Lignes enregistrées</h3>
+          <span id="linesCount" class="countBadge">0</span>
+        </div>
+        <div id="linesAdminList" class="adminList"></div>
+      </div>
+    </div>
+
+    <!-- PANEL: STOPS -->
+    <div id="panelStops" class="adminPanel">
+      <div class="card">
+        <h3 id="stopPanelTitle">Ajouter un arrêt</h3>
+        <div class="formRow">
+          <div class="formGroup">
+            <label>Ligne</label>
+            <select id="stopLineSelect"></select>
+          </div>
+          <div class="formGroup">
+            <label>Sens</label>
+            <select id="stopDirection">
+              <option value="both">Aller + Retour</option>
+              <option value="aller">Aller seulement</option>
+              <option value="retour">Retour seulement</option>
+            </select>
+          </div>
+        </div>
+        <div class="formGroup">
+          <label>Nom de l'arrêt</label>
+          <input id="stopName" type="text" placeholder="Ex: Sidi Aïch Centre">
+        </div>
+        <div class="formRow">
+          <div class="formGroup">
+            <label>Latitude</label>
+            <input id="stopLat" inputmode="decimal" placeholder="36.6122">
+          </div>
+          <div class="formGroup">
+            <label>Longitude</label>
+            <input id="stopLng" inputmode="decimal" placeholder="4.6865">
+          </div>
+        </div>
+        <div class="formGroup">
+          <label>Ordre dans la ligne</label>
+          <input id="stopOrder" inputmode="numeric" placeholder="1, 2, 3...">
+        </div>
+        <div class="formRow">
+          <button id="useMyLocationStopBtn" class="btn-secondary" type="button">📍 Ma position</button>
+          <button id="pickStopOnMapBtn" class="btn-secondary" type="button">🗺️ Choisir sur carte</button>
+        </div>
+        <div class="formActions">
+          <button id="addStopBtn" class="btn-primary" type="button">Ajouter l'arrêt</button>
+          <button id="cancelStopEditBtn" class="btn-ghost hidden" type="button">Annuler</button>
+        </div>
+        <div id="stopStatus" class="formStatus"></div>
+      </div>
+      <div class="card">
+        <div class="cardHeader">
+          <h3>Arrêts enregistrés</h3>
+          <span id="stopsCount" class="countBadge">0</span>
+        </div>
+        <div class="filterRow">
+          <select id="adminStopsLineFilter" class="filterSelect">
+            <option value="all">Toutes les lignes</option>
+          </select>
+          <input id="adminStopsSearch" type="text" placeholder="Rechercher..." class="filterInput">
+        </div>
+        <div id="adminStopsCount" class="formStatus"></div>
+        <div id="stopsAdminList" class="adminList"></div>
+      </div>
+    </div>
+
+    <!-- PANEL: VEHICLES -->
+    <div id="panelVehicles" class="adminPanel">
+      <div class="card">
+        <h3 id="vehiclePanelTitle">Ajouter un véhicule</h3>
+        <div class="formGroup">
+          <label>Numéro / nom véhicule</label>
+          <input id="vehicleName" type="text" placeholder="Ex: Bus 12 — Toyota Coaster">
+        </div>
+        <div class="formRow">
+          <div class="formGroup">
+            <label>Ligne</label>
+            <select id="vehicleLineSelect"></select>
+          </div>
+          <div class="formGroup">
+            <label>Chauffeur</label>
+            <select id="vehicleDriverSelect"><option value="">Aucun</option></select>
+          </div>
+        </div>
+        <div class="formActions">
+          <button id="addVehicleBtn" class="btn-primary" type="button">Ajouter le véhicule</button>
+          <button id="cancelVehicleEditBtn" class="btn-ghost hidden" type="button">Annuler</button>
+        </div>
+        <div id="vehicleStatus" class="formStatus"></div>
+      </div>
+      <div class="card">
+        <div class="cardHeader">
+          <h3>Flotte de véhicules</h3>
+          <span id="vehiclesCount" class="countBadge">0</span>
+        </div>
+        <div id="vehiclesAdminList" class="adminList"></div>
+      </div>
+    </div>
+
+    <!-- PANEL: DRIVERS -->
+    <div id="panelDrivers" class="adminPanel">
+      <div class="card" id="pendingDriversCard">
+        <div class="cardHeader">
+          <h3>⏳ Demandes en attente</h3>
+          <span id="pendingCount" class="countBadge countBadge--orange">0</span>
+        </div>
+        <div id="pendingDriversList" class="adminList"></div>
+      </div>
+      <div class="card">
+        <h3 id="driverPanelTitle">Ajouter un chauffeur</h3>
+        <div class="formGroup">
+          <label>Nom complet</label>
+          <input id="driverNameAdmin" type="text" placeholder="Prénom et nom">
+        </div>
+        <div class="formRow">
+          <div class="formGroup">
+            <label>Téléphone</label>
+            <input id="driverPhoneAdmin" type="tel" placeholder="0555 xx xx xx">
+          </div>
+          <div class="formGroup">
+            <label>Email / UID Firebase</label>
+            <input id="driverEmailAdmin" type="text" placeholder="email@example.com">
+          </div>
+        </div>
+        <div class="formActions">
+          <button id="addDriverBtn" class="btn-primary" type="button">Ajouter le chauffeur</button>
+          <button id="cancelDriverEditBtn" class="btn-ghost hidden" type="button">Annuler</button>
+        </div>
+        <div id="driverAdminStatus" class="formStatus"></div>
+      </div>
+      <div class="card">
+        <div class="cardHeader">
+          <h3>Chauffeurs enregistrés</h3>
+          <span id="driversCount" class="countBadge">0</span>
+        </div>
+        <div id="driversAdminList" class="adminList"></div>
+      </div>
+    </div>
+
+    <!-- PANEL: INCIDENTS -->
+    <div id="panelIncidents" class="adminPanel">
+      <div class="card">
+        <div class="cardHeader">
+          <h3>⚠️ Incidents signalés</h3>
+          <button id="clearOldIncidentsBtn" class="btn-ghost-sm" type="button">Archiver tous</button>
+        </div>
+        <div id="incidentsList" class="adminList"></div>
+      </div>
+    </div>
+
+    <!-- PANEL: IMPORT -->
+    <div id="panelWalking" class="adminPanel">
+      <div class="card">
+        <h3>Enregistrer un chemin à pied</h3>
+        <div class="formGroup"><label>Départ</label><select id="walkFromStopSelect"></select></div>
+        <div class="formGroup"><label>Arrivée</label><select id="walkToStopSelect"></select></div>
+        <div id="walkingTrackStatus" class="formStatus">Prêt.</div>
+        <div class="formRow">
+          <button id="startWalkingTrackBtn" class="btn-primary" type="button">▶ Démarrer</button>
+          <button id="stopWalkingTrackBtn" class="btn-secondary" type="button">⏹ Terminer</button>
+        </div>
+      </div>
+    </div>
+    <div id="panelImport" class="adminPanel">
+      <div class="card">
+        <h3>Import GeoJSON Béjaïa</h3>
+        <p class="cardDesc">Fichier intégré : <code>data/bejaia-lines-stops.geojson</code></p>
+        <label class="checkLabel">
+          <input id="showBejaiaGeojsonToggle" type="checkbox" checked>
+          Afficher sur la carte
+        </label>
+        <div class="formActions">
+          <div class="formGroup"><label>Lier arrêts à la ligne</label><select id="bejaiaImportLineSelect"></select></div>
+        <button id="autoImportBejaiaBtn" class="btn-primary" type="button">⬆️ Importer tout (lignes + arrêts)</button>
+          <button id="deleteAllLinesStopsBtn" class="btn-danger" type="button">🗑 Tout supprimer</button>
+        </div>
+        <div id="bejaiaGeojsonStatus" class="formStatus"></div>
+      </div>
+      <div class="card">
+        <h3>Import arrêts OSM</h3>
+        <label class="checkLabel">
+          <input id="showOsmStopsToggle" type="checkbox" checked>
+          Afficher les arrêts OSM
+        </label>
+        <div class="formGroup">
+          <label>Lier à la ligne</label>
+          <select id="osmImportLineSelect"></select>
+        </div>
+        <button id="importOsmStopsBtn" class="btn-primary" type="button">Importer dans Firebase</button>
+        <div id="osmImportStatus" class="formStatus"></div>
+      </div>
+      <div class="card">
+        <h3>Import JSON manuel</h3>
+        <button id="loadExampleImportBtn" class="btn-ghost" type="button">Charger l'exemple</button>
+        <textarea id="importJsonText" class="jsonBox" placeholder='{"lines":[...]}'></textarea>
+        <button id="importLinesBtn" class="btn-primary" type="button">Importer dans Firebase</button>
+        <div id="importStatus" class="formStatus"></div>
+      </div>
+    </div>
+
+  </section>
+
 </main>
 
-<nav class="bottomNav"><button class="navBtn active" type="button" data-page="clientPage">🗺️<span>Client</span></button><button class="navBtn" type="button" data-page="driverPage">🚌<span>Chauffeur</span></button><button class="navBtn" type="button" data-page="adminPage">⚙️<span>Admin</span></button></nav>
+<!-- Bottom navigation -->
+<nav class="bottomNav">
+  <button class="navBtn active" type="button" data-page="clientPage">
+    <span class="navIcon">🗺️</span>
+    <span class="navLabel">Carte</span>
+  </button>
+  <button class="navBtn" type="button" data-page="driverPage">
+    <span class="navIcon">🚌</span>
+    <span class="navLabel">Chauffeur</span>
+  </button>
+  <button class="navBtn" type="button" data-page="adminPage">
+    <span class="navIcon">⚙️</span>
+    <span class="navLabel">Admin</span>
+    <span id="adminAlertDot" class="navAlertDot hidden"></span>
+  </button>
+</nav>
 
-<div id="loginModal" class="modal hidden"><div class="modalCard">
-  <h2>Connexion</h2><p>Connecte-toi comme admin ou chauffeur.</p>
-  <label>Email</label><input id="emailInput" type="email" value="allaouaboucheneb04@gmail.com" autocomplete="username">
-  <label>Mot de passe</label><input id="passwordInput" type="password" autocomplete="current-password">
-  <button id="loginBtn" class="primary" type="button">Se connecter</button>
-  <label>Type de compte (inscription)</label>
-  <select id="signupRoleSelect">
-    <option value="client">Client</option>
-    <option value="driver">Chauffeur</option>
-  </select>
-  <button id="signupBtn" class="secondary" type="button">Créer compte</button>
-  <button id="logoutBtn" class="danger" type="button">Déconnexion</button>
-  <button id="closeLoginBtn" class="ghost" type="button">Fermer</button>
-  <div id="authStatus" class="result">Non connecté</div>
-</div></div>
+<!-- Login modal -->
+<div id="loginModal" class="modal hidden">
+  <div class="modalCard">
+    <div class="modalHeader">
+      <h2>Compte</h2>
+      <button id="closeLoginBtn" class="modalClose" type="button">✕</button>
+    </div>
+    <input id="emailInput" type="email" placeholder="Email" autocomplete="username">
+    <input id="passwordInput" type="password" placeholder="Mot de passe" autocomplete="current-password">
+    <button id="loginBtn" class="btn-primary" type="button">Se connecter</button>
+    <div class="modalDivider">ou</div>
+    <select id="signupRoleSelect">
+      <option value="client">Client</option>
+      <option value="driver">Chauffeur</option>
+    </select>
+    <button id="signupBtn" class="btn-secondary" type="button">Créer un compte</button>
+    <button id="logoutBtn" class="btn-danger" type="button">Déconnexion</button>
+    <div id="authStatus" class="formStatus"></div>
+  </div>
+</div>
 
-<div id="stopPickerModal" class="modal hidden"><div class="modalCard mapModal">
-  <h2>Choisir l’arrêt</h2><p>Clique sur la carte pour choisir la position exacte.</p><div id="stopPickerMap"></div><div id="pickedCoords" class="result">Aucune position choisie</div>
-  <button id="pickerUseGpsBtn" class="secondary" type="button">Ma position</button>
-  <button id="pickerConfirmBtn" class="primary" type="button">Utiliser cette position</button>
-  <button id="pickerCloseBtn" class="ghost" type="button">Fermer</button>
-</div></div>
+<!-- Stop picker modal -->
+<div id="stopPickerModal" class="modal hidden">
+  <div class="modalCard modalCard--map">
+    <div class="modalHeader">
+      <h2>Choisir la position</h2>
+      <button id="pickerCloseBtn" class="modalClose" type="button">✕</button>
+    </div>
+    <p class="cardDesc">Appuyez sur la carte pour placer l'arrêt.</p>
+    <div id="stopPickerMap" class="stopPickerMap"></div>
+    <div id="pickedCoords" class="formStatus">Aucune position choisie.</div>
+    <div class="formActions">
+      <button id="pickerUseGpsBtn" class="btn-secondary" type="button">📍 Ma position</button>
+      <button id="pickerConfirmBtn" class="btn-primary" type="button">Confirmer</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=gm-repair-simple-1"></script>
-
-<div id="gmSafePanel" class="gmSafePanel hidden">
-  <div class="gmSafeHeader">
-    <button id="gmSafeBack" type="button">‹</button>
-    <div class="gmSafeFields">
-      <div class="gmSafeField"><span class="blueDot"></span><input id="gmSafeFrom" value="Votre position" placeholder="Votre position"></div>
-      <div class="gmLine"></div>
-      <div class="gmSafeField"><span class="redDot"></span><input id="gmSafeTo" placeholder="Où voulez-vous aller ?"><button id="gmSafeClear" type="button">×</button></div>
-    </div>
-  </div>
-  <div id="gmSafeSuggestions"></div>
-  <button id="gmSafeGo" type="button">Itinéraire</button>
-</div>
-
+<script src="app.js?v=2.0.0"></script>
 </body>
 </html>

@@ -1,819 +1,644 @@
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}:root{--line:#dbe4f0;--primary:#2563eb;--primary2:#1d4ed8;--danger:#dc2626;--shadow:0 14px 34px rgba(15,23,42,.08);--radius:24px}html,body{margin:0;width:100%;max-width:100%;overflow-x:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(180deg,#f8fbff,#eff5ff);color:#0f172a}body{padding-bottom:96px}button,input,select{font-family:inherit}button{cursor:pointer}.topbar{position:sticky;top:0;z-index:80;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 14px;background:rgba(248,251,255,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}.kicker{text-transform:uppercase;letter-spacing:.18em;font-size:12px;font-weight:900;color:#475569}h1{margin:2px 0 0;font-size:29px;line-height:.98;letter-spacing:-.04em}h2{margin:0;font-size:29px;line-height:1.05;letter-spacing:-.04em}h3{margin:0 0 12px;font-size:21px}.badges{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;max-width:50%}.badge{border:0;border-radius:999px;min-height:40px;padding:8px 11px;font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 8px 20px rgba(15,23,42,.06)}.blue{background:#dbeafe;color:#1d4ed8}.green{background:#dcfce7;color:#166534}.light{background:#fff;color:#1d4ed8;border:1px solid var(--line)}main{width:100%;max-width:960px;margin:0 auto}.page{display:none;padding:14px 12px}.page.active{display:block}.hero,.card{background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}.hero{background:linear-gradient(135deg,#fff,#eef5ff)}.hero p,.card p{font-size:17px;line-height:1.38;color:#334155;margin:8px 0 0}label{display:block;margin:15px 0 8px;color:#334155;font-weight:900;font-size:16px}input,select{width:100%;min-height:56px;border:1px solid var(--line);border-radius:18px;background:#fff;color:#0f172a;padding:15px 16px;font-size:18px;outline:none;box-shadow:0 8px 18px rgba(15,23,42,.035)}.primary,.secondary,.danger,.ghost{width:100%;min-height:54px;border-radius:18px;border:0;padding:14px 16px;margin-top:12px;font-size:17px;font-weight:900}.primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;box-shadow:0 12px 26px rgba(37,99,235,.22)}.secondary{background:#fff;color:#1d4ed8;border:1px solid var(--line)}.danger{background:#fee2e2;color:var(--danger)}.ghost{background:transparent;color:#0f172a}.small{width:100%;margin-top:14px}.row{display:grid;grid-template-columns:1fr;gap:10px}.mapWrap{width:100%;overflow:hidden;border-radius:26px;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow);margin:16px 0}#map{width:100%;height:420px;min-height:380px}.list{display:grid;gap:10px}.item{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 8px 20px rgba(15,23,42,.04)}.item strong{display:block;margin-bottom:4px}.muted,.result{color:#475569;font-size:16px;line-height:1.4;margin-top:12px}.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px;margin:16px 0;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}.tab{min-height:46px;border:0;border-radius:16px;background:transparent;color:#0f172a;font-weight:900;font-size:13px;padding:8px 4px}.tab.active{background:#0f172a;color:#fff}.adminPanel{display:none}.adminPanel.active{display:block}.deleteBtn{width:auto;min-height:40px;border:0;border-radius:14px;background:#fee2e2;color:#dc2626;font-weight:900;padding:9px 12px;margin-top:8px}.bottomNav{position:fixed;left:0;right:0;bottom:0;z-index:1000;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 14px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid var(--line);box-shadow:0 -14px 30px rgba(15,23,42,.08)}.navBtn{min-height:58px;border:0;border-radius:22px;background:transparent;color:#0f172a;font-size:21px;font-weight:950}.navBtn span{display:block;font-size:14px;margin-top:2px}.navBtn.active{background:#eff6ff;color:#1d4ed8}.modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:10px;background:rgba(15,23,42,.55);backdrop-filter:blur(8px)}.modal.hidden,.hidden{display:none!important}.modalCard{width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:28px;padding:22px 16px;box-shadow:0 28px 80px rgba(0,0,0,.22)}.modalCard h2{font-size:32px;margin:0 0 10px}#stopPickerMap{width:100%;height:410px;min-height:340px;border-radius:22px;border:1px solid var(--line);overflow:hidden;margin:14px 0}button:disabled{opacity:.65;pointer-events:none}.workBadge{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;padding:10px 16px;font-weight:950;margin:8px 0 12px}.workBadge.offline{background:#fee2e2;color:#dc2626}.workBadge.online{background:#dcfce7;color:#166534}.workBadge.warning{background:#fef3c7;color:#92400e}@media(min-width:700px){.hero{display:flex;align-items:flex-start;justify-content:space-between}.small{width:auto;margin-top:0}.row{grid-template-columns:1fr 1fr}.badges{max-width:none}.badge{font-size:14px;padding:10px 14px}}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.editBtn{width:auto;min-height:40px;border:0;border-radius:14px;background:#dbeafe;color:#1d4ed8;font-weight:900;padding:9px 12px;margin-top:8px}
+/* ═══════════════════════════════════════════
+   TRANSPORT DZ — Design System v2
+   Clean, professional, mobile-first
+═══════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-.hint{font-size:14px;color:#64748b;margin:6px 0 8px;font-weight:700}
-
-#adminStopsSearch{margin-bottom:10px}
-#adminStopsCount{font-weight:900;color:#1d4ed8}
-
-.walkingRouteLegend{font-size:14px;color:#111827;font-weight:800;margin-top:8px}
-
-.routeNote{font-size:14px;color:#334155;font-weight:800;margin:8px 0 10px}
-
-.etaBadge{display:inline-flex;margin-top:8px;padding:8px 12px;border-radius:999px;background:#dcfce7;color:#166534;font-weight:950}
-.etaItem{border-left:5px solid #22c55e}
-
-.jsonBox{width:100%;min-height:260px;border:1px solid var(--line);border-radius:18px;background:#fff;color:#0f172a;padding:15px 16px;font-size:14px;outline:none;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;white-space:pre;overflow:auto}
-.codeBox{background:#0f172a;color:#e2e8f0;border-radius:18px;padding:16px;overflow:auto;font-size:13px;line-height:1.45}
-
-.checkLine{display:flex;align-items:center;gap:10px;margin:14px 0;font-weight:900;color:#334155}
-.checkLine input{width:auto;min-height:auto;box-shadow:none}
-
-.autoImportNote{font-size:14px;color:#475569;font-weight:800;margin-top:8px}
-
-.dangerNote{margin-top:10px;padding:12px;border-radius:16px;background:#fff1f2;color:#be123c;font-weight:900;border:1px solid #fecdd3}
-
-.routeStep{padding:8px 10px;border-radius:12px;background:#f8fafc;margin-top:6px;font-weight:800}
-
-.smallBtn{width:auto;min-height:42px;border-radius:14px;margin:8px 0 10px;padding:8px 14px;font-weight:900}
-
-.routeStepsList{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.routeStepCard{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:18px;border:1px solid #dbe4f0;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.06)}
-.routeStepCard.busStep{border-left:6px solid #2563eb}
-.routeStepCard.walkStep{border-left:6px dashed #111827}
-.stepIcon{font-size:26px;line-height:1}
-.stepContent{flex:1}
-.stepTitle{font-weight:950;color:#0f172a;font-size:16px}
-.stepLine{margin:8px 0}
-.stepMeta{color:#475569;font-weight:800;font-size:14px}
-.lineBadge{display:inline-flex;align-items:center;border-radius:999px;color:#fff;font-weight:950;font-size:13px;padding:6px 10px;box-shadow:0 6px 16px rgba(0,0,0,.12)}
-.routeMarkerLabel{background:transparent;border:0}
-.routeMarkerBubble{background:#0f172a;color:#fff;border-radius:999px;padding:7px 10px;font-weight:950;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25);white-space:nowrap;border:2px solid #fff}
-
-.routeOnlyNote{margin:10px 0;padding:10px 12px;border-radius:16px;background:#eff6ff;color:#1d4ed8;font-weight:950;border:1px solid #bfdbfe}
-
-.disableBtn{background:#fee2e2!important;color:#b91c1c!important;border:0!important;border-radius:16px;padding:12px 18px;font-weight:950}
-.activateBtn{background:#dcfce7!important;color:#166534!important;border:0!important;border-radius:16px;padding:12px 18px;font-weight:950}
-.offBadge{display:inline-flex;margin-left:8px;padding:4px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:950}
-.onBadge{display:inline-flex;margin-left:8px;padding:4px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:950}
-
-.directionBadge{display:inline-flex;margin-left:6px;padding:5px 9px;border-radius:999px;background:#e0f2fe;color:#075985;font-weight:950;font-size:12px}
-.hintBox{padding:10px 12px;border-radius:14px;background:#f8fafc;color:#475569;font-weight:800;border:1px solid #e2e8f0}
-
-.terminusBadge{display:inline-flex;padding:5px 9px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:950;font-size:12px}
-
-.waitingBusItem{border-left:6px solid #64748b}
-.waitingCount{display:inline-flex;margin-top:8px;padding:8px 12px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:950}
-
-.busEmojiIcon{background:transparent!important;border:0!important}
-.busEmojiPin{
-  width:44px;height:44px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  background:#fff;border:3px solid #2563eb;
-  box-shadow:0 8px 22px rgba(15,23,42,.28);
-  font-size:25px;line-height:1;
-  animation:busPulse 1.8s infinite;
-}
-@keyframes busPulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
-
-.driverBlocked .card:not(#driverPendingCard){opacity:.35;pointer-events:none;filter:grayscale(.5)}
-.activateBtn{background:#dcfce7!important;color:#166534!important;border:0!important;border-radius:16px;padding:12px 18px;font-weight:950}
-
-.authGate{position:fixed;inset:0;z-index:99999;background:linear-gradient(180deg,#eef6ff,#f8fbff);display:flex;align-items:center;justify-content:center;padding:22px}
-.authGate.hidden{display:none!important}
-.authHero{width:min(560px,100%);background:#fff;border:1px solid #dbe4f0;border-radius:34px;padding:28px;box-shadow:0 30px 90px rgba(15,23,42,.18)}
-.brandMini{text-transform:uppercase;letter-spacing:.35em;color:#64748b;font-weight:950;font-size:12px;margin-bottom:8px}
-.authHero h1{font-size:42px;line-height:1;margin:0 0 10px;color:#0f172a}
-.authHero p{color:#475569;font-weight:750;font-size:17px;line-height:1.4}
-.authTabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#eff6ff;border-radius:20px;padding:6px;margin:18px 0}
-.authTab{border:0;border-radius:16px;padding:14px;font-weight:950;background:transparent;color:#1d4ed8}
-.authTab.active{background:#2563eb;color:#fff;box-shadow:0 8px 18px rgba(37,99,235,.25)}
-.authBox label{display:block;margin-top:12px;font-weight:950;color:#334155}
-.authBox input,.authBox select{width:100%;min-height:54px;border:1px solid #dbe4f0;border-radius:18px;padding:0 14px;font-size:16px;background:#fff}
-.authHint{font-size:14px!important;color:#64748b!important;margin-top:10px!important}
-.authStatus{margin-top:12px;color:#dc2626;font-weight:900}
-.roleBadge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:9px 12px;background:#e0f2fe;color:#075985;font-weight:950;margin-right:8px}
-
-.etaCard{border:1px solid #bfdbfe;background:linear-gradient(180deg,#ffffff,#eff6ff)}
-.etaResult{margin-top:12px;padding:14px;border-radius:18px;background:#fff;border:1px solid #dbeafe;color:#334155;font-weight:800}
-.etaBig{font-size:22px;color:#0f172a;font-weight:950;margin-bottom:8px}
-.etaMeta{font-size:15px;line-height:1.5;color:#475569}
-.etaEmpty{color:#b45309;font-weight:950}
-
-.suggestionBox{margin:12px 0;padding:12px;border-radius:18px;background:#f8fafc;border:1px solid #dbe4f0}
-.suggestionBox.hidden{display:none!important}
-.suggestGroup{margin-bottom:12px}
-.suggestTitle{font-weight:950;color:#0f172a;margin-bottom:8px}
-.suggestBtn{width:100%;min-height:44px;margin:5px 0;border:1px solid #dbe4f0;border-radius:14px;background:#fff;color:#0f172a;font-weight:900;text-align:left;padding:10px 12px}
-.suggestBtn small{display:block;color:#64748b;font-weight:800;margin-top:3px}
-.suggestEmpty{color:#94a3b8;font-weight:800;padding:8px}
-
-.clearFieldBtn{float:right;width:auto;min-height:32px;border-radius:999px;padding:5px 10px;margin-top:-6px;background:#f1f5f9;color:#334155;font-size:13px;font-weight:950}
-.recentTripsBox{margin:10px 0 14px}
-.recentTitle{font-weight:950;color:#0f172a;margin-bottom:8px}
-.recentTripBtn,.favBtn{width:100%;margin:5px 0;min-height:42px;border-radius:14px;border:1px solid #dbe4f0;background:#fff;color:#0f172a;text-align:left;padding:9px 12px;font-weight:900}
-.favRow{display:grid;grid-template-columns:1fr;gap:6px}
-.suggestBtn span{display:block;font-size:16px}
-
-
-/* SAFE RESTORE V2 */
-html, body{
-  overflow-x:hidden;
-}
-body{
-  padding-bottom:110px!important;
-}
-#map{
-  min-height:420px!important;
-  height:420px!important;
-  border-radius:24px!important;
-  overflow:hidden!important;
-  display:block!important;
-}
-.bottomNav{
-  position:fixed!important;
-  left:0!important;
-  right:0!important;
-  bottom:0!important;
-  z-index:1000!important;
-  background:rgba(255,255,255,.96)!important;
-  backdrop-filter:blur(18px)!important;
-  padding-bottom:calc(env(safe-area-inset-bottom) + 8px)!important;
-}
-.page, main, .container{
-  padding-bottom:120px!important;
-}
-button, input, select{
-  pointer-events:auto!important;
-}
-.clearFieldBtn{
-  float:none!important;
-  position:static!important;
-  display:inline-flex!important;
-  width:auto!important;
-  min-height:34px!important;
-  padding:6px 12px!important;
-  margin:6px 0 8px auto!important;
+:root {
+  --brand: #1a56db;
+  --brand-dark: #1e40af;
+  --brand-light: #eff6ff;
+  --success: #16a34a;
+  --success-light: #dcfce7;
+  --danger: #dc2626;
+  --danger-light: #fee2e2;
+  --warning: #d97706;
+  --warning-light: #fef3c7;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --white: #ffffff;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  --shadow: 0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* =========================
-   CLEAN FULLSCREEN MAP - SAFE
-========================= */
-.cleanMapOverlay{
-  position:fixed;
-  inset:0;
-  z-index:999999;
-  background:#fff;
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; width: 100%; overflow-x: hidden; font-family: var(--font); background: var(--gray-50); color: var(--gray-900); font-size: 15px; line-height: 1.5; }
+body { padding-bottom: 80px; }
+button, input, select, textarea { font-family: inherit; }
+h1,h2,h3 { margin: 0; font-weight: 700; letter-spacing: -0.02em; }
+p { margin: 0; }
+
+/* ── Hidden ── */
+.hidden { display: none !important; }
+
+/* ═══════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════ */
+.toastContainer {
+  position: fixed; top: 16px; right: 16px; left: 16px;
+  z-index: 99999;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
 }
-.cleanMapOverlay.hidden{
-  display:none!important;
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--gray-900); color: var(--white);
+  padding: 12px 16px; border-radius: var(--radius);
+  box-shadow: var(--shadow-lg); font-size: 14px; font-weight: 500;
+  pointer-events: auto;
+  animation: toastIn 0.25s ease, toastOut 0.3s ease 3s forwards;
 }
-.cleanMap{
-  position:absolute;
-  inset:0;
-  width:100vw;
-  height:100dvh;
-  background:#e5e7eb;
+.toast.toast--success { background: var(--success); }
+.toast.toast--danger { background: var(--danger); }
+.toast.toast--warning { background: var(--warning); }
+@keyframes toastIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toastOut { from { opacity:1; } to { opacity:0; pointer-events:none; } }
+
+/* ═══════════════════════
+   HEADER
+═══════════════════════ */
+.appHeader {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--white); border-bottom: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
 }
-.cleanMapSearch{
-  position:absolute;
-  top:calc(env(safe-area-inset-top) + 12px);
-  left:14px;
-  right:14px;
-  z-index:20;
-  min-height:64px;
-  border-radius:28px;
-  background:#fff;
-  box-shadow:0 12px 36px rgba(15,23,42,.25);
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:8px 10px 8px 16px;
+.appHeaderLeft { display: flex; align-items: center; gap: 10px; }
+.appLogo { font-size: 24px; }
+.appName { font-size: 16px; font-weight: 800; color: var(--gray-900); }
+.appCity { font-size: 12px; font-weight: 500; color: var(--brand); }
+.appHeaderRight { display: flex; align-items: center; gap: 10px; }
+.statusDot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
-.cleanMapSearch span{
-  font-size:24px;
-}
-.cleanMapSearch input{
-  flex:1;
-  border:0!important;
-  outline:0!important;
-  min-height:48px!important;
-  box-shadow:none!important;
-  font-size:16px!important;
-}
-.cleanMapSearch button{
-  width:auto!important;
-  min-height:46px!important;
-  border-radius:20px!important;
-  padding:0 16px!important;
-  background:#2563eb!important;
-  color:#fff!important;
-  font-weight:950!important;
-}
-.cleanFloatingBtn{
-  position:absolute;
-  z-index:25;
-  width:56px!important;
-  height:56px!important;
-  min-height:56px!important;
-  border-radius:50%!important;
-  border:0!important;
-  background:#fff!important;
-  color:#0f172a!important;
-  box-shadow:0 12px 30px rgba(15,23,42,.25)!important;
-  font-weight:950!important;
-  font-size:28px!important;
-  padding:0!important;
-}
-.cleanCloseBtn{
-  top:calc(env(safe-area-inset-top) + 88px);
-  right:14px;
-}
-.cleanLocateBtn{
-  right:14px;
-  bottom:calc(env(safe-area-inset-bottom) + 165px);
-  color:#2563eb!important;
-  transform:rotate(-45deg);
-}
-.cleanBottomSheet{
-  position:absolute;
-  left:14px;
-  right:14px;
-  bottom:calc(env(safe-area-inset-bottom) + 86px);
-  z-index:22;
-  background:#fff;
-  border-radius:28px;
-  padding:12px 18px 18px;
-  box-shadow:0 -12px 36px rgba(15,23,42,.22);
-}
-.cleanHandle{
-  width:54px;
-  height:6px;
-  border-radius:999px;
-  background:#cbd5e1;
-  margin:0 auto 12px;
-}
-.cleanBottomSheet h2{
-  margin:0 0 6px;
-  font-size:24px;
-  color:#0f172a;
-}
-.cleanBottomSheet p{
-  margin:0 0 12px;
-  color:#64748b;
-  font-weight:850;
-}
-.cleanBottomSheet button{
-  width:auto!important;
-  min-height:48px!important;
-  border-radius:18px!important;
-  padding:0 18px!important;
-  background:#2563eb!important;
-  color:#fff!important;
-  font-weight:950!important;
-}
-.cleanBusIcon{
-  background:transparent!important;
-  border:0!important;
-}
-.cleanBusIcon div{
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  background:#fff;
-  border:3px solid #2563eb;
-  box-shadow:0 8px 22px rgba(15,23,42,.25);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:24px;
-}
-.cleanMeIcon{
-  background:transparent!important;
-  border:0!important;
-}
-.cleanMeIcon div{
-  width:44px;
-  height:44px;
-  border-radius:50%;
-  background:#2563eb;
-  color:#fff;
-  border:3px solid #fff;
-  box-shadow:0 8px 22px rgba(15,23,42,.25);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:24px;
-  transform:rotate(-45deg);
+.statusDot--loading { background: var(--gray-400); animation: pulse 1.5s infinite; }
+.statusDot--ok { background: var(--success); }
+.statusDot--error { background: var(--danger); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.headerLoginBtn {
+  background: var(--brand-light); color: var(--brand);
+  border: 1px solid #bfdbfe; border-radius: var(--radius-sm);
+  padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
 }
 
+/* ═══════════════════════
+   MAIN / PAGES
+═══════════════════════ */
+.appMain { max-width: 640px; margin: 0 auto; padding: 0; }
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
 
-/* =========================
-   CLIENT UI CLEAN FIX
-========================= */
-:root{
-  --bottom-nav-h: 118px;
+/* ═══════════════════════
+   CARDS
+═══════════════════════ */
+.card {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg); padding: 16px;
+  margin-bottom: 12px; box-shadow: var(--shadow-sm);
 }
-
-html, body{
-  overflow-x:hidden!important;
-  min-height:100%!important;
+.card--warning { background: var(--warning-light); border-color: #fde68a; }
+.cardHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
 }
-
-body{
-  padding-bottom:calc(var(--bottom-nav-h) + env(safe-area-inset-bottom))!important;
+.cardHeader h3 { font-size: 15px; font-weight: 700; }
+.cardDesc { font-size: 13px; color: var(--gray-500); margin: 4px 0 12px; }
+.countBadge {
+  background: var(--gray-100); color: var(--gray-600);
+  border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 700;
 }
-
-main,
-.app,
-.container,
-.page,
-#clientPage,
-#driverPage,
-#adminPage{
-  padding-bottom:calc(var(--bottom-nav-h) + 30px)!important;
+.countBadge--orange { background: var(--warning-light); color: var(--warning); }
+.detailsCard summary {
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  list-style: none; padding: 2px 0;
 }
+.detailsCard[open] summary { margin-bottom: 12px; }
 
-.bottomNav,
-.bottom-nav,
-#bottomNav{
-  position:fixed!important;
-  left:0!important;
-  right:0!important;
-  bottom:0!important;
-  z-index:9999!important;
-  min-height:92px!important;
-  padding-bottom:calc(env(safe-area-inset-bottom) + 10px)!important;
-  background:rgba(255,255,255,.96)!important;
-  backdrop-filter:blur(18px)!important;
-  border-top:1px solid rgba(226,232,240,.9)!important;
+/* ═══════════════════════
+   BUTTONS
+═══════════════════════ */
+.btn-primary {
+  display: block; width: 100%;
+  background: var(--brand); color: var(--white);
+  border: 0; border-radius: var(--radius); padding: 12px 16px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(26,86,219,.3);
+  transition: background 0.15s, transform 0.1s;
 }
-
-#clientPage .card:last-child,
-#clientPage > *:last-child{
-  margin-bottom:calc(var(--bottom-nav-h) + 30px)!important;
+.btn-primary:hover { background: var(--brand-dark); }
+.btn-primary:active { transform: scale(.98); }
+.btn-primary:disabled { opacity:.5; pointer-events:none; }
+.btn-secondary {
+  display: block; width: 100%;
+  background: var(--white); color: var(--brand);
+  border: 1.5px solid var(--brand); border-radius: var(--radius); padding: 11px 16px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s;
 }
-
-.fullMapBtn,
-#cleanFullMapBtn{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:100%!important;
-  min-height:58px!important;
-  border-radius:22px!important;
-  margin:12px 0!important;
-  background:#fff!important;
-  border:1px solid #dbe4f0!important;
-  color:#1d4ed8!important;
-  font-weight:950!important;
-  font-size:17px!important;
+.btn-secondary:hover { background: var(--brand-light); }
+.btn-ghost {
+  display: block; width: 100%;
+  background: transparent; color: var(--gray-600);
+  border: 1.5px solid var(--gray-300); border-radius: var(--radius); padding: 11px 16px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
 }
-
-#clearFromBtn,
-#clearToBtn,
-.clearFieldBtn{
-  float:none!important;
-  position:relative!important;
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:auto!important;
-  min-height:34px!important;
-  padding:6px 12px!important;
-  margin:6px 0 8px 0!important;
-  border-radius:999px!important;
-  background:#f1f5f9!important;
-  color:#334155!important;
-  font-size:13px!important;
-  font-weight:950!important;
-  z-index:1!important;
+.btn-ghost-sm {
+  background: transparent; color: var(--gray-500);
+  border: 0; padding: 4px 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border-radius: var(--radius-sm);
 }
-
-input, select, textarea, button{
-  pointer-events:auto!important;
+.btn-ghost-sm:hover { background: var(--gray-100); }
+.btn-danger {
+  display: block; width: 100%;
+  background: var(--danger-light); color: var(--danger);
+  border: 0; border-radius: var(--radius); padding: 12px 16px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
 }
-
-#map{
-  min-height:420px!important;
-  height:420px!important;
-  display:block!important;
+.btn-online {
+  flex: 1; background: var(--success); color: var(--white);
+  border: 0; border-radius: var(--radius); padding: 14px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.btn-offline {
+  flex: 1; background: var(--danger-light); color: var(--danger);
+  border: 0; border-radius: var(--radius); padding: 14px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.btn-icon {
+  background: var(--gray-100); color: var(--gray-700);
+  border: 0; border-radius: var(--radius-sm);
+  width: 44px; height: 44px; font-size: 18px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.cleanMapOverlay{
-  z-index:999999!important;
+/* ═══════════════════════
+   FORMS
+═══════════════════════ */
+label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; }
+input[type="text"], input[type="email"], input[type="password"], input[type="tel"],
+input[type="number"], input[inputmode], select, textarea {
+  display: block; width: 100%;
+  background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius); padding: 10px 14px;
+  font-size: 15px; color: var(--gray-900);
+  outline: none; transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--brand); background: var(--white);
+  box-shadow: 0 0 0 3px rgba(26,86,219,.1);
+}
+.authSelect { margin-bottom: 12px; }
+.colorInput { padding: 4px; height: 44px; cursor: pointer; }
+.jsonBox { min-height: 160px; font-family: ui-monospace, monospace; font-size: 13px; }
+.formGroup { margin-bottom: 12px; }
+.formRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.formActions { display: flex; gap: 8px; margin-top: 16px; }
+.formActions .btn-primary { flex: 1; }
+.formStatus { font-size: 13px; color: var(--gray-500); margin-top: 8px; min-height: 18px; }
+.formStatus.status--ok { color: var(--success); }
+.formStatus.status--error { color: var(--danger); }
+.filterRow { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.filterSelect {
+  background: var(--white); border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm); padding: 8px 10px; font-size: 14px;
+  font-weight: 500; cursor: pointer; flex: 1; min-width: 0;
+}
+.filterInput {
+  flex: 1; background: var(--white); border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm); padding: 8px 12px; font-size: 14px;
+}
+.checkLabel {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 500; color: var(--gray-700);
+  cursor: pointer; margin-bottom: 12px;
+}
+.checkLabel input { width: auto; }
+.inputClearBtn {
+  background: none; border: 0; color: var(--gray-400); cursor: pointer;
+  padding: 4px; font-size: 14px; flex-shrink: 0;
 }
 
-
-/* FULLSCREEN MAP LEAFLET IOS FIX */
-.cleanMapOverlay{
-  position:fixed!important;
-  inset:0!important;
-  width:100vw!important;
-  height:100dvh!important;
-  z-index:999999!important;
-  background:#eef6ff!important;
-  overflow:hidden!important;
+/* ═══════════════════════
+   AUTH GATE
+═══════════════════════ */
+.authGate {
+  position: fixed; inset: 0; z-index: 9000;
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
 }
-.cleanMapOverlay.hidden{display:none!important}
-.cleanMap{
-  position:absolute!important;
-  inset:0!important;
-  width:100vw!important;
-  height:100dvh!important;
-  min-height:100dvh!important;
-  background:#e0f2fe!important;
-  z-index:1!important;
+.authCard {
+  background: var(--white); border-radius: 24px;
+  padding: 28px 24px; width: 100%; max-width: 400px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.3);
 }
-#cleanMap.leaflet-container{
-  width:100vw!important;
-  height:100dvh!important;
-}
-.cleanMapSearch{
-  top:calc(env(safe-area-inset-top) + 18px)!important;
-  left:18px!important;
-  right:18px!important;
-  z-index:1000!important;
-}
-.cleanCloseBtn{
-  top:calc(env(safe-area-inset-top) + 92px)!important;
-  right:18px!important;
-  z-index:1001!important;
-}
-.cleanLocateBtn{
-  right:18px!important;
-  bottom:calc(env(safe-area-inset-bottom) + 165px)!important;
-  z-index:1001!important;
-}
-.cleanBottomSheet{z-index:1000!important}
-.cleanMap .leaflet-top.leaflet-left{
-  top:100px!important;
-  left:14px!important;
-}
-.cleanMap .leaflet-control-zoom{
-  border-radius:14px!important;
-  overflow:hidden!important;
-  box-shadow:0 8px 22px rgba(15,23,42,.22)!important;
+.authLogo { text-align: center; margin-bottom: 24px; }
+.authBusIcon { font-size: 48px; margin-bottom: 8px; }
+.authLogo h1 { font-size: 28px; margin-bottom: 4px; }
+.authLogo p { font-size: 14px; color: var(--gray-500); }
+.authTabs { display: flex; gap: 6px; background: var(--gray-100); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 20px; }
+.authTab { flex: 1; background: transparent; border: 0; padding: 8px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--gray-500); }
+.authTab.active { background: var(--white); color: var(--gray-900); box-shadow: var(--shadow-sm); }
+.authBox { display: flex; flex-direction: column; gap: 10px; }
+.authBox input, .authBox select { margin: 0; }
+.authBox .btn-primary { margin-top: 4px; }
+.authHint { font-size: 12px; color: var(--gray-400); text-align: center; margin-top: 4px; }
+.authStatus { font-size: 13px; color: var(--danger); margin-top: 8px; text-align: center; min-height: 18px; }
+.btn-ghost.authGuestBtn, #continueGuestBtn {
+  margin-top: 16px; text-align: center; font-size: 14px;
+  color: var(--gray-500); background: none; border: 0; width: 100%; cursor: pointer; padding: 8px;
 }
 
-/* FULL MAP LINES/STOPS FIX */
-.cleanRefreshBtn{
-  right:18px!important;
-  bottom:calc(env(safe-area-inset-bottom) + 235px)!important;
-  z-index:1001!important;
-  color:#2563eb!important;
-  transform:none!important;
+/* ═══════════════════════
+   HERO SEARCH (Client)
+═══════════════════════ */
+.heroSearch {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl); padding: 16px; margin-bottom: 12px;
+  box-shadow: var(--shadow);
 }
-.cleanBusIcon div{
-  animation:cleanBusPulse 1.8s infinite;
+.heroSearchTitle { font-size: 14px; font-weight: 700; color: var(--gray-500); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .05em; }
+.heroInputGroup {
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius); overflow: hidden;
+  margin-bottom: 12px;
 }
-@keyframes cleanBusPulse{
-  0%{transform:scale(1)}
-  50%{transform:scale(1.08)}
-  100%{transform:scale(1)}
+.heroInputRow { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+.heroInputRow input { border: 0; background: none; padding: 0; font-size: 15px; flex: 1; box-shadow: none; }
+.heroInputRow input:focus { box-shadow: none; border: 0; }
+.heroInputDivider { height: 1px; background: var(--gray-100); margin: 0 12px; }
+.heroDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.heroDotBlue { background: var(--brand); }
+.heroDotRed { background: var(--danger); }
+.heroActions { display: flex; gap: 8px; }
+.heroActions .btn-primary { flex: 1; }
+.heroActions .btn-secondary { width: auto; padding: 12px 16px; }
+
+/* ═══════════════════════
+   SUGGESTIONS
+═══════════════════════ */
+.suggestionBox {
+  border: 1px solid var(--gray-200); border-radius: var(--radius);
+  background: var(--white); overflow: hidden;
+  box-shadow: var(--shadow); margin-bottom: 8px;
+  max-height: 220px; overflow-y: auto;
 }
-.cleanMap .leaflet-control-attribution{
-  font-size:11px!important;
+.suggestionItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--gray-100);
+  transition: background 0.1s;
+}
+.suggestionItem:last-child { border-bottom: 0; }
+.suggestionItem:hover, .suggestionItem:active { background: var(--brand-light); }
+.suggestionItem strong { font-size: 14px; font-weight: 600; display: block; }
+.suggestionItem small { font-size: 12px; color: var(--gray-500); }
+.recentTripsBox { margin-bottom: 8px; }
+.recentTripItem {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; font-size: 14px; color: var(--gray-600);
+  cursor: pointer; border-bottom: 1px solid var(--gray-100);
+}
+.recentTripItem:last-child { border-bottom: 0; }
+
+/* ═══════════════════════
+   ROUTE RESULT
+═══════════════════════ */
+.routeResult { font-size: 15px; color: var(--gray-700); margin-bottom: 12px; }
+.routeStepsList { display: flex; flex-direction: column; gap: 8px; }
+.routeStepCard {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; background: var(--gray-50); border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+}
+.routeStepCard.busStep { border-left: 3px solid var(--brand); }
+.routeStepCard.walkStep { border-left: 3px solid var(--gray-400); }
+.stepIcon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.stepTitle { font-size: 14px; font-weight: 700; }
+.stepLine { margin: 3px 0; }
+.stepMeta { font-size: 13px; color: var(--gray-500); }
+.lineBadge { display: inline-block; color: var(--white); padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.directionBadge { font-size: 12px; color: var(--gray-500); font-weight: 500; }
+
+/* ═══════════════════════
+   SECTION HEADER
+═══════════════════════ */
+.sectionHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 20px 0 8px;
+}
+.sectionHeader h2 { font-size: 18px; }
+.headerFilters { display: flex; gap: 8px; }
+.headerFilters .filterSelect { padding: 6px 8px; font-size: 13px; }
+
+/* ═══════════════════════
+   BUS LIST (CLIENT)
+═══════════════════════ */
+.busList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.busCard {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg); padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.busCard.busCard--online { border-left: 3px solid var(--success); }
+.busCard.busCard--waiting { border-left: 3px solid var(--warning); }
+.busIconBig { font-size: 28px; flex-shrink: 0; }
+.busInfo { flex: 1; min-width: 0; }
+.busName { font-size: 15px; font-weight: 700; }
+.busLine { font-size: 13px; color: var(--gray-500); }
+.busMeta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.busStatusBadge {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+}
+.busStatusBadge--online { background: var(--success-light); color: var(--success); }
+.busStatusBadge--waiting { background: var(--warning-light); color: var(--warning); }
+.busSpeed { font-size: 12px; color: var(--gray-400); }
+.busEta { font-size: 14px; font-weight: 700; color: var(--brand); flex-shrink: 0; }
+.emptyState { text-align: center; padding: 32px; color: var(--gray-400); font-size: 15px; }
+.emptyState span { display: block; font-size: 36px; margin-bottom: 8px; }
+
+/* ═══════════════════════
+   ETA
+═══════════════════════ */
+.etaSelectRow { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.etaSelect { flex: 1; }
+.etaResult { font-size: 15px; }
+.etaBig { font-size: 22px; font-weight: 800; color: var(--brand); margin-bottom: 6px; }
+.etaMeta { font-size: 14px; color: var(--gray-600); }
+.etaList { display: flex; flex-direction: column; gap: 6px; }
+.etaItem { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+.etaItem:last-child { border-bottom: 0; }
+.etaStopName { font-size: 14px; font-weight: 600; }
+.etaTime { font-size: 13px; font-weight: 700; color: var(--brand); }
+
+/* ═══════════════════════
+   STOPS / VEHICLES LISTS
+═══════════════════════ */
+.stopsList { display: flex; flex-direction: column; gap: 4px; }
+.stopItem { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; color: var(--gray-700); }
+.stopDot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); flex-shrink: 0; }
+.vehiclesList { display: flex; flex-direction: column; gap: 6px; }
+
+/* ═══════════════════════
+   DRIVER PAGE
+═══════════════════════ */
+.driverStatusCard { }
+.driverStatusHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.workBadge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 700;
+}
+.workBadge--offline { background: var(--gray-100); color: var(--gray-600); }
+.workBadge--online { background: var(--success-light); color: var(--success); }
+.workBadge--warning { background: var(--warning-light); color: var(--warning); }
+.workBadgeDot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.workBadge--online .workBadgeDot { animation: pulse 1.5s infinite; }
+.speedBadge { background: var(--gray-800); color: var(--white); padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.driverActions { display: flex; gap: 8px; margin-top: 16px; }
+.driverStatusMsg { font-size: 13px; color: var(--gray-500); margin-top: 10px; text-align: center; }
+.nextStopInfo { font-size: 16px; }
+.rulesList { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.rulesList li { font-size: 14px; color: var(--gray-600); }
+.warningIcon { font-size: 36px; text-align: center; margin-bottom: 8px; }
+.card--warning h3 { color: var(--warning); }
+
+/* ═══════════════════════
+   ADMIN DASHBOARD
+═══════════════════════ */
+.adminDashboard {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;
+}
+.statCard {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg); padding: 14px; text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.statCard--alert { border-color: #fde68a; background: var(--warning-light); }
+.statValue { font-size: 28px; font-weight: 800; color: var(--brand); }
+.statCard--alert .statValue { color: var(--warning); }
+.statLabel { font-size: 12px; font-weight: 500; color: var(--gray-500); margin-top: 2px; }
+.pendingAlert {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--warning-light); border: 1px solid #fde68a;
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px;
+  font-size: 14px; font-weight: 600; color: var(--warning);
+}
+.pendingAlert button { margin-left: auto; background: var(--warning); color: var(--white); border: 0; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.pendingBadge {
+  background: var(--danger); color: var(--white);
+  border-radius: 999px; padding: 0 5px; font-size: 10px; font-weight: 800;
+  margin-left: 4px;
+}
+.adminAlertDot { /* handled inline */ }
+.navAlertDot {
+  position: absolute; top: 6px; right: 16px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--danger);
 }
 
-/* FULLSCREEN SEARCH SUGGESTIONS FIX */
-.cleanMapSearch{
-  overflow:visible!important;
+/* ═══════════════════════
+   ADMIN TABS
+═══════════════════════ */
+.adminTabs {
+  display: flex; gap: 4px; overflow-x: auto; padding: 4px;
+  background: var(--gray-100); border-radius: var(--radius);
+  margin-bottom: 16px; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-.cleanSearchSuggestBox{
-  position:absolute;
-  left:0;
-  right:0;
-  top:74px;
-  background:#fff;
-  border:1px solid #dbe4f0;
-  border-radius:22px;
-  box-shadow:0 18px 45px rgba(15,23,42,.22);
-  overflow:hidden;
-  z-index:1005;
+.adminTabs::-webkit-scrollbar { display: none; }
+.adminTab {
+  flex-shrink: 0; background: transparent; border: 0;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--gray-600); white-space: nowrap; position: relative;
+  transition: all 0.15s;
 }
-.cleanSearchSuggestBox.hidden{
-  display:none!important;
+.adminTab.active { background: var(--white); color: var(--gray-900); box-shadow: var(--shadow-sm); }
+.adminPanel { display: none; }
+.adminPanel.active { display: block; }
+
+/* ═══════════════════════
+   ADMIN LISTS
+═══════════════════════ */
+.adminList { display: flex; flex-direction: column; gap: 8px; }
+.adminItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; background: var(--gray-50);
+  border: 1px solid var(--gray-200); border-radius: var(--radius);
 }
-.cleanSuggestItem{
-  width:100%!important;
-  min-height:62px!important;
-  border:0!important;
-  border-bottom:1px solid #edf2f7!important;
-  background:#fff!important;
-  color:#0f172a!important;
-  display:flex!important;
-  align-items:center!important;
-  gap:12px!important;
-  padding:10px 14px!important;
-  text-align:left!important;
-  border-radius:0!important;
-  box-shadow:none!important;
+.adminItem.adminItem--online { border-left: 3px solid var(--success); }
+.adminItemInfo { flex: 1; min-width: 0; }
+.adminItemName { font-size: 14px; font-weight: 700; }
+.adminItemMeta { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+.adminItemActions { display: flex; gap: 6px; flex-shrink: 0; }
+.adminBtnEdit, .adminBtnDelete, .adminBtnApprove, .adminBtnToggle {
+  border: 0; border-radius: 6px; padding: 5px 10px;
+  font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
-.cleanSuggestItem:active{
-  background:#eff6ff!important;
+.adminBtnEdit { background: var(--brand-light); color: var(--brand); }
+.adminBtnDelete { background: var(--danger-light); color: var(--danger); }
+.adminBtnApprove { background: var(--success-light); color: var(--success); }
+.adminBtnToggle { background: var(--gray-100); color: var(--gray-600); }
+.incidentCard {
+  padding: 12px; background: var(--warning-light);
+  border: 1px solid #fde68a; border-radius: var(--radius); margin-bottom: 8px;
 }
-.cleanSuggestPin{
-  width:38px;
-  height:38px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:50%;
-  background:#eff6ff;
-  font-size:20px;
+.incidentHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.incidentType { font-size: 13px; font-weight: 700; color: var(--warning); }
+.incidentTime { font-size: 12px; color: var(--gray-500); }
+.incidentNote { font-size: 14px; color: var(--gray-700); }
+.incidentDriver { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+
+/* ═══════════════════════
+   BOTTOM NAV
+═══════════════════════ */
+.bottomNav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--white); border-top: 1px solid var(--gray-200);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 16px rgba(0,0,0,.08);
 }
-.cleanSuggestText{
-  display:flex;
-  flex-direction:column;
-  line-height:1.2;
+.navBtn {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px; padding: 8px 4px; border: 0; background: transparent;
+  cursor: pointer; border-radius: var(--radius); position: relative;
+  transition: background 0.15s;
 }
-.cleanSuggestText b{
-  font-size:16px;
-  font-weight:950;
+.navBtn.active { background: var(--brand-light); }
+.navIcon { font-size: 22px; }
+.navLabel { font-size: 11px; font-weight: 600; color: var(--gray-500); }
+.navBtn.active .navLabel { color: var(--brand); }
+
+/* ═══════════════════════
+   MODALS
+═══════════════════════ */
+.modal {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  padding: 0;
 }
-.cleanSuggestText small{
-  margin-top:4px;
-  font-size:13px;
-  font-weight:850;
-  color:#64748b;
+.modalCard {
+  background: var(--white); border-radius: 24px 24px 0 0;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 -8px 32px rgba(0,0,0,.2);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.modalCard--map { border-radius: 24px 24px 0 0; }
+.modalHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.modalHeader h2 { font-size: 20px; }
+.modalClose { background: var(--gray-100); border: 0; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 14px; }
+.modalDivider { text-align: center; font-size: 13px; color: var(--gray-400); }
+.stopPickerMap { width: 100%; height: 300px; border-radius: var(--radius); overflow: hidden; }
+
+/* ═══════════════════════
+   FULLSCREEN MAP
+═══════════════════════ */
+.mapOverlay {
+  position: fixed; inset: 0; z-index: 5000;
+  background: #f8f9fa;
+}
+#fullMap {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.mapSearchBar {
+  position: absolute; top: calc(env(safe-area-inset-top) + 12px); left: 12px; right: 12px;
+  z-index: 1000;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--white); border-radius: 999px;
+  padding: 10px 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.2);
+}
+.mapSearchIcon { font-size: 16px; flex-shrink: 0; }
+.mapSearchBar input { border: 0; background: none; font-size: 15px; flex: 1; outline: none; min-width: 0; }
+.mapSearchClear { background: none; border: 0; color: var(--gray-400); font-size: 14px; cursor: pointer; flex-shrink: 0; }
+.mapSearchSuggestions {
+  position: absolute; top: calc(env(safe-area-inset-top) + 70px); left: 12px; right: 12px;
+  z-index: 999; background: var(--white); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); max-height: 300px; overflow-y: auto;
+}
+.mapFab {
+  position: absolute; z-index: 999;
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 0; font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.15s;
+}
+.mapFab:active { transform: scale(.92); }
+.mapFabLocate { background: var(--white); right: 12px; bottom: 280px; }
+.mapFabRefresh { background: var(--white); right: 12px; bottom: 220px; }
+.mapFabClose { background: var(--gray-800); color: var(--white); right: 12px; bottom: 160px; }
+
+/* Info sheet */
+.mapInfoSheet {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 998;
+  background: var(--white); border-radius: 24px 24px 0 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 20px rgba(0,0,0,.15);
+}
+.mapInfoHandle { width: 40px; height: 4px; background: var(--gray-300); border-radius: 999px; margin: 0 auto 12px; }
+.mapInfoBody h2 { font-size: 18px; margin-bottom: 6px; }
+.mapStatus { font-size: 14px; color: var(--gray-500); margin-bottom: 12px; }
+.mapInfoBtns { display: flex; gap: 8px; }
+.mapInfoBtns .btn-primary { padding: 10px; }
+
+/* Itinerary panel */
+.mapItineraryPanel {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 999;
+  background: var(--white); border-radius: 24px 24px 0 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 24px rgba(0,0,0,.2);
+}
+.mapItineraryHandle { width: 40px; height: 4px; background: var(--gray-300); border-radius: 999px; margin: 0 auto 12px; }
+.mapItineraryRow { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+.mapItineraryRow input { flex: 1; border: 0; background: none; font-size: 15px; outline: none; }
+.mapItinerarySep { height: 1px; background: var(--gray-100); margin: 0; }
+.mapDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.mapDotBlue { background: var(--brand); }
+.mapDotRed { background: var(--danger); }
+.mapRouteResult { margin-top: 12px; padding: 12px; background: var(--gray-50); border-radius: var(--radius); font-size: 14px; }
+
+/* ═══════════════════════
+   LEAFLET OVERRIDES
+═══════════════════════ */
+.leaflet-popup-content-wrapper { border-radius: var(--radius); box-shadow: var(--shadow-lg); }
+.busMarker { font-size: 28px; line-height: 1; }
+.myPositionMarker { width: 16px; height: 16px; border-radius: 50%; background: var(--brand); border: 3px solid var(--white); box-shadow: 0 0 0 3px rgba(26,86,219,.3); }
+
+/* ═══════════════════════
+   RESPONSIVE
+═══════════════════════ */
+@media (min-width: 640px) {
+  .appMain { padding: 0 16px; }
+  .adminDashboard { grid-template-columns: repeat(4, 1fr); }
 }
 
-.cleanMapStatus{
-  display:inline-flex;
-  padding:7px 10px;
-  border-radius:999px;
-  background:#eff6ff;
-  color:#1d4ed8;
-  font-size:13px;
-  font-weight:950;
-  margin:0 0 10px;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gray-50: #111827; --gray-100: #1f2937; --gray-200: #374151;
+    --gray-300: #4b5563; --gray-400: #6b7280; --gray-500: #9ca3af;
+    --gray-600: #d1d5db; --gray-700: #e5e7eb; --gray-800: #f3f4f6;
+    --gray-900: #f9fafb; --white: #1f2937;
+    --brand-light: #1e3a5f; --success-light: #064e3b; --danger-light: #450a0a;
+    --warning-light: #451a03;
+  }
+  .appHeader, .bottomNav { background: #111827; border-color: #374151; }
+  .modal { background: rgba(0,0,0,.7); }
+  .leaflet-popup-content-wrapper { background: #1f2937; color: #f9fafb; }
 }
-
-.fallbackWarning{
-  display:inline-flex;
-  padding:7px 10px;
-  border-radius:999px;
-  background:#fef3c7;
-  color:#92400e;
-  font-size:12px;
-  font-weight:950;
-  margin:0 0 8px;
-}
-
-/* PAGE CRASH FIX UI */
-body{padding-bottom:120px!important}
-.bottomNav{z-index:9999!important}
-#map{min-height:420px!important;height:420px!important;display:block!important}
-button,input,select{pointer-events:auto!important}
-
-/* Hide old separate fullscreen map overlay */
-#cleanMapOverlay{display:none!important}
-
-/* SAME MAP FULLSCREEN MODE */
-.fullMapBtn,
-#sameMapFullscreenBtn{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:100%!important;
-  min-height:58px!important;
-  border-radius:22px!important;
-  margin:12px 0!important;
-  background:#fff!important;
-  border:1px solid #dbe4f0!important;
-  color:#1d4ed8!important;
-  font-weight:950!important;
-  font-size:17px!important;
-}
-
-.sameMapCloseBtn{
-  position:fixed!important;
-  top:calc(env(safe-area-inset-top) + 16px)!important;
-  right:18px!important;
-  z-index:1000000!important;
-  width:58px!important;
-  height:58px!important;
-  min-height:58px!important;
-  border-radius:50%!important;
-  background:#fff!important;
-  color:#0f172a!important;
-  box-shadow:0 12px 30px rgba(15,23,42,.25)!important;
-  border:0!important;
-  font-size:34px!important;
-  font-weight:950!important;
-  padding:0!important;
-}
-.sameMapCloseBtn.hidden{display:none!important}
-
-body.sameMapFullscreen{
-  overflow:hidden!important;
-}
-body.sameMapFullscreen #map{
-  position:fixed!important;
-  inset:0!important;
-  width:100vw!important;
-  height:100dvh!important;
-  min-height:100dvh!important;
-  z-index:999998!important;
-  border-radius:0!important;
-  margin:0!important;
-}
-body.sameMapFullscreen .bottomNav{
-  display:none!important;
-}
-body.sameMapFullscreen header,
-body.sameMapFullscreen .hero,
-body.sameMapFullscreen .card:not(:has(#map)),
-body.sameMapFullscreen #mapStatus,
-body.sameMapFullscreen .etaCard{
-  display:none!important;
-}
-body.sameMapFullscreen #map .leaflet-control-zoom{
-  margin-top:85px!important;
-}
-
-/* FULLSCREEN SEARCH + LOCATE + REFRESH UI */
-.sameMapSearchBar{
-  position:fixed!important;
-  top:calc(env(safe-area-inset-top) + 18px)!important;
-  left:18px!important;
-  right:18px!important;
-  z-index:1000000!important;
-  min-height:64px!important;
-  border-radius:28px!important;
-  background:#fff!important;
-  box-shadow:0 12px 36px rgba(15,23,42,.25)!important;
-  display:flex!important;
-  align-items:center!important;
-  gap:10px!important;
-  padding:8px 10px 8px 16px!important;
-}
-.sameMapSearchBar.hidden{display:none!important}
-.sameMapSearchBar span{font-size:24px}
-.sameMapSearchBar input{
-  flex:1!important;
-  border:0!important;
-  box-shadow:none!important;
-  outline:0!important;
-  min-height:46px!important;
-  font-size:16px!important;
-  padding:0 6px!important;
-}
-.sameMapSearchBar button{
-  width:auto!important;
-  min-height:46px!important;
-  border-radius:20px!important;
-  padding:0 16px!important;
-  background:#2563eb!important;
-  color:#fff!important;
-  font-weight:950!important;
-}
-.sameMapSuggestBox{
-  position:absolute!important;
-  top:74px!important;
-  left:0!important;
-  right:0!important;
-  background:#fff!important;
-  border:1px solid #dbe4f0!important;
-  border-radius:22px!important;
-  box-shadow:0 18px 45px rgba(15,23,42,.22)!important;
-  overflow:hidden!important;
-  z-index:1000001!important;
-}
-.sameMapSuggestBox.hidden{display:none!important}
-.sameMapSuggestItem{
-  width:100%!important;
-  min-height:62px!important;
-  border:0!important;
-  border-bottom:1px solid #edf2f7!important;
-  background:#fff!important;
-  color:#0f172a!important;
-  display:flex!important;
-  align-items:center!important;
-  gap:12px!important;
-  padding:10px 14px!important;
-  text-align:left!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-}
-.sameMapSuggestItem:active{background:#eff6ff!important}
-.sameMapPin{
-  width:38px!important;
-  height:38px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  border-radius:50%!important;
-  background:#eff6ff!important;
-  font-size:20px!important;
-}
-.sameMapSuggestText{display:flex;flex-direction:column;line-height:1.2}
-.sameMapSuggestText b{font-size:16px;font-weight:950}
-.sameMapSuggestText small{margin-top:4px;font-size:13px;font-weight:850;color:#64748b}
-
-.sameMapFloatBtn{
-  position:fixed!important;
-  right:18px!important;
-  z-index:1000000!important;
-  width:58px!important;
-  height:58px!important;
-  min-height:58px!important;
-  border-radius:50%!important;
-  background:#fff!important;
-  color:#2563eb!important;
-  box-shadow:0 12px 30px rgba(15,23,42,.25)!important;
-  border:0!important;
-  font-size:30px!important;
-  font-weight:950!important;
-  padding:0!important;
-}
-.sameMapFloatBtn.hidden{display:none!important}
-.sameMapRefreshBtn{bottom:calc(env(safe-area-inset-bottom) + 150px)!important}
-.sameMapLocateBtn{
-  bottom:calc(env(safe-area-inset-bottom) + 82px)!important;
-  transform:rotate(-45deg)!important;
-}
-.sameMapMeIcon{background:transparent!important;border:0!important}
-.sameMapMeIcon div{
-  width:46px;height:46px;border-radius:50%;
-  background:#2563eb;color:#fff;border:3px solid #fff;
-  box-shadow:0 8px 22px rgba(15,23,42,.25);
-  display:flex;align-items:center;justify-content:center;
-  font-size:24px;transform:rotate(-45deg);
-}
-
-/* leave room for search bar in fullscreen */
-body.sameMapFullscreen #map .leaflet-control-zoom{
-  margin-top:92px!important;
-}
-body.sameMapFullscreen .sameMapCloseBtn{
-  top:calc(env(safe-area-inset-top) + 92px)!important;
-}
-
-/* FULLSCREEN BUTTON FIX FINAL */
-#sameMapFullscreenBtn,
-#cleanFullMapBtn,
-.fullMapBtn{
-  pointer-events:auto!important;
-  cursor:pointer!important;
-  position:relative!important;
-  z-index:20!important;
-  user-select:none!important;
-  -webkit-user-select:none!important;
-}
-body.sameMapFullscreen #map{
-  position:fixed!important;
-  inset:0!important;
-  width:100vw!important;
-  height:100dvh!important;
-  min-height:100dvh!important;
-  z-index:999998!important;
-  border-radius:0!important;
-  margin:0!important;
-}
-.sameMapCloseBtn{
-  position:fixed!important;
-  top:calc(env(safe-area-inset-top) + 92px)!important;
-  right:18px!important;
-  z-index:1000002!important;
-}
-
-/* FULLSCREEN PANEL FIX FINAL */
-body.sameMapFullscreen{overflow:hidden!important;height:100dvh!important;background:#fff!important}
-body.sameMapFullscreen #map{
-  position:fixed!important;left:0!important;top:0!important;right:0!important;bottom:0!important;
-  width:100vw!important;height:100dvh!important;min-height:100dvh!important;
-  z-index:999998!important;border-radius:0!important;margin:0!important;background:#e0f2fe!important;
-}
-body.sameMapFullscreen #map.leaflet-container{width:100vw!important;height:100dvh!important}
-body.sameMapFullscreen .bottomNav{display:none!important}
-body.sameMapFullscreen header,
-body.sameMapFullscreen .hero,
-body.sameMapFullscreen .card:not(:has(#map)),
-body.sameMapFullscreen #mapStatus,
-body.sameMapFullscreen .etaCard{display:none!important}
-.sameMapSheet{
-  position:fixed!important;left:14px!important;right:14px!important;
-  bottom:calc(env(safe-area-inset-bottom) + 14px)!important;
-  z-index:1000001!important;background:#fff!important;border:1px solid #dbe4f0!important;
-  border-radius:28px!important;box-shadow:0 -12px 36px rgba(15,23,42,.22)!important;
-  padding:10px 16px 16px!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important;
-  transition:height .22s ease!important;
-}
-.sameMapSheet.hidden{display:none!important}
-.sameMapSheet.dragging{transition:none!important}
-.sameMapSheet.mini{height:92px!important;overflow:hidden!important}
-.sameMapSheet.mid{height:245px!important}
-.sameMapSheet.full{height:68vh!important}
-.sameMapSheetHandle{width:54px!important;height:6px!important;border-radius:999px!important;background:#cbd5e1!important;margin:0 auto 12px!important}
-.sameMapSheetHeader h2{margin:0!important;font-size:24px!important;color:#0f172a!important;font-weight:950!important}
-.sameMapSheetHeader p{margin:4px 0 10px!important;color:#64748b!important;font-weight:850!important}
-.sameMapSheetStatus{display:inline-flex!important;padding:7px 10px!important;border-radius:999px!important;background:#eff6ff!important;color:#1d4ed8!important;font-size:13px!important;font-weight:950!important;margin:0 0 12px!important}
-.sameMapSheetRouteBtn{width:auto!important;min-height:48px!important;border-radius:18px!important;padding:0 18px!important;background:#2563eb!important;color:#fff!important;font-weight:950!important}
-.sameMapSheet.mini .sameMapSheetStatus,.sameMapSheet.mini .sameMapSheetRouteBtn{display:none!important}
-body.sameMapFullscreen .sameMapRefreshBtn{bottom:calc(env(safe-area-inset-bottom) + 300px)!important}
-body.sameMapFullscreen .sameMapLocateBtn{bottom:calc(env(safe-area-inset-bottom) + 230px)!important}
-body.sameMapFullscreen .sameMapSearchBar{top:calc(env(safe-area-inset-top) + 18px)!important}
-body.sameMapFullscreen .sameMapCloseBtn{top:calc(env(safe-area-inset-top) + 92px)!important;z-index:1000003!important}
-.sameMapSuggestBox{z-index:1000005!important;max-height:50vh!important;overflow:auto!important}
-
-.gmSafePanel{position:fixed!important;top:calc(env(safe-area-inset-top) + 10px)!important;left:12px!important;right:12px!important;z-index:1000010!important;background:#fff!important;border-radius:26px!important;box-shadow:0 12px 38px rgba(15,23,42,.25)!important;padding:10px 12px 12px!important;max-height:70vh!important;overflow:auto!important}
-.gmSafePanel.hidden{display:none!important}.gmSafeHeader{display:flex!important;gap:8px!important}.gmSafeHeader>button{width:42px!important;height:42px!important;min-height:42px!important;border-radius:50%!important;border:0!important;background:#f1f5f9!important;color:#0f172a!important;font-size:34px!important;padding:0!important}
-.gmSafeFields{flex:1!important}.gmSafeField{display:flex!important;align-items:center!important;gap:10px!important;min-height:48px!important}.gmSafeField input{flex:1!important;border:0!important;box-shadow:none!important;outline:0!important;min-height:44px!important;font-size:17px!important;padding:0!important}.gmLine{height:1px!important;background:#e5e7eb!important;margin-left:20px!important}
-.blueDot,.redDot{width:10px!important;height:10px!important;border-radius:50%!important;display:inline-block!important;flex:0 0 10px!important}.blueDot{background:#3b82f6!important}.redDot{background:#ef4444!important}
-#gmSafeClear{width:34px!important;height:34px!important;min-height:34px!important;border-radius:50%!important;border:0!important;background:#f8fafc!important;color:#334155!important;font-size:20px!important;padding:0!important}
-.gmSug{width:100%!important;min-height:62px!important;border:0!important;border-bottom:1px solid #eef2f7!important;background:#fff!important;color:#0f172a!important;display:grid!important;grid-template-columns:42px 1fr!important;column-gap:12px!important;text-align:left!important;border-radius:0!important;padding:10px 4px!important;box-shadow:none!important}.gmSug span{grid-row:1/3;width:42px;height:42px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center}.gmSug b{font-size:17px!important;font-weight:850!important}.gmSug small{font-size:14px!important;color:#64748b!important;font-weight:650!important}
-#gmSafeGo{width:100%!important;min-height:46px!important;border-radius:18px!important;background:#2563eb!important;color:#fff!important;font-weight:950!important;margin-top:10px!important}
-#sameMapFullscreenBtn,.fullMapBtn{pointer-events:auto!important;cursor:pointer!important;z-index:20!important}
