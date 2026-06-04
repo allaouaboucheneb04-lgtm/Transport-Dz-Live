@@ -12,6 +12,7 @@ let pickedLat = null, pickedLng = null;
 let clientMarker = null, driverWatchId = null, lastGpsWrite = 0;
 let editingLineId = null, editingStopId = null, editingVehicleId = null, editingDriverId = null;
 let routeCache = {}, routeFocusActive = false, routeLayers = [];
+let _transportGraph = null, _graphStopsHash = '';
 let osmStopsLayer = null, osmStopsGeojson = null;
 let bejaiaGeojson = null, bejaiaGeojsonLayer = null;
 let walkingTrackWatchId = null, walkingTrackPoints = [], walkingTrackStart = 0;
@@ -261,8 +262,8 @@ window.switchAdminTab = switchAdminTab;
 function bindRealtime() {
   unsub.forEach(f => f && f());
   unsub = [];
-  unsub.push(db.collection('lines').onSnapshot(s => { lines = s.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); }, console.error));
-  unsub.push(db.collection('stops').onSnapshot(s => { stops = s.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); }, console.error));
+  unsub.push(db.collection('lines').onSnapshot(s => { lines = s.docs.map(d => ({ id: d.id, ...d.data() })); _transportGraph = null; scheduleRender(); }, console.error));
+  unsub.push(db.collection('stops').onSnapshot(s => { stops = s.docs.map(d => ({ id: d.id, ...d.data() })); _transportGraph = null; scheduleRender(); }, console.error));
   unsub.push(db.collection('vehicles').onSnapshot(s => { vehicles = s.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); renderDriverWorkStatus(); }, console.error));
   unsub.push(db.collection('drivers').onSnapshot(s => { drivers = s.docs.map(d => ({ id: d.id, ...d.data() })); scheduleRender(); }, console.error));
   unsub.push(db.collection('driverRequests').where('status', '==', 'pending').onSnapshot(s => { driverRequests = s.docs.map(d => ({ id: d.id, ...d.data() })); applyRoleVisibility(); renderPendingDrivers(); }, console.error));
@@ -1268,15 +1269,27 @@ async function clientGps() {
 const WALK_MAX_METERS = 2500; // Algeria bus network has sparse transfer points
 
 function sortStopsByRoute(lineStops) {
-  // Sort stops along route using nearest-neighbor starting from stop with lowest order
-  if (lineStops.length <= 2) return lineStops;
-  const sorted = [lineStops.reduce((best, s) => Number(s.order||9999) < Number(best.order||9999) ? s : best, lineStops[0])];
-  const remaining = lineStops.filter(s => s.id !== sorted[0].id);
+  // Filter out stops with invalid coordinates first
+  const valid = lineStops.filter(s => num(s.lat) !== null && num(s.lng) !== null);
+  if (valid.length <= 2) return valid;
+  // If stops have meaningful order values (not all 0 or 9999), use them directly
+  const orders = valid.map(s => Number(s.order || 0));
+  const hasRealOrder = new Set(orders).size > valid.length * 0.5; // majority unique
+  if (hasRealOrder) {
+    return [...valid].sort((a, b) => Number(a.order || 9999) - Number(b.order || 9999));
+  }
+  // Nearest-neighbor sort from lowest-order stop
+  const first = valid.reduce((best, s) => Number(s.order||9999) < Number(best.order||9999) ? s : best, valid[0]);
+  const sorted = [first];
+  const remaining = valid.filter(s => s.id !== first.id);
   while (remaining.length) {
     const last = sorted[sorted.length - 1];
+    const lastLat = num(last.lat), lastLng = num(last.lng);
     let nearestIdx = 0, nearestDist = Infinity;
     for (let i = 0; i < remaining.length; i++) {
-      const d = distanceMeters(num(last.lat), num(last.lng), num(remaining[i].lat), num(remaining[i].lng));
+      const rLat = num(remaining[i].lat), rLng = num(remaining[i].lng);
+      if (rLat === null || rLng === null) continue;
+      const d = distanceMeters(lastLat, lastLng, rLat, rLng);
       if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
     }
     sorted.push(remaining.splice(nearestIdx, 1)[0]);
@@ -1285,6 +1298,11 @@ function sortStopsByRoute(lineStops) {
 }
 
 function buildTransportGraph() {
+  // Return cached graph if data hasn't changed
+  const hash = lines.length + '_' + stops.length;
+  if (_transportGraph && _graphStopsHash === hash) return _transportGraph;
+  _graphStopsHash = hash;
+  
   const graph = {};
   stops.forEach(s => { if (!graph[s.id]) graph[s.id] = []; });
 
@@ -1323,38 +1341,50 @@ function buildTransportGraph() {
       graph[b.id].push({ to: a.id, type: 'walk', distance: d, minutes, cost });
     }
   }
+  _transportGraph = graph;
   return graph;
 }
 
 function dijkstraRoute(startId, endId) {
   const graph = buildTransportGraph();
-  const dist = {}, prev = {}, visited = new Set();
-  Object.keys(graph).forEach(k => { dist[k] = Infinity; });
+  if (!graph[startId] || !graph[endId]) return null;
+  
+  const dist = {}, prev = {};
+  // Simple min-heap using object + sorted insert for small graphs
   dist[startId] = 0;
-  const pq = [{ id: startId, cost: 0 }];
+  // Use a Map for O(1) lookups, array as priority queue
+  const pq = [[0, startId]]; // [cost, id]
+  const visited = new Set();
+  
   while (pq.length) {
-    pq.sort((a, b) => a.cost - b.cost);
-    const { id } = pq.shift();
+    // Find minimum cost entry (simple linear scan - fast enough for <300 nodes)
+    let minIdx = 0;
+    for (let i = 1; i < pq.length; i++) {
+      if (pq[i][0] < pq[minIdx][0]) minIdx = i;
+    }
+    const [, id] = pq.splice(minIdx, 1)[0];
     if (visited.has(id)) continue;
     visited.add(id);
     if (id === endId) break;
-    (graph[id] || []).forEach(edge => {
+    for (const edge of (graph[id] || [])) {
+      if (visited.has(edge.to)) continue;
       const newCost = dist[id] + edge.cost;
-      if (newCost < (dist[edge.to] || Infinity)) {
+      if (newCost < (dist[edge.to] ?? Infinity)) {
         dist[edge.to] = newCost;
         prev[edge.to] = { from: id, edge };
-        pq.push({ id: edge.to, cost: newCost });
+        pq.push([newCost, edge.to]);
       }
-    });
+    }
   }
-  if (dist[endId] === Infinity) return null;
+  
+  if (dist[endId] === undefined || dist[endId] === Infinity) return null;
   const path = [];
   let cur = endId;
   while (cur && prev[cur]) {
     path.unshift({ stopId: cur, ...prev[cur] });
     cur = prev[cur].from;
   }
-  return path;
+  return path.length ? path : null;
 }
 
 function normalize(str) {
@@ -1392,10 +1422,25 @@ async function searchRouteMultiLines() {
   const stepsEl = $('routeStepsList');
   if (!fromQ || !toQ) { toastWarn('Remplis départ et destination.'); return; }
   if (resultEl) resultEl.textContent = 'Calcul en cours...';
-  if (resultCard) resultCard.classList.remove('hidden');
+  if (resultCard) {
+    resultCard.classList.remove('hidden');
+    setTimeout(() => resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  }
   const fromStop = bestStopMatch(fromQ), toStop = bestStopMatch(toQ);
-  if (!fromStop) { if (resultEl) resultEl.textContent = `Arrêt de départ introuvable: "${fromQ}"`; return; }
-  if (!toStop) { if (resultEl) resultEl.textContent = `Destination introuvable: "${toQ}"`; return; }
+  if (!stops.length) {
+    if (resultEl) resultEl.innerHTML = '<span style="color:#dc2626">⚠️ Les arrêts ne sont pas encore chargés. Attends quelques secondes et réessaie.</span>';
+    return;
+  }
+  if (!fromStop) {
+    const suggestions = stops.slice(0,3).map(s=>s.name).join(', ');
+    if (resultEl) resultEl.innerHTML = `<span style="color:#dc2626">⚠️ Arrêt introuvable: "<b>${fromQ}</b>". Exemples: ${suggestions}</span>`;
+    return;
+  }
+  if (!toStop) {
+    const suggestions = stops.slice(0,3).map(s=>s.name).join(', ');
+    if (resultEl) resultEl.innerHTML = `<span style="color:#dc2626">⚠️ Destination introuvable: "<b>${toQ}</b>". Exemples: ${suggestions}</span>`;
+    return;
+  }
   if (fromStop.id === toStop.id) { if (resultEl) resultEl.textContent = 'Départ = Destination.'; return; }
   const path = dijkstraRoute(fromStop.id, toStop.id);
   if (!path || !path.length) {
@@ -1407,7 +1452,7 @@ async function searchRouteMultiLines() {
     } else if (!fromLine || !toLine) {
       msg = 'Un des arrêts n\'a pas de ligne assignée. Vérifiez les données dans l\'admin.';
     } else {
-      msg = `Pas de connexion trouvée entre ${getLineName(fromLine)} et ${getLineName(toLine)}. Les lignes sont peut-être trop éloignées pour une correspondance à pied (max 800m).`;
+      msg = `Pas de connexion trouvée entre ${getLineName(fromLine)} et ${getLineName(toLine)}. Les lignes sont peut-être trop éloignées pour une correspondance à pied.`;
     }
     if (resultEl) resultEl.innerHTML = `<span style="color:#dc2626">⚠️ ${msg}</span>`;
     return;
@@ -1462,23 +1507,13 @@ async function searchRouteMultiLines() {
       }
     }).join('');
   }
-  // Draw on map
+  // Draw on map (don't auto-open overlay - user can tap Carte button)
   routeFocusActive = true;
-  if (!map) {
-    // First time: open map without drawing (routeFocusActive=true blocks drawMap)
-    const overlay = $('mapOverlay');
-    if (overlay) overlay.classList.remove('hidden');
-    initMap();
-    await new Promise(r => setTimeout(r, 400));
-    if (map) map.invalidateSize(true);
-  } else {
-    // Map exists: just show the overlay
-    const overlay = $('mapOverlay');
-    if (overlay) overlay.classList.remove('hidden');
-    setTimeout(() => { if (map) map.invalidateSize(true); }, 100);
+  // Initialize map silently if not done yet
+  if (!map) { initMap(); await new Promise(r => setTimeout(r, 300)); }
+  if (map) {
+    map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l); });
   }
-  // Clear ALL existing layers before drawing route
-  if (map) map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l); });
   clearRouteLayers();
   const pts = [];
   for (const seg of segments) {
@@ -1498,6 +1533,9 @@ async function searchRouteMultiLines() {
     map.fitBounds(L.latLngBounds(pts), { padding: [50, 50] });
   }
   saveRecentTrip(fromQ, toQ);
+  // Update map button to indicate route is ready
+  const mapBtn = $('openFullMapBtn');
+  if (mapBtn) { mapBtn.textContent = '🗺️ Voir sur la carte'; mapBtn.style.background = '#dcfce7'; mapBtn.style.color = '#166534'; }
 }
 
 function resetRouteSearchView() {
@@ -1505,6 +1543,8 @@ function resetRouteSearchView() {
   if ($('routeResultCard')) $('routeResultCard').classList.add('hidden');
   if ($('routeResult')) $('routeResult').innerHTML = '';
   if ($('routeStepsList')) $('routeStepsList').innerHTML = '';
+  const mapBtn = $('openFullMapBtn');
+  if (mapBtn) { mapBtn.textContent = '🗺️ Carte'; mapBtn.style.background = ''; mapBtn.style.color = ''; }
   clearRouteLayers();
   drawMap().catch(console.error);
 }
