@@ -339,58 +339,113 @@ function clearRouteLayers() {
 }
 
 
-function drawSavedRouteOnMap() {
+function cacheKeyForCoords(prefix, coords) {
+  return prefix + '_' + coords.map(p => `${Number(p[0]).toFixed(5)},${Number(p[1]).toFixed(5)}`).join(';');
+}
+
+async function getRoadLatLngs(coords, mode = 'driving') {
+  // coords = [[lat,lng], ...]. Uses OSRM when internet is available.
+  const clean = (coords || []).filter(p => Array.isArray(p) && num(p[0]) !== null && num(p[1]) !== null);
+  if (clean.length < 2) return clean;
+  const key = cacheKeyForCoords(mode, clean);
+  if (routeCache[key]) return routeCache[key];
+  try {
+    const osrmProfile = mode === 'walking' ? 'foot' : 'driving';
+    const coordStr = clean.map(p => `${num(p[1])},${num(p[0])}`).join(';');
+    const res = await fetch(`https://router.project-osrm.org/route/v1/${osrmProfile}/${coordStr}?overview=full&geometries=geojson&steps=false&continue_straight=false`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.routes && data.routes[0] && data.routes[0].geometry && data.routes[0].geometry.coordinates) {
+        const road = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        if (road.length > 1) {
+          routeCache[key] = road;
+          return road;
+        }
+      }
+    }
+  } catch (e) {
+    // Offline / OSRM blocked: keep fallback below.
+  }
+  routeCache[key] = clean;
+  return clean;
+}
+
+function stopsBetweenOnLine(lineId, fromId, toId) {
+  const ordered = sortStopsByRoute(stopsForLine(lineId));
+  const a = ordered.findIndex(s => s.id === fromId);
+  const b = ordered.findIndex(s => s.id === toId);
+  if (a < 0 || b < 0) return [stops.find(s => s.id === fromId), stops.find(s => s.id === toId)].filter(Boolean);
+  const slice = a <= b ? ordered.slice(a, b + 1) : ordered.slice(b, a + 1).reverse();
+  return slice.filter(s => num(s.lat) !== null && num(s.lng) !== null);
+}
+
+function coordsForRouteSegment(seg) {
+  if (seg.type === 'bus') {
+    const passedStops = seg.stopIds && seg.stopIds.length
+      ? seg.stopIds.map(id => stops.find(s => s.id === id)).filter(Boolean)
+      : stopsBetweenOnLine(seg.lineId, seg.from, seg.to);
+    return passedStops.map(s => [num(s.lat), num(s.lng)]).filter(p => num(p[0]) !== null && num(p[1]) !== null);
+  }
+  const a = stops.find(s => s.id === seg.from), b = stops.find(s => s.id === seg.to);
+  return [a, b].filter(Boolean).map(s => [num(s.lat), num(s.lng)]).filter(p => num(p[0]) !== null && num(p[1]) !== null);
+}
+
+
+async function drawSavedRouteOnMap() {
   if (!map || !currentRouteState) return;
   const { segments, fromStop, toStop } = currentRouteState;
   map.eachLayer(l => {
     if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l);
   });
   clearRouteLayers();
-  const pts = [];
+  const boundsPts = [];
   for (const seg of segments) {
-    const fromS = stops.find(s => s.id === seg.from);
-    const toS = stops.find(s => s.id === seg.to);
-    if (!fromS || !toS || num(fromS.lat) === null || num(fromS.lng) === null || num(toS.lat) === null || num(toS.lng) === null) continue;
-    const a = [num(fromS.lat), num(fromS.lng)];
-    const b = [num(toS.lat), num(toS.lng)];
-    pts.push(a, b);
+    const coords = coordsForRouteSegment(seg);
+    if (coords.length < 2) continue;
     const color = seg.type === 'bus' ? (getLineById(seg.lineId)?.color || '#1a56db') : '#9ca3af';
-    const poly = L.polyline([a, b], {
+    const roadLatLngs = await getRoadLatLngs(coords, seg.type === 'walk' ? 'walking' : 'driving');
+    roadLatLngs.forEach(p => boundsPts.push(p));
+    const poly = L.polyline(roadLatLngs, {
       color,
       weight: seg.type === 'bus' ? 6 : 4,
       dashArray: seg.type === 'walk' ? '6,8' : null,
-      opacity: 0.9
+      opacity: 0.95
     }).addTo(map);
     routeLayers.push(poly);
+
+    // Show the bus stops passed on this segment
+    if (seg.type === 'bus') {
+      const passedStops = (seg.stopIds && seg.stopIds.length ? seg.stopIds.map(id => stops.find(s => s.id === id)) : stopsBetweenOnLine(seg.lineId, seg.from, seg.to)).filter(Boolean);
+      passedStops.forEach((st, idx) => {
+        const label = idx === 0 ? 'Monter' : (idx === passedStops.length - 1 ? 'Descendre' : 'Arrêt');
+        const m = L.circleMarker([num(st.lat), num(st.lng)], { radius: idx === 0 || idx === passedStops.length - 1 ? 9 : 6, color, fillColor: color, weight: 2, fillOpacity: 0.95 })
+          .addTo(map)
+          .bindPopup(`🚏 <b>${label}</b><br>${st.name}<br>${getLineName(seg.lineId)}`);
+        routeLayers.push(m);
+      });
+    }
   }
-  if (pts.length) {
-    L.circleMarker(pts[0], { radius: 10, color: '#1a56db', fillColor: '#1a56db', fillOpacity: 1 }).addTo(map).bindPopup('Départ: ' + fromStop.name);
-    L.circleMarker(pts[pts.length - 1], { radius: 10, color: '#dc2626', fillColor: '#dc2626', fillOpacity: 1 }).addTo(map).bindPopup('Arrivée: ' + toStop.name);
+  if (fromStop && num(fromStop.lat) !== null && num(fromStop.lng) !== null) {
+    const m = L.circleMarker([num(fromStop.lat), num(fromStop.lng)], { radius: 10, color: '#1a56db', fillColor: '#1a56db', fillOpacity: 1 }).addTo(map).bindPopup('Départ: ' + fromStop.name);
+    routeLayers.push(m); boundsPts.push([num(fromStop.lat), num(fromStop.lng)]);
+  }
+  if (toStop && num(toStop.lat) !== null && num(toStop.lng) !== null) {
+    const m = L.circleMarker([num(toStop.lat), num(toStop.lng)], { radius: 10, color: '#dc2626', fillColor: '#dc2626', fillOpacity: 1 }).addTo(map).bindPopup('Arrivée: ' + toStop.name);
+    routeLayers.push(m); boundsPts.push([num(toStop.lat), num(toStop.lng)]);
+  }
+  if (boundsPts.length) {
     setTimeout(() => {
       map.invalidateSize(true);
-      map.fitBounds(L.latLngBounds(pts), { padding: [70, 70], maxZoom: 16 });
+      map.fitBounds(L.latLngBounds(boundsPts), { padding: [70, 70], maxZoom: 16 });
     }, 80);
   }
 }
 
 async function drawRouteForLine(line, routeStops) {
   if (routeStops.length < 2) return;
-  const key = line.id + '_' + routeStops.map(s => s.id).join(',');
-  let latlngs = routeCache[key];
-  if (!latlngs) {
-    const coords = routeStops.map(s => `${num(s.lng)},${num(s.lat)}`).join(';');
-    try {
-      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.routes && data.routes[0]) {
-          latlngs = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-          routeCache[key] = latlngs;
-        }
-      }
-    } catch (e) { /* OSRM unavailable, fallback to straight lines */ }
-    if (!latlngs) latlngs = routeStops.map(s => [num(s.lat), num(s.lng)]);
-  }
+  const coords = routeStops.map(s => [num(s.lat), num(s.lng)]).filter(p => num(p[0]) !== null && num(p[1]) !== null);
+  if (coords.length < 2) return;
+  const latlngs = await getRoadLatLngs(coords, 'driving');
   if (!map) return;
   const poly = L.polyline(latlngs, { color: line.color || '#1a56db', weight: 4, opacity: 0.8 }).addTo(map);
   routeLayers.push(poly);
@@ -454,14 +509,14 @@ function openFullMap() {
     initMap();
     if (map) {
       map.invalidateSize(true);
-      if (routeFocusActive && currentRouteState) drawSavedRouteOnMap();
+      if (routeFocusActive && currentRouteState) drawSavedRouteOnMap().catch(console.error);
       else drawMap();
     }
   }, 120);
   setTimeout(() => {
     if (!map) return;
     map.invalidateSize(true);
-    if (routeFocusActive && currentRouteState) drawSavedRouteOnMap();
+    if (routeFocusActive && currentRouteState) drawSavedRouteOnMap().catch(console.error);
   }, 500);
 }
 
@@ -1506,9 +1561,10 @@ async function searchRouteMultiLines() {
         curSeg.to = step.stopId;
         curSeg.minutes += step.edge.minutes;
         curSeg.distance += step.edge.distance;
+        if (!curSeg.stopIds.includes(step.stopId)) curSeg.stopIds.push(step.stopId);
       } else {
         if (curSeg) segments.push(curSeg);
-        curSeg = { type: 'bus', lineId: step.edge.lineId, direction: step.edge.direction, from: step.from, to: step.stopId, minutes: step.edge.minutes, distance: step.edge.distance };
+        curSeg = { type: 'bus', lineId: step.edge.lineId, direction: step.edge.direction, from: step.from, to: step.stopId, minutes: step.edge.minutes, distance: step.edge.distance, stopIds: [step.from, step.stopId] };
       }
     } else {
       if (curSeg) segments.push(curSeg);
@@ -1532,6 +1588,7 @@ async function searchRouteMultiLines() {
             <div class="stepTitle">Monter à <b>${stopName(seg.from)}</b></div>
             <div class="stepLine"><span class="lineBadge" style="background:${lineColor(seg.lineId)}">${getLineName(seg.lineId)}</span> <span class="directionBadge">${directionLabel(seg.direction)}</span></div>
             <div class="stepMeta">Descendre à <b>${stopName(seg.to)}</b> · ${min} min</div>
+            <div class="passedStopsBox"><b>Arrêts traversés :</b> ${((seg.stopIds && seg.stopIds.length ? seg.stopIds : stopsBetweenOnLine(seg.lineId, seg.from, seg.to).map(s => s.id)).map(id => stopName(id)).join(' → '))}</div>
           </div>
         </div>`;
       } else {
@@ -1550,7 +1607,7 @@ async function searchRouteMultiLines() {
   // Save route and draw it only when the Leaflet map is visible.
   routeFocusActive = true;
   currentRouteState = { segments, fromStop, toStop };
-  if (map && !$('mapOverlay')?.classList.contains('hidden')) drawSavedRouteOnMap();
+  if (map && !$('mapOverlay')?.classList.contains('hidden')) drawSavedRouteOnMap().catch(console.error);
   saveRecentTrip(fromQ, toQ);
   // Update map button to indicate route is ready
   const mapBtn = $('openFullMapBtn');
@@ -1694,7 +1751,7 @@ function setupMapSearch() {
         $('mapRouteResult').classList.remove('hidden');
         $('mapRouteResult').innerHTML = $('routeResult') ? $('routeResult').innerHTML : 'Itinéraire calculé.';
       }
-      drawSavedRouteOnMap();
+      drawSavedRouteOnMap().catch(console.error);
     }
   });
 }
