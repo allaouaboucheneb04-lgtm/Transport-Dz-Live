@@ -1482,6 +1482,104 @@ function dijkstraRoute(startId, endId) {
   return path.length ? path : null;
 }
 
+
+function bestStopMatches(query, limit = 12) {
+  const q = normalize(query);
+  if (!q) return [];
+  const qWords = q.split(/\s+/).filter(Boolean);
+  return stops.map(s => {
+    const name = normalize(s.name);
+    let score = 0;
+    if (name === q) score = 1000;
+    else if (name.startsWith(q)) score = 900;
+    else if (name.includes(q)) score = 700;
+    else {
+      const nameWords = name.split(/\s+/).filter(Boolean);
+      const matchedWords = qWords.filter(w => nameWords.some(nw => nw.startsWith(w) || w.startsWith(nw)));
+      if (matchedWords.length === qWords.length) score = 600;
+      else if (matchedWords.length > 0) score = 300 * (matchedWords.length / qWords.length);
+    }
+    // Small bonus for active lines only
+    if (getLineById(s.lineId)?.active === false) score -= 100;
+    return { s, score };
+  }).filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, limit).map(x => x.s);
+}
+
+function directPathOnSameLine(startId, endId, lineId) {
+  const ordered = sortStopsByRoute(stopsForLine(lineId));
+  const a = ordered.findIndex(s => s.id === startId);
+  const b = ordered.findIndex(s => s.id === endId);
+  if (a < 0 || b < 0 || a === b) return null;
+  const stepDir = a < b ? 1 : -1;
+  const direction = a < b ? 'aller' : 'retour';
+  const path = [];
+  for (let i = a; i !== b; i += stepDir) {
+    const from = ordered[i], to = ordered[i + stepDir];
+    const d = distanceMeters(num(from.lat), num(from.lng), num(to.lat), num(to.lng));
+    const minutes = (d / (BUS_AVG_KMH * 1000 / 3600)) / 60;
+    path.push({ stopId: to.id, from: from.id, edge: { to: to.id, type: 'bus', lineId, direction, distance: d, minutes, cost: minutes + 0.5 } });
+  }
+  return path.length ? path : null;
+}
+
+function segmentsFromPath(path) {
+  const segments = [];
+  let curSeg = null;
+  path.forEach(step => {
+    if (step.edge.type === 'bus') {
+      if (curSeg && curSeg.type === 'bus' && curSeg.lineId === step.edge.lineId && curSeg.direction === step.edge.direction) {
+        curSeg.to = step.stopId;
+        curSeg.minutes += step.edge.minutes;
+        curSeg.distance += step.edge.distance;
+        if (!curSeg.stopIds.includes(step.stopId)) curSeg.stopIds.push(step.stopId);
+      } else {
+        if (curSeg) segments.push(curSeg);
+        curSeg = { type: 'bus', lineId: step.edge.lineId, direction: step.edge.direction, from: step.from, to: step.stopId, minutes: step.edge.minutes, distance: step.edge.distance, stopIds: [step.from, step.stopId] };
+      }
+    } else {
+      if (curSeg) segments.push(curSeg);
+      curSeg = { type: 'walk', from: step.from, to: step.stopId, minutes: step.edge.minutes, distance: step.edge.distance };
+    }
+  });
+  if (curSeg) segments.push(curSeg);
+  return segments;
+}
+
+function chooseBestRoute(fromQuery, toQuery) {
+  const fromCandidates = bestStopMatches(fromQuery, 15);
+  const toCandidates = bestStopMatches(toQuery, 20);
+  if (!fromCandidates.length || !toCandidates.length) return { fromCandidates, toCandidates, best: null };
+  let best = null;
+
+  for (const fromStop of fromCandidates) {
+    for (const toStop of toCandidates) {
+      if (!fromStop || !toStop || fromStop.id === toStop.id) continue;
+      let path = null;
+      let directPreferred = false;
+
+      // Très important: si le départ et la destination existent sur la même ligne,
+      // on garde cette ligne et on évite une correspondance inutile vers une ligne parallèle.
+      if (fromStop.lineId && fromStop.lineId === toStop.lineId) {
+        path = directPathOnSameLine(fromStop.id, toStop.id, fromStop.lineId) || dijkstraRoute(fromStop.id, toStop.id);
+        directPreferred = true;
+      } else {
+        path = dijkstraRoute(fromStop.id, toStop.id);
+      }
+      if (!path || !path.length) continue;
+      const segments = segmentsFromPath(path);
+      const busSegments = segments.filter(s => s.type === 'bus').length;
+      const transfers = Math.max(0, busSegments - 1);
+      const walkingMeters = segments.filter(s => s.type === 'walk').reduce((t, s) => t + (s.distance || 0), 0);
+      const totalMin = segments.reduce((t, s) => t + (s.minutes || 0), 0);
+      // Penalty forte: on préfère 5-10 min de plus dans le même bus plutôt qu'une correspondance inutile.
+      const score = totalMin + transfers * 35 + walkingMeters / 120 + (directPreferred ? -25 : 0);
+      const candidate = { fromStop, toStop, path, segments, transfers, totalMin, score, directPreferred };
+      if (!best || candidate.score < best.score) best = candidate;
+    }
+  }
+  return { fromCandidates, toCandidates, best };
+}
+
 function normalize(str) {
   return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
 }
@@ -1521,59 +1619,37 @@ async function searchRouteMultiLines() {
     resultCard.classList.remove('hidden');
     setTimeout(() => resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
   }
-  const fromStop = bestStopMatch(fromQ), toStop = bestStopMatch(toQ);
   if (!stops.length) {
     if (resultEl) resultEl.innerHTML = '<span style="color:#dc2626">⚠️ Les arrêts ne sont pas encore chargés. Attends quelques secondes et réessaie.</span>';
     return;
   }
-  if (!fromStop) {
+  const routeChoice = chooseBestRoute(fromQ, toQ);
+  const fromStop = routeChoice.best?.fromStop || routeChoice.fromCandidates?.[0];
+  const toStop = routeChoice.best?.toStop || routeChoice.toCandidates?.[0];
+  if (!routeChoice.fromCandidates || !routeChoice.fromCandidates.length) {
     const suggestions = stops.slice(0,3).map(s=>s.name).join(', ');
     if (resultEl) resultEl.innerHTML = `<span style="color:#dc2626">⚠️ Arrêt introuvable: "<b>${fromQ}</b>". Exemples: ${suggestions}</span>`;
     return;
   }
-  if (!toStop) {
+  if (!routeChoice.toCandidates || !routeChoice.toCandidates.length) {
     const suggestions = stops.slice(0,3).map(s=>s.name).join(', ');
     if (resultEl) resultEl.innerHTML = `<span style="color:#dc2626">⚠️ Destination introuvable: "<b>${toQ}</b>". Exemples: ${suggestions}</span>`;
     return;
   }
-  if (fromStop.id === toStop.id) { if (resultEl) resultEl.textContent = 'Départ = Destination.'; return; }
-  const path = dijkstraRoute(fromStop.id, toStop.id);
-  if (!path || !path.length) {
-    // Diagnostic: are they on the same line?
-    const fromLine = fromStop.lineId, toLine = toStop.lineId;
+  if (!routeChoice.best) {
     let msg = 'Aucun itinéraire trouvé entre ces deux arrêts.';
-    if (fromLine && fromLine === toLine) {
-      msg = `Les deux arrêts sont sur la même ligne (${getLineName(fromLine)}) mais aucun chemin n'a été trouvé. Vérifiez que les arrêts ont des coordonnées GPS et un ordre défini.`;
-    } else if (!fromLine || !toLine) {
-      msg = 'Un des arrêts n\'a pas de ligne assignée. Vérifiez les données dans l\'admin.';
+    if (fromStop?.lineId && toStop?.lineId && fromStop.lineId === toStop.lineId) {
+      msg = `Les deux arrêts sont sur la même ligne (${getLineName(fromStop.lineId)}) mais aucun chemin n'a été trouvé. Vérifiez les coordonnées GPS et l'ordre des arrêts.`;
     } else {
-      msg = `Pas de connexion trouvée entre ${getLineName(fromLine)} et ${getLineName(toLine)}. Les lignes sont peut-être trop éloignées pour une correspondance à pied.`;
+      msg = 'Pas de connexion trouvée. Vérifiez que les lignes ont des arrêts de correspondance proches ou un arrêt commun.';
     }
     if (resultEl) resultEl.innerHTML = `<span style="color:#dc2626">⚠️ ${msg}</span>`;
     return;
   }
-  // Build segments
-  const segments = [];
-  let curSeg = null;
-  path.forEach(step => {
-    if (step.edge.type === 'bus') {
-      if (curSeg && curSeg.type === 'bus' && curSeg.lineId === step.edge.lineId && curSeg.direction === step.edge.direction) {
-        curSeg.to = step.stopId;
-        curSeg.minutes += step.edge.minutes;
-        curSeg.distance += step.edge.distance;
-        if (!curSeg.stopIds.includes(step.stopId)) curSeg.stopIds.push(step.stopId);
-      } else {
-        if (curSeg) segments.push(curSeg);
-        curSeg = { type: 'bus', lineId: step.edge.lineId, direction: step.edge.direction, from: step.from, to: step.stopId, minutes: step.edge.minutes, distance: step.edge.distance, stopIds: [step.from, step.stopId] };
-      }
-    } else {
-      if (curSeg) segments.push(curSeg);
-      curSeg = { type: 'walk', from: step.from, to: step.stopId, minutes: step.edge.minutes, distance: step.edge.distance };
-    }
-  });
-  if (curSeg) segments.push(curSeg);
+  if (fromStop.id === toStop.id) { if (resultEl) resultEl.textContent = 'Départ = Destination.'; return; }
+  const segments = routeChoice.best.segments;
   const totalMin = Math.round(segments.reduce((t, s) => t + s.minutes, 0));
-  const transfers = segments.filter(s => s.type === 'bus').length - 1;
+  const transfers = Math.max(0, segments.filter(s => s.type === 'bus').length - 1);
   if (resultEl) resultEl.innerHTML = `<strong>${fromStop.name}</strong> → <strong>${toStop.name}</strong> · ${totalMin} min · ${transfers > 0 ? transfers + ' correspondance(s)' : 'Direct'}`;
   // Render steps
   if (stepsEl) {
