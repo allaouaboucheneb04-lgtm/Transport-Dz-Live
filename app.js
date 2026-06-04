@@ -360,9 +360,13 @@ async function drawRouteForLine(line, routeStops) {
   routeLayers.push(poly);
 }
 
+let _drawingMap = false;
 async function drawMap() {
   if (!map) return;
   if (routeFocusActive) return;
+  if (_drawingMap) return;
+  _drawingMap = true;
+  try {
   map.eachLayer(layer => {
     if (layer instanceof L.Marker || layer instanceof L.CircleMarker || layer instanceof L.Polyline)
       map.removeLayer(layer);
@@ -402,6 +406,7 @@ async function drawMap() {
   const onlineCount = visibleVehiclesForClients().length;
   const stopCount = visible.length;
   setText('mapStatus', `${onlineCount} bus en direct · ${stopCount} arrêts`);
+  } finally { _drawingMap = false; }
 }
 
 // ── Fullscreen map ────────────────────────────
@@ -411,7 +416,10 @@ function openFullMap() {
   overlay.classList.remove('hidden');
   setTimeout(() => {
     initMap();
-    if (map) { map.invalidateSize(true); drawMap(); }
+    if (map) {
+      map.invalidateSize(true);
+      if (!routeFocusActive) drawMap(); // Don't redraw if a route is being shown
+    }
   }, 100);
   setTimeout(() => { if (map) map.invalidateSize(true); }, 500);
 }
@@ -429,19 +437,23 @@ function renderAll() {
   renderClientBusList();
   renderWaitingBuses();
   renderEtaStopSelect();
-  renderEtaList();
+  if (!routeFocusActive) renderEtaList(); // skip heavy renders during route display
   renderStopsList();
-  renderVehiclesList();
+  if (!routeFocusActive) renderVehiclesList();
   renderPendingDrivers();
   renderLists();
   updateAdminStats();
-  drawMap().catch(console.error);
+  drawMap().catch(console.error); // drawMap already checks routeFocusActive
 }
 
 // ═══════════════════════════════════════════
 // SELECTS
 // ═══════════════════════════════════════════
+let _updatingSelects = false;
 function renderSelects() {
+  if (_updatingSelects) return;
+  _updatingSelects = true;
+  try {
   const city = val('clientCity') || 'Bejaia';
   const cityLines = lines.filter(l => !l.city || l.city === city);
   const oldLine = val('clientLineSelect');
@@ -470,6 +482,7 @@ function renderSelects() {
   // Update city label
   const cityNames = { Bejaia: 'Béjaïa', Alger: 'Alger', Oran: 'Oran', Constantine: 'Constantine', Tizi: 'Tizi Ouzou', Annaba: 'Annaba' };
   setText('appCityLabel', cityNames[city] || city);
+  } finally { _updatingSelects = false; }
 }
 
 // ═══════════════════════════════════════════
@@ -1252,7 +1265,7 @@ async function clientGps() {
 // ═══════════════════════════════════════════
 // ROUTE SEARCH (simplified Dijkstra)
 // ═══════════════════════════════════════════
-const WALK_MAX_METERS = 800;
+const WALK_MAX_METERS = 2500; // Algeria bus network has sparse transfer points
 
 function sortStopsByRoute(lineStops) {
   // Sort stops along route using nearest-neighbor starting from stop with lowest order
@@ -1305,7 +1318,7 @@ function buildTransportGraph() {
       const d = distanceMeters(num(a.lat), num(a.lng), num(b.lat), num(b.lng));
       if (d > WALK_MAX_METERS) continue;
       const minutes = (d / WALK_MPS) / 60;
-      const cost = minutes * 1.8 + 4; // walking penalty + transfer penalty
+      const cost = minutes * 1.5 + 3; // walking penalty + transfer penalty
       graph[a.id].push({ to: b.id, type: 'walk', distance: d, minutes, cost });
       graph[b.id].push({ to: a.id, type: 'walk', distance: d, minutes, cost });
     }
@@ -1451,8 +1464,21 @@ async function searchRouteMultiLines() {
   }
   // Draw on map
   routeFocusActive = true;
-  if (!map) { openFullMap(); await new Promise(r => setTimeout(r, 600)); }
-  map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l); });
+  if (!map) {
+    // First time: open map without drawing (routeFocusActive=true blocks drawMap)
+    const overlay = $('mapOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+    initMap();
+    await new Promise(r => setTimeout(r, 400));
+    if (map) map.invalidateSize(true);
+  } else {
+    // Map exists: just show the overlay
+    const overlay = $('mapOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+    setTimeout(() => { if (map) map.invalidateSize(true); }, 100);
+  }
+  // Clear ALL existing layers before drawing route
+  if (map) map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l); });
   clearRouteLayers();
   const pts = [];
   for (const seg of segments) {
