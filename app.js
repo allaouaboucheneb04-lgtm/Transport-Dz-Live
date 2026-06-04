@@ -11,7 +11,7 @@ let unsub = [], map = null, stopPickerMap = null, stopPickerMarker = null;
 let pickedLat = null, pickedLng = null;
 let clientMarker = null, driverWatchId = null, lastGpsWrite = 0;
 let editingLineId = null, editingStopId = null, editingVehicleId = null, editingDriverId = null;
-let routeCache = {}, routeFocusActive = false, routeLayers = [];
+let routeCache = {}, routeFocusActive = false, routeLayers = [], currentRouteState = null;
 let _transportGraph = null, _graphStopsHash = '';
 let osmStopsLayer = null, osmStopsGeojson = null;
 let bejaiaGeojson = null, bejaiaGeojsonLayer = null;
@@ -338,6 +338,41 @@ function clearRouteLayers() {
   routeLayers = [];
 }
 
+
+function drawSavedRouteOnMap() {
+  if (!map || !currentRouteState) return;
+  const { segments, fromStop, toStop } = currentRouteState;
+  map.eachLayer(l => {
+    if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l);
+  });
+  clearRouteLayers();
+  const pts = [];
+  for (const seg of segments) {
+    const fromS = stops.find(s => s.id === seg.from);
+    const toS = stops.find(s => s.id === seg.to);
+    if (!fromS || !toS || num(fromS.lat) === null || num(fromS.lng) === null || num(toS.lat) === null || num(toS.lng) === null) continue;
+    const a = [num(fromS.lat), num(fromS.lng)];
+    const b = [num(toS.lat), num(toS.lng)];
+    pts.push(a, b);
+    const color = seg.type === 'bus' ? (getLineById(seg.lineId)?.color || '#1a56db') : '#9ca3af';
+    const poly = L.polyline([a, b], {
+      color,
+      weight: seg.type === 'bus' ? 6 : 4,
+      dashArray: seg.type === 'walk' ? '6,8' : null,
+      opacity: 0.9
+    }).addTo(map);
+    routeLayers.push(poly);
+  }
+  if (pts.length) {
+    L.circleMarker(pts[0], { radius: 10, color: '#1a56db', fillColor: '#1a56db', fillOpacity: 1 }).addTo(map).bindPopup('Départ: ' + fromStop.name);
+    L.circleMarker(pts[pts.length - 1], { radius: 10, color: '#dc2626', fillColor: '#dc2626', fillOpacity: 1 }).addTo(map).bindPopup('Arrivée: ' + toStop.name);
+    setTimeout(() => {
+      map.invalidateSize(true);
+      map.fitBounds(L.latLngBounds(pts), { padding: [70, 70], maxZoom: 16 });
+    }, 80);
+  }
+}
+
 async function drawRouteForLine(line, routeStops) {
   if (routeStops.length < 2) return;
   const key = line.id + '_' + routeStops.map(s => s.id).join(',');
@@ -419,10 +454,15 @@ function openFullMap() {
     initMap();
     if (map) {
       map.invalidateSize(true);
-      if (!routeFocusActive) drawMap(); // Don't redraw if a route is being shown
+      if (routeFocusActive && currentRouteState) drawSavedRouteOnMap();
+      else drawMap();
     }
-  }, 100);
-  setTimeout(() => { if (map) map.invalidateSize(true); }, 500);
+  }, 120);
+  setTimeout(() => {
+    if (!map) return;
+    map.invalidateSize(true);
+    if (routeFocusActive && currentRouteState) drawSavedRouteOnMap();
+  }, 500);
 }
 
 function closeFullMap() {
@@ -1507,31 +1547,10 @@ async function searchRouteMultiLines() {
       }
     }).join('');
   }
-  // Draw on map (don't auto-open overlay - user can tap Carte button)
+  // Save route and draw it only when the Leaflet map is visible.
   routeFocusActive = true;
-  // Initialize map silently if not done yet
-  if (!map) { initMap(); await new Promise(r => setTimeout(r, 300)); }
-  if (map) {
-    map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.CircleMarker) map.removeLayer(l); });
-  }
-  clearRouteLayers();
-  const pts = [];
-  for (const seg of segments) {
-    const fromS = stops.find(s => s.id === seg.from);
-    const toS = stops.find(s => s.id === seg.to);
-    if (!fromS || !toS) continue;
-    pts.push([num(fromS.lat), num(fromS.lng)]);
-    pts.push([num(toS.lat), num(toS.lng)]);
-    const color = seg.type === 'bus' ? (getLineById(seg.lineId)?.color || '#1a56db') : '#9ca3af';
-    const line = L.polyline([[num(fromS.lat), num(fromS.lng)], [num(toS.lat), num(toS.lng)]], { color, weight: seg.type === 'bus' ? 5 : 3, dashArray: seg.type === 'walk' ? '6,6' : null, opacity: 0.85 }).addTo(map);
-    routeLayers.push(line);
-  }
-  // Markers for start/end
-  if (pts.length) {
-    L.circleMarker(pts[0], { radius: 9, color: '#1a56db', fillColor: '#1a56db', fillOpacity: 1 }).addTo(map).bindPopup('Départ: ' + fromStop.name);
-    L.circleMarker(pts[pts.length - 1], { radius: 9, color: '#dc2626', fillColor: '#dc2626', fillOpacity: 1 }).addTo(map).bindPopup('Arrivée: ' + toStop.name);
-    map.fitBounds(L.latLngBounds(pts), { padding: [50, 50] });
-  }
+  currentRouteState = { segments, fromStop, toStop };
+  if (map && !$('mapOverlay')?.classList.contains('hidden')) drawSavedRouteOnMap();
   saveRecentTrip(fromQ, toQ);
   // Update map button to indicate route is ready
   const mapBtn = $('openFullMapBtn');
@@ -1545,6 +1564,7 @@ function resetRouteSearchView() {
   if ($('routeStepsList')) $('routeStepsList').innerHTML = '';
   const mapBtn = $('openFullMapBtn');
   if (mapBtn) { mapBtn.textContent = '🗺️ Carte'; mapBtn.style.background = ''; mapBtn.style.color = ''; }
+  currentRouteState = null;
   clearRouteLayers();
   drawMap().catch(console.error);
 }
@@ -1662,12 +1682,20 @@ function setupMapSearch() {
     if ($('mapItineraryPanel')) $('mapItineraryPanel').classList.toggle('hidden');
     if ($('mapInfoSheet')) $('mapInfoSheet').classList.toggle('hidden');
   });
-  if ($('mapGoBtn')) $('mapGoBtn').addEventListener('click', () => {
+  if ($('mapGoBtn')) $('mapGoBtn').addEventListener('click', async () => {
     const from = val('mapFromInput'), to = val('mapToInput');
     if ($('fromInput')) $('fromInput').value = from;
     if ($('toInput')) $('toInput').value = to;
-    closeFullMap();
-    searchRouteMultiLines();
+    await searchRouteMultiLines();
+    if (routeFocusActive && currentRouteState) {
+      if ($('mapInfoSheet')) $('mapInfoSheet').classList.add('hidden');
+      if ($('mapItineraryPanel')) $('mapItineraryPanel').classList.add('hidden');
+      if ($('mapRouteResult')) {
+        $('mapRouteResult').classList.remove('hidden');
+        $('mapRouteResult').innerHTML = $('routeResult') ? $('routeResult').innerHTML : 'Itinéraire calculé.';
+      }
+      drawSavedRouteOnMap();
+    }
   });
 }
 
