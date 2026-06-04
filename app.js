@@ -1254,35 +1254,58 @@ async function clientGps() {
 // ═══════════════════════════════════════════
 const WALK_MAX_METERS = 800;
 
+function sortStopsByRoute(lineStops) {
+  // Sort stops along route using nearest-neighbor starting from stop with lowest order
+  if (lineStops.length <= 2) return lineStops;
+  const sorted = [lineStops.reduce((best, s) => Number(s.order||9999) < Number(best.order||9999) ? s : best, lineStops[0])];
+  const remaining = lineStops.filter(s => s.id !== sorted[0].id);
+  while (remaining.length) {
+    const last = sorted[sorted.length - 1];
+    let nearestIdx = 0, nearestDist = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const d = distanceMeters(num(last.lat), num(last.lng), num(remaining[i].lat), num(remaining[i].lng));
+      if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
+    }
+    sorted.push(remaining.splice(nearestIdx, 1)[0]);
+  }
+  return sorted;
+}
+
 function buildTransportGraph() {
   const graph = {};
-  stops.forEach(s => { const k = s.id; if (!graph[k]) graph[k] = []; });
+  stops.forEach(s => { if (!graph[s.id]) graph[s.id] = []; });
+
   lines.filter(l => l.active !== false).forEach(line => {
-    ['aller', 'retour'].forEach(dir => {
-      const ls = stopsForLine(line.id).filter(s => s.direction === 'both' || s.direction === dir);
-      for (let i = 0; i < ls.length - 1; i++) {
-        const a = ls[i], b = ls[i + 1];
-        const d = distanceMeters(num(a.lat), num(a.lng), num(b.lat), num(b.lng));
-        const minutes = (d / (BUS_AVG_KMH * 1000 / 3600)) / 60;
-        if (!graph[a.id]) graph[a.id] = [];
-        if (!graph[b.id]) graph[b.id] = [];
-        graph[a.id].push({ to: b.id, type: 'bus', lineId: line.id, direction: dir, distance: d, minutes, cost: minutes + 0.5 });
-        if (dir === 'aller') graph[b.id].push({ to: a.id, type: 'bus', lineId: line.id, direction: 'retour', distance: d, minutes, cost: minutes + 0.5 });
-      }
-    });
+    const allLineStops = stopsForLine(line.id);
+    if (allLineStops.length < 2) return;
+    
+    // Sort stops along the route geographically
+    const ordered = sortStopsByRoute(allLineStops);
+    
+    // Build edges: each stop connects to the next AND previous (bidirectional travel)
+    // Also connect with cumulative distance so Dijkstra can traverse the full line
+    for (let i = 0; i < ordered.length - 1; i++) {
+      const a = ordered[i], b = ordered[i + 1];
+      const d = distanceMeters(num(a.lat), num(a.lng), num(b.lat), num(b.lng));
+      const minutes = (d / (BUS_AVG_KMH * 1000 / 3600)) / 60;
+      const cost = minutes + 0.5;
+      // Aller direction (forward along route)
+      graph[a.id].push({ to: b.id, type: 'bus', lineId: line.id, direction: 'aller', distance: d, minutes, cost });
+      // Retour direction (backward along route)
+      graph[b.id].push({ to: a.id, type: 'bus', lineId: line.id, direction: 'retour', distance: d, minutes, cost });
+    }
   });
-  // Walking edges
-  const allStops = stops.filter(s => num(s.lat) !== null);
-  for (let i = 0; i < allStops.length; i++) {
-    for (let j = i + 1; j < allStops.length; j++) {
-      const a = allStops[i], b = allStops[j];
-      if (a.lineId === b.lineId) continue;
+
+  // Walking edges between stops of DIFFERENT lines within walking distance
+  const validStops = stops.filter(s => num(s.lat) !== null && num(s.lng) !== null);
+  for (let i = 0; i < validStops.length; i++) {
+    for (let j = i + 1; j < validStops.length; j++) {
+      const a = validStops[i], b = validStops[j];
+      if (a.lineId === b.lineId) continue; // same line = use bus edges
       const d = distanceMeters(num(a.lat), num(a.lng), num(b.lat), num(b.lng));
       if (d > WALK_MAX_METERS) continue;
       const minutes = (d / WALK_MPS) / 60;
-      const cost = minutes * 1.8 + 4;
-      if (!graph[a.id]) graph[a.id] = [];
-      if (!graph[b.id]) graph[b.id] = [];
+      const cost = minutes * 1.8 + 4; // walking penalty + transfer penalty
       graph[a.id].push({ to: b.id, type: 'walk', distance: d, minutes, cost });
       graph[b.id].push({ to: a.id, type: 'walk', distance: d, minutes, cost });
     }
@@ -1321,17 +1344,32 @@ function dijkstraRoute(startId, endId) {
   return path;
 }
 
+function normalize(str) {
+  return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
+}
+
 function bestStopMatch(query) {
-  const q = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const q = normalize(query);
   if (!q) return null;
-  return stops.map(s => {
-    const name = (s.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const qWords = q.split(/\s+/).filter(Boolean);
+  
+  const scored = stops.map(s => {
+    const name = normalize(s.name);
     let score = 0;
     if (name === q) score = 1000;
-    else if (name.startsWith(q)) score = 800;
-    else if (name.includes(q)) score = 500;
+    else if (name.startsWith(q)) score = 900;
+    else if (name.includes(q)) score = 700;
+    else {
+      // Word-by-word match: "Gare Routiere" matches "Gare Routière de Béjaïa"
+      const nameWords = name.split(/\s+/).filter(Boolean);
+      const matchedWords = qWords.filter(w => nameWords.some(nw => nw.startsWith(w) || w.startsWith(nw)));
+      if (matchedWords.length === qWords.length) score = 600;
+      else if (matchedWords.length > 0) score = 300 * (matchedWords.length / qWords.length);
+    }
     return { s, score };
-  }).filter(x => x.score > 0).sort((a, b) => b.score - a.score)[0]?.s || null;
+  }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
+  
+  return scored[0]?.s || null;
 }
 
 async function searchRouteMultiLines() {
@@ -1348,7 +1386,17 @@ async function searchRouteMultiLines() {
   if (fromStop.id === toStop.id) { if (resultEl) resultEl.textContent = 'Départ = Destination.'; return; }
   const path = dijkstraRoute(fromStop.id, toStop.id);
   if (!path || !path.length) {
-    if (resultEl) resultEl.textContent = 'Aucun itinéraire trouvé entre ces deux arrêts.';
+    // Diagnostic: are they on the same line?
+    const fromLine = fromStop.lineId, toLine = toStop.lineId;
+    let msg = 'Aucun itinéraire trouvé entre ces deux arrêts.';
+    if (fromLine && fromLine === toLine) {
+      msg = `Les deux arrêts sont sur la même ligne (${getLineName(fromLine)}) mais aucun chemin n'a été trouvé. Vérifiez que les arrêts ont des coordonnées GPS et un ordre défini.`;
+    } else if (!fromLine || !toLine) {
+      msg = 'Un des arrêts n\'a pas de ligne assignée. Vérifiez les données dans l\'admin.';
+    } else {
+      msg = `Pas de connexion trouvée entre ${getLineName(fromLine)} et ${getLineName(toLine)}. Les lignes sont peut-être trop éloignées pour une correspondance à pied (max 800m).`;
+    }
+    if (resultEl) resultEl.innerHTML = `<span style="color:#dc2626">⚠️ ${msg}</span>`;
     return;
   }
   // Build segments
@@ -1625,13 +1673,49 @@ async function importBejaiaAutoLinesAndStops() {
       lineIdMap[f.id || p['@id'] || name] = ref.id;
       linesCreated++;
     }
-    // Create stops from point features
+    // Create stops from point features - assign to nearest line by geography
     const pointFeatures = features.filter(f => f.geometry && f.geometry.type === 'Point');
+    // Build line geometries for nearest-line assignment
+    const lineGeoms = {};
+    features.filter(f => {
+      const g = (f.geometry || {}).type;
+      return g === 'LineString' || g === 'MultiLineString';
+    }).forEach(f => {
+      const osmId = (f.properties || {})['@id'] || f.id || '';
+      const lid = lineIdMap[osmId] || lineIdMap[f.id] || Object.values(lineIdMap)[0];
+      if (!lid) return;
+      let coords = [];
+      if (f.geometry.type === 'LineString') coords = f.geometry.coordinates;
+      else if (f.geometry.type === 'MultiLineString') coords = f.geometry.coordinates.flat();
+      lineGeoms[lid] = (lineGeoms[lid] || []).concat(coords);
+    });
+    const lineIds = Object.keys(lineGeoms);
+    
+    function distToLine(lat, lng, lineCoords) {
+      let minD = Infinity;
+      for (const c of lineCoords) {
+        const d = Math.hypot(lat - Number(c[1]), lng - Number(c[0]));
+        if (d < minD) minD = d;
+      }
+      return minD;
+    }
+    
     for (const f of pointFeatures) {
       const p = f.properties || {}, c = f.geometry.coordinates || [];
       const name = p.name || p.local_ref || p.ref || 'Arrêt OSM';
-      const lineId = Object.values(lineIdMap)[0] || '';
-      await db.collection('stops').add({ name, lineId, lineName: getLineName(lineId), city: 'Bejaia', lat: Number(c[1]), lng: Number(c[0]), order: stopsCreated + 1, direction: 'both', active: true, source: 'bejaia_osm', createdAt: now(), updatedAt: now() });
+      const lat = Number(c[1]), lng = Number(c[0]);
+      
+      // Assign to nearest line
+      let bestLineId = Object.values(lineIdMap)[0] || '';
+      if (lineIds.length > 1) {
+        let bestDist = Infinity;
+        for (const lid of lineIds) {
+          const d = distToLine(lat, lng, lineGeoms[lid] || []);
+          if (d < bestDist) { bestDist = d; bestLineId = lid; }
+        }
+      }
+      
+      await db.collection('stops').add({ name, lineId: bestLineId, lineName: getLineName(bestLineId), city: 'Bejaia', lat, lng, order: stopsCreated + 1, direction: 'both', active: true, source: 'bejaia_osm', createdAt: now(), updatedAt: now() });
       stopsCreated++;
       if (stopsCreated % 20 === 0) setText('bejaiaGeojsonStatus', `Import... ${stopsCreated} arrêts`);
     }
