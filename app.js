@@ -825,6 +825,149 @@ function renderEta(){
 
 function renderAll(){applyTransitFallbackIfEmpty();renderEtaStopSelect();renderRoleBadge();renderPendingDrivers();applyRoleVisibility();renderWaitingBusesList();renderSelects();fillWalkingStopSelectsSafe();renderLists();renderEtaList();renderWalkingTracksAdminSafe();drawMap().catch(console.error);window._lines=lines;window._stops=stops;window._vehicles=vehicles;}
 
+
+// ==========================================
+// MISSING CRUD HELPERS (were never defined)
+// ==========================================
+
+async function addDoc(collection_name, data, statusId) {
+  try {
+    await db.collection(collection_name).add(data);
+    if(statusId) setText(statusId, "Enregistré ✅");
+    return true;
+  } catch(e) {
+    console.error("addDoc error", e);
+    if(statusId) setText(statusId, "Erreur: " + (e.message || e));
+    alert("Erreur Firebase: " + (e.message || e));
+    return false;
+  }
+}
+
+async function updateDoc(collection_name, docId, data, statusId) {
+  try {
+    await db.collection(collection_name).doc(docId).update({...data, updatedAt: now()});
+    if(statusId) setText(statusId, "Mis à jour ✅");
+    return true;
+  } catch(e) {
+    console.error("updateDoc error", e);
+    if(statusId) setText(statusId, "Erreur: " + (e.message || e));
+    alert("Erreur Firebase: " + (e.message || e));
+    return false;
+  }
+}
+
+function driverName(driverId) {
+  if(!driverId) return "—";
+  const d = drivers.find(x => x.id === driverId);
+  return d ? (d.name || d.email || driverId) : driverId;
+}
+
+function editLine(id) {
+  const l = lines.find(x => x.id === id);
+  if(!l) return;
+  editingLineId = id;
+  if($("lineNameInput")) $("lineNameInput").value = l.name || "";
+  if($("lineCity")) $("lineCity").value = l.city || "Bejaia";
+  if($("lineType")) $("lineType").value = l.type || "bus";
+  if($("lineColor")) $("lineColor").value = l.color || "#2563eb";
+  if($("lineStartStopSelect")) $("lineStartStopSelect").value = l.startStopId || "";
+  if($("lineEndStopSelect")) $("lineEndStopSelect").value = l.endStopId || "";
+  if($("addLineBtn")) $("addLineBtn").textContent = "Mettre à jour ligne";
+  // Scroll to form
+  const panel = $("panelLines");
+  if(panel) { $("panelLines").scrollIntoView({behavior:"smooth",block:"start"}); }
+  // Switch to lines tab
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".adminPanel").forEach(p => p.classList.remove("active"));
+  const linesTab = document.querySelector('[data-panel="panelLines"]');
+  if(linesTab) linesTab.classList.add("active");
+  if(panel) panel.classList.add("active");
+}
+
+function editStop(id) {
+  const s = stops.find(x => x.id === id);
+  if(!s) return;
+  editingStopId = id;
+  if($("stopName")) $("stopName").value = s.name || "";
+  if($("stopLineSelect")) $("stopLineSelect").value = s.lineId || "";
+  if($("stopLat")) $("stopLat").value = s.lat || "";
+  if($("stopLng")) $("stopLng").value = s.lng || "";
+  if($("stopOrder")) $("stopOrder").value = s.order || "";
+  if($("stopDirection")) $("stopDirection").value = s.direction || "both";
+  if($("addStopBtn")) $("addStopBtn").textContent = "Mettre à jour arrêt";
+  const panel = $("panelStops");
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".adminPanel").forEach(p => p.classList.remove("active"));
+  const tab = document.querySelector('[data-panel="panelStops"]');
+  if(tab) tab.classList.add("active");
+  if(panel) { panel.classList.add("active"); panel.scrollIntoView({behavior:"smooth",block:"start"}); }
+}
+
+function editVehicle(id) {
+  const v = vehicles.find(x => x.id === id);
+  if(!v) return;
+  editingVehicleId = id;
+  if($("vehicleName")) $("vehicleName").value = v.name || "";
+  if($("vehicleLineSelect")) $("vehicleLineSelect").value = v.lineId || "";
+  if($("vehicleDriverSelect")) $("vehicleDriverSelect").value = v.driverId || "";
+  if($("addVehicleBtn")) $("addVehicleBtn").textContent = "Mettre à jour véhicule";
+  const panel = $("panelVehicles");
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".adminPanel").forEach(p => p.classList.remove("active"));
+  const tab = document.querySelector('[data-panel="panelVehicles"]');
+  if(tab) tab.classList.add("active");
+  if(panel) { panel.classList.add("active"); panel.scrollIntoView({behavior:"smooth",block:"start"}); }
+}
+
+function editDriver(id) {
+  const d = drivers.find(x => x.id === id);
+  if(!d) return;
+  editingDriverId = id;
+  if($("driverNameAdmin")) $("driverNameAdmin").value = d.name || "";
+  if($("driverPhoneAdmin")) $("driverPhoneAdmin").value = d.phone || "";
+  if($("driverEmailAdmin")) $("driverEmailAdmin").value = d.email || d.uid || "";
+  if($("addDriverBtn")) $("addDriverBtn").textContent = "Mettre à jour chauffeur";
+  const panel = $("panelDrivers");
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".adminPanel").forEach(p => p.classList.remove("active"));
+  const tab = document.querySelector('[data-panel="panelDrivers"]');
+  if(tab) tab.classList.add("active");
+  if(panel) { panel.classList.add("active"); panel.scrollIntoView({behavior:"smooth",block:"start"}); }
+}
+
+function resetEdit(type) {
+  if(type === "line" || !type) {
+    editingLineId = null;
+    if($("lineNameInput")) $("lineNameInput").value = "";
+    if($("lineColor")) $("lineColor").value = "#2563eb";
+    if($("addLineBtn")) $("addLineBtn").textContent = "Ajouter ligne";
+    setText("lineStatus", "");
+  }
+  if(type === "stop" || !type) {
+    editingStopId = null;
+    if($("stopName")) $("stopName").value = "";
+    if($("stopLat")) $("stopLat").value = "";
+    if($("stopLng")) $("stopLng").value = "";
+    if($("stopOrder")) $("stopOrder").value = "";
+    if($("addStopBtn")) $("addStopBtn").textContent = "Ajouter arrêt";
+    setText("stopStatus", "");
+  }
+  if(type === "vehicle" || !type) {
+    editingVehicleId = null;
+    if($("vehicleName")) $("vehicleName").value = "";
+    if($("addVehicleBtn")) $("addVehicleBtn").textContent = "Ajouter véhicule";
+    setText("vehicleStatus", "");
+  }
+  if(type === "driver" || !type) {
+    editingDriverId = null;
+    if($("driverNameAdmin")) $("driverNameAdmin").value = "";
+    if($("driverPhoneAdmin")) $("driverPhoneAdmin").value = "";
+    if($("driverEmailAdmin")) $("driverEmailAdmin").value = "";
+    if($("addDriverBtn")) $("addDriverBtn").textContent = "Ajouter chauffeur";
+    setText("driverAdminStatus", "");
+  }
+}
+
 async function saveLine(){if(!requireAdmin())return;const btn=$("addLineBtn");btn.disabled=true;btn.textContent=editingLineId?"Mise à jour...":"Enregistrement...";const name=val("lineNameInput").trim();if(!name){btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne";return alert("Nom ligne obligatoire.")}const data={city:val("lineCity")||"Bejaia",name,type:val("lineType")||"bus",color:val("lineColor")||"#2563eb",active:true};let ok=false;if(editingLineId){ok=await updateDoc("lines",editingLineId,data,"lineStatus")}else{ok=await addDoc("lines",{...data,createdAt:now(),updatedAt:now()},"lineStatus")}if(ok){resetEdit("line")}btn.disabled=false;btn.textContent=editingLineId?"Mettre à jour ligne":"Ajouter ligne"}
 async function saveStop(){if(!requireAdmin())return;const btn=$("addStopBtn");btn.disabled=true;btn.textContent=editingStopId?"Mise à jour...":"Enregistrement...";const name=val("stopName").trim(),lat=num(val("stopLat")),lng=num(val("stopLng"));if(!name){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Nom arrêt obligatoire.")}if(!val("stopLineSelect")){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Choisis une ligne pour cet arrêt.")}if(lat===null||lng===null){btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt";return alert("Latitude/longitude invalide.")}const data={lineId:val("stopLineSelect"),name,lat,lng,order:Number(val("stopOrder")||0),direction:val("stopDirection")||"both",active:true};let ok=false;if(editingStopId){ok=await updateDoc("stops",editingStopId,data,"stopStatus")}else{ok=await addDoc("stops",{...data,createdAt:now(),updatedAt:now()},"stopStatus")}if(ok){resetEdit("stop")}btn.disabled=false;btn.textContent=editingStopId?"Mettre à jour arrêt":"Ajouter arrêt"}
 async function saveVehicle(){if(!requireAdmin())return;const btn=$("addVehicleBtn");btn.disabled=true;btn.textContent=editingVehicleId?"Mise à jour...":"Enregistrement...";const name=val("vehicleName").trim();if(!name){btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule";return alert("Nom véhicule obligatoire.")}const data={name,lineId:val("vehicleLineSelect"),driverId:val("vehicleDriverSelect"),active:true};let ok=false;if(editingVehicleId){ok=await updateDoc("vehicles",editingVehicleId,data,"vehicleStatus")}else{ok=await addDoc("vehicles",{...data,status:"offline",visibleToClients:false,lat:null,lng:null,createdAt:now(),updatedAt:now()},"vehicleStatus")}if(ok){resetEdit("vehicle")}btn.disabled=false;btn.textContent=editingVehicleId?"Mettre à jour véhicule":"Ajouter véhicule"}
